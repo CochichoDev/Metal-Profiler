@@ -1,0 +1,247 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include "platform.h"
+#include "xil_printf.h"
+#include "xil_cache.h"
+#include "PMU.h"
+#include "xtime_l.h"
+#include "xil_mmu.h"
+#include <time.h>
+#include <errno.h>
+#include <assert.h>
+#include <math.h>
+
+#include <unistd.h>
+
+int msleep(unsigned int tms) {
+	return usleep(tms * 1000);
+}
+
+static XTime XMt_CalcTime(XTime tCur) {
+	XTime tEnd;
+	XTime tDiff;
+	XTime_GetTime(&tEnd);
+	tDiff = tEnd - tCur;
+	return tDiff;
+}
+
+static void enable_cycle_counter_el0(void) {
+	uint64_t val;
+	/* Disable cycle counter overflow interrupt */
+	asm volatile("msr pmintenset_el1, %0" : : "r" ((uint64_t)(0 << 31)));
+	/* Enable cycle counter */
+	asm volatile("msr pmcntenset_el0, %0" :: "r" (1 << 31));
+	/* Enable user-mode access to cycle counters. */
+	asm volatile("msr pmuserenr_el0, %0" :: "r" ((1 << 0) | (1 << 2)));
+	/* Clear cycle counter and start */
+	asm volatile("mrs %0, pmcr_el0" : "=r" (val));
+	val |= ((1 << 0) | (1 << 2));
+	asm volatile("isb");
+	asm volatile("msr pmcr_el0, %0" :: "r" (val));
+	val = (1 << 27);
+	asm volatile("msr pmccfiltr_el0, %0" :: "r" (val));
+}
+
+static inline uint64_t read_pmccntr(void) {
+	uint64_t val;
+	asm volatile("mrs %0, pmccntr_el0" : "=r"(val));
+	return val;
+}
+
+
+// Configure attacker #2
+#define NoCacheMemAttack
+#define OCMMemAttack
+#define STORE
+
+#if defined(L1CacheFill)
+
+#define PAYLOAD_STORE(WAYS, SETS, OFFSET, PTR) \
+    for (register u32 way = 0; way < WAYS; way++)   \
+        for (register u32 set = 0; set < SETS; set++)    \
+            for (register u32 byte = 0; byte < OFFSET; byte++)  \
+                target[way][set][byte] = way + set + byte
+
+__attribute__((section(".ddr"))) __attribute__((aligned(1024*32))) volatile u8 target[4][128][64];
+
+int main(s32 argc, char8 **argv) {
+    Xil_ConfigureL1Prefetch(0x0U);
+    no_allocate_threshold_L1(0b11);
+    no_allocate_threshold_L2(0b11);
+    Xil_ICacheDisable();
+
+    enable_cycle_counter();
+    Xil_DCacheInvalidate();
+    for (register u32 ctr = 0; ctr < 500; ctr++) {
+        reset_cycle_counter(0);       
+        PAYLOAD_STORE(4, 128, 64, target);
+        printf("%llu\n", read_cycle_counter());
+    }
+
+    return 0;
+}
+
+/*
+ * This option creates an application that does not use any kind of memory manipulation
+ */
+#elif defined(independent)
+
+#define MINIBENCH_STORE(REPS, VA, VB) \
+    register u32 a = VA;    \
+    register u32 b = VB;    \
+    for (register u32 c = 0; c < REPS; c++) \
+        a ^= (volatile u32) b
+
+#define PAYLOAD_STORE(VA, VB) \
+    __asm__ ("  ldr w1, =%0   \n\t	\
+                ldr w0, =%1   \n	\
+            payload:          \n\t	\
+                eor w0, w0, w1     \n\t	\
+                b payload": :"i"(VA), "i"(VB))
+
+int main(s32 argc, char8 **argv) {
+    PAYLOAD_STORE(2, 1);
+
+    return 0;
+}
+
+#elif defined(OCMAttacker)
+
+#define PAYLOAD_STORE(VA, VB) \
+    __asm__ ("  ldr w1, =%0   \n\t	\
+                ldr w0, =%1   \n	\
+            payload:          \n\t	\
+                eor w0, w0, w1     \n\t	\
+                b payload": :"i"(VA), "i"(VB))
+
+int main(s32 argc, char8 **argv) {
+    PAYLOAD_STORE(2, 1);
+
+    return 0;
+}
+
+#elif defined(NoCacheMemAttack)
+
+#if defined(BasicMemAttack)
+#define WAYS 512
+#define SETS 128
+#define BYTES 64
+
+#if defined(STORE)
+#define PAYLOAD(PSETS, POFFSET, WAYS, SETS, OFFSET, PTR) \
+    for (register u32 way = 0; way < WAYS; way++) { \
+        for (register u32 set = 0; set < SETS; set++) {  \
+            for (register u32 byte = 0; byte < OFFSET; byte++) {\
+                 __asm__ (                      \
+                    "                       \t\
+                    lsl x0, %2, %0          \n\t\
+                    add x1, %3, %2          \n\t\
+                    lsl x1, %3, %1          \n\t\
+                    add %5, %3, %4          \n\t\
+                    strb w0, [%5]           \
+                    "                       \
+                :                           \ 
+                :"i"(PSETS), "i"(POFFSET), "r"(way), "r"(set), "r"(byte), "r"(PTR)  \
+                :"x0", "x1"); \
+            }           \
+        }           \
+    }           
+#else
+#define PAYLOAD(PSETS, POFFSET, WAYS, SETS, OFFSET, PTR) \
+    for (register u32 way = 0; way < WAYS; way++) { \
+        for (register u32 set = 0; set < SETS; set++) {  \
+            for (register u32 byte = 0; byte < OFFSET; byte++) {\
+                 __asm__ (                      \
+                    "                       \t\
+                    lsl x0, %2, %0          \n\t\
+                    add x1, %3, %2          \n\t\
+                    lsl x1, %3, %1          \n\t\
+                    add %5, %3, %4          \n\t\
+                    ldrb w0, [%5]           \
+                    "                       \
+                :                           \ 
+                :"i"(PSETS), "i"(POFFSET), "r"(way), "r"(set), "r"(byte), "r"(PTR)  \
+                :"x0", "x1"); \
+            }           \
+        }           \
+    }           
+#endif
+
+__attribute__((section(".ddr"))) __attribute__((aligned(1024*32))) volatile u8 target[WAYS][SETS][BYTES];
+
+int main(s32 argc, char8 **argv) {
+    Xil_ConfigureL1Prefetch(0x0U);
+    no_allocate_threshold_L1(0b11);
+    no_allocate_threshold_L2(0b11);
+    Xil_ICacheDisable();
+    Xil_DCacheDisable();
+
+    
+    while (1)
+        PAYLOAD(7, 6, WAYS, SETS, BYTES, target);
+
+    return 0;
+}
+
+#elif defined(OCMMemAttack)
+#define WAYS 32
+#define SETS 128
+#define BYTES 64
+
+__attribute__((section(".ocm"))) __attribute__((aligned(1024*32))) volatile u8 target[WAYS][SETS][BYTES];
+
+#if defined(STORE)
+#define PAYLOAD(PSETS, POFFSET, WAYS, SETS, OFFSET, PTR) \
+    for (register u32 way = 0; way < WAYS; way++) { \
+        for (register u32 set = 0; set < SETS; set++) {  \
+            for (register u32 byte = 0; byte < OFFSET; byte++) {\
+                 __asm__ (                      \
+                    "                       \t\
+                    lsl x0, %2, %0          \n\t\
+                    add x1, %3, %2          \n\t\
+                    lsl x1, %3, %1          \n\t\
+                    add %5, %3, %4          \n\t\
+                    strb w0, [%5]           \
+                    "                       \
+                :                           \ 
+                :"i"(PSETS), "i"(POFFSET), "r"(way), "r"(set), "r"(byte), "r"(PTR)  \
+                :"x0", "x1"); \
+            }           \
+        }           \
+    }           
+#else
+#define PAYLOAD(PSETS, POFFSET, WAYS, SETS, OFFSET, PTR) \
+    for (register u32 way = 0; way < WAYS; way++) { \
+        for (register u32 set = 0; set < SETS; set++) {  \
+            for (register u32 byte = 0; byte < OFFSET; byte++) {\
+                 __asm__ (                      \
+                    "                       \t\
+                    lsl x0, %2, %0          \n\t\
+                    add x1, %3, %2          \n\t\
+                    lsl x1, %3, %1          \n\t\
+                    add %5, %3, %4          \n\t\
+                    ldrb w0, [%5]           \
+                    "                       \
+                :                           \ 
+                :"i"(PSETS), "i"(POFFSET), "r"(way), "r"(set), "r"(byte), "r"(PTR)  \
+                :"x0", "x1"); \
+            }           \
+        }           \
+    }           
+#endif
+
+int main(s32 argc, char8 **argv) {
+    Xil_ConfigureL1Prefetch(0x0U);
+    no_allocate_threshold_L1(0b11);
+    no_allocate_threshold_L2(0b11);
+    Xil_ICacheDisable();
+    Xil_DCacheDisable();
+
+    while (1) {
+        PAYLOAD(7, 6, WAYS, SETS, BYTES, target);
+    }
+
+    return 0;
+}
+#endif
+#endif

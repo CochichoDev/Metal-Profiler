@@ -1,0 +1,76 @@
+[
+    {
+        "arguments": [
+            "aarch64-none-elf-gcc",
+            "-c",
+            "-Wall",
+            "-O0",
+            "-fmessage-length=0",
+            "-MTsrc/main.o",
+            "-I/home/local/MetaVonics_1/Meta/export/Meta/sw/Meta/standalone_psu_cortexa53_2/bspinclude/include",
+            "-MFsrc/main.d",
+            "-MTsrc/main.o",
+            "-o",
+            "src/main.o",
+            "../src/main.c"
+        ],
+        "directory": "/home/local/MetaVonics_1/Core2/Debug",
+        "file": "../src/main.c"
+    },
+    {
+        "arguments": [
+            "aarch64-none-elf-gcc",
+            "-c",
+            "-Wall",
+            "-O0",
+            "-fmessage-length=0",
+            "-MTsrc/platform.o",
+            "-I/home/local/MetaVonics_1/Meta/export/Meta/sw/Meta/standalone_psu_cortexa53_2/bspinclude/include",
+            "-MFsrc/platform.d",
+            "-MTsrc/platform.o",
+            "-o",
+            "src/platform.o",
+            "../src/platform.c"
+        ],
+        "directory": "/home/local/MetaVonics_1/Core2/Debug",
+        "file": "../src/platform.c"
+    },
+    {
+        "arguments": [
+            "/tools/Xilinx/Vitis/2021.2/gnu/aarch64/lin/aarch64-none/bin/../x86_64-oesdk-linux/usr/bin/aarch64-xilinx-elf/aarch64-xilinx-elf-gcc",
+            "-c",
+            "--sysroot=/tools/Xilinx/Vitis/2021.2/gnu/aarch64/lin/aarch64-none/bin/../aarch64-xilinx-elf",
+            "-Wall",
+            "-O0",
+            "-fmessage-length=0",
+            "-MTsrc/main.o",
+            "-I/home/local/MetaVonics_1/Meta/export/Meta/sw/Meta/standalone_psu_cortexa53_2/bspinclude/include",
+            "-MFsrc/main.d",
+            "-MTsrc/main.o",
+            "-o",
+            "src/main.o",
+            "../src/main.c"
+        ],
+        "directory": "/home/local/MetaVonics_1/Core2/Debug",
+        "file": "../src/main.c"
+    },
+    {
+        "arguments": [
+            "/tools/Xilinx/Vitis/2021.2/gnu/aarch64/lin/aarch64-none/bin/../x86_64-oesdk-linux/usr/bin/aarch64-xilinx-elf/aarch64-xilinx-elf-gcc",
+            "-c",
+            "--sysroot=/tools/Xilinx/Vitis/2021.2/gnu/aarch64/lin/aarch64-none/bin/../aarch64-xilinx-elf",
+            "-Wall",
+            "-O0",
+            "-fmessage-length=0",
+            "-MTsrc/platform.o",
+            "-I/home/local/MetaVonics_1/Meta/export/Meta/sw/Meta/standalone_psu_cortexa53_2/bspinclude/include",
+            "-MFsrc/platform.d",
+            "-MTsrc/platform.o",
+            "-o",
+            "src/platform.o",
+            "../src/platform.c"
+        ],
+        "directory": "/home/local/MetaVonics_1/Core2/Debug",
+        "file": "../src/platform.c"
+    }
+]

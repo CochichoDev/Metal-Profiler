@@ -1,0 +1,6 @@
+RUN IN INDEPENDENT MACHINE (TOWER):
+Benchmark framework (autocompilation, interface with TRACE32 and UART) -> autometal-bench
+
+RUN IN ZYNQ ULTRASCLE+:
+Metavonics Xilinx Adapted Project -> metavonics
+Metavonics Independent Project -> metavonics-alheira

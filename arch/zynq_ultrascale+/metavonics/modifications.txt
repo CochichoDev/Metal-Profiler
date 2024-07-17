@@ -1,0 +1,3 @@
+1. Modified translation_table.S to include 4KB granularity
+2. Modified boot.S to allow the translation until the 3rd level of TS and 4KB granularity
+3. Modified xil_mmu.c to make it so that Xil_SetTlbAttributes support 4KB pages

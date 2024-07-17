@@ -1,0 +1,77 @@
+; Developed by Diogo Cochicho under Youcef Bouchebaba's supervision
+
+; clear & powercycle
+WinCLEAR
+;DO "&scripts/PowerCycle.cmm"
+
+; --------------------------------------------------------------------------------
+; check prerequisites
+IF VERSION.BUILD.BASE()<75524.
+(
+  PRINT %ERROR "Please use more recent Software! Contact support@lauterbach.com."
+  ENDDO
+)
+
+; --------------------------------------------------------------------------------
+; initialize and start the debugger
+RESet
+SYStem.RESet
+
+Intercom.name A53_0
+
+SYStem.CPU ZYNQ-ULTRASCALE+-APU
+SYStem.Option TRST OFF
+SYStem.Option ResBreak OFF
+SYStem.Option WaitReset 500ms
+SYStem.JtagClock CTCK 10MHz
+CORE.ASSIGN 1.
+
+SYStem.Mode Prepare
+
+DO "zynq_ultrascale_kickboot.cmm" A53_X64
+
+ETM.OFF
+STM.OFF
+Trace.DISable
+
+SYStem.Mode.Attach
+IF STATE.RUN()
+  Break.direct
+
+; --------------------------------------------------------------------------------
+; load the FSBL (first-stage boot loader) into the OCM
+Data.LOAD.Elf "Meta/zynqmp_fsbl/fsbl_a53.elf"
+
+; --------------------------------------------------------------------------------
+; start FSBL execution
+Go.direct XFsbl_Loop
+WAIT !STATE.RUN() 3.s
+;IF STATE.RUN()
+;(
+;  Break.direct
+;)
+
+IF Register(PC)!=ADDRESS.OFFSET(XFsbl_Loop)
+(
+  PRINT %ERROR "Boot flow error"
+  ENDDO
+)
+
+; The FSBL configures the trace clock to 250 Mhz, which is too much for the
+; single-lane design. Manually switch to a lower clock. Note: You do not need
+; to do this if you regenerate the FSBL to match the project.
+; Data.Set AD:0xFF5E00C4 %Long 0x1010802 ; 1200 MHz clock source divided by (1 * 8) => trace clock = 150 MHz
+
+
+; program the FPGA fabric
+; DO "zynq-ultrascale_load_bitstream.cmm" "zcu102_hsstp_hpc1_1lane_6250mbps_2017.3.1.bit" 0x10000000
+; DBG_TRACE_CTRL - enable clock to have proper access to the TPIU
+; Data.Set ENAXI:0xFD1A0064 %Long Data.Long(ENAXI:0xFD1A0064)|0x01003f00
+; WAIT 0.1s
+
+; switch TPIU to clock source provided by PL
+; Data.Set EDAP:0x80180FB0 %Long 0xC5ACCE55
+; Data.Set EDAP:0x80180404 %Long 0x1
+; WAIT 0.1s
+
+DO "loadapp.cmm" "Core0/Debug/Core0.elf" TRUE()

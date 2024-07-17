@@ -1,0 +1,43 @@
+; Developed Diogo Cochicho under Youcef Bouchebaba's supervision
+
+Menu.RESet
+TOOLBAR ON
+STATUSBAR ON
+
+FramePOS ,,,,Maximized
+WINPAGE.RESET
+
+&zcu102=OS.PPD()
+
+LOCAL &Sieve &AMP &FreeRTOS
+&sieve="[ uu,u  u u        u,u   uuu      uuu, uu  u  u  u Uu,   u u u u uu u,u  u u u u u  u, uu  u  uu u  u,,YccYYYYYYYYYYYYY,cYYcYcYYYYYYYYYY,cYYYYYYYYYYYYYYY,YccYYcYYcYcYcYcY,YYYcYcYcccctcccc,cYYcYcYcYtccYcYt,YccYYcYYcYctYYcY,YYYYYYYYYYYYYYYY]"
+&AMP="[ uu,u  u u        u,u   uuu      uuu, uu  u  u  u Uu,   u u u u uu u,u  u u u u u  u, uu  u  uu u  u,,YYYYYYYYYYYYYYYY,cYYYcYYYYYcYYYYY,ccYccYYYYYcYcYYc,cYcYcYYYYYcYccYY,cYYYcYcYcYcYcYYc,cYYYcYcYcYcYcYYc,cYYYcYcccYcYcYYc,YYYYYYYYYYYYYYYY]"
+&FreeRTOS="[GGGGGGGGGGGGGGGG,GXXXXX         G,G X            G,G XX X X X   X G,G X  XX XxX XxXG,G X  X  X   X  G,G X  X   X   X G,G              G,Ggg gggg g   g G,Gg g  g g g g gG,Gg g  g g g g  G,Ggg   g g g  g G,Gg g  g g g   gG,Gg g  g g g g gG,Gg g  g  g   g G,GXXXXXXXXXXXXXXG]"
+
+Title "DEMO ZCU102 HSSTP" "T32 Version:"  VERSION.SOFTWARE()
+Reset
+WINCLEAR
+
+MENU.AddTool "restart" ":redo" "Do  &zcu102/Start_ZCU102.cmm"
+
+IF SYSTEM.INSTANCE()<=1.
+(
+  MENU.ReProgram
+  (&
+    ADD
+    MENU
+    (
+      POPUP "ACTION MENU"
+      (
+        MENUITEM "&(sieve) CORTEX-A53 sieve 1 Core"
+        (
+           DO &zcu102/1coeur.cmm
+        )
+        MENUITEM "&(sieve) CORTEX-A53 sieve 2 Core"
+        (
+           DO &zcu102/2coeurs.cmm
+        )
+      )
+    )
+  )
+)

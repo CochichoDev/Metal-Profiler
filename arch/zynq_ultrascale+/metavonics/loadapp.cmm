@@ -1,0 +1,51 @@
+ENTRY &path &victim
+
+IF "&path"==""
+(
+	PRINT "A path parameter is expected in order to run the script"
+	ENDDO
+)
+ELSE IF "&victim"==""
+(
+	PRINT "The default victim value is being used"
+	&victim=FALSE()
+)
+
+Data.LOAD.Elf &path
+sYmbol.SourcePATH.Translate "Core0/src/" 
+
+WAIT !STATE.RUN() 100ms
+IF STATE.RUN()
+(
+	PRINT %ERROR "a53-0 core doesn't stop!"
+	PLIST
+	STOP
+)
+ 
+IF &victim 
+(
+	;Go.direct main
+	; ETM.ON
+	; trace.Init
+	; trace.METHOD Onchip
+	; trace.ARM
+)
+ELSE
+(
+	Go.direct boot
+    break
+)
+
+;WAIT !STATE.RUN() 100ms
+;Go
+
+;BMC
+;
+;BMC.PMN0.EVENT    0x05
+;BMC.PMN1.EVENT    0x05
+;BMC.PMN2.EVENT    0x19
+;BMC.PMN3.EVENT    0x07
+;BMC.PMN4.EVENT    0x06
+;BMC.PMN5.EVENT    0x03
+
+ENDDO
