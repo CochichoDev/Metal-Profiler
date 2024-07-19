@@ -7,6 +7,11 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "api/api.h"
+
+#define ARCHS_PATH "arch/"
+#define ARCH_CONFIG "archs.txt"
+
 #define DEVICE "/dev/ttyUSB0"
 
 #define MAKEFILE0 "Core0/Debug"
@@ -16,6 +21,8 @@
 
 #define FALSE 0
 #define TRUE 1
+
+#define MAX_ARCHS 256
 
 #define REP_EXP 20
 #define NUM_CORES 4
@@ -30,6 +37,16 @@
 /*
  * Type declarations
  */
+typedef struct {
+    char name[128];
+    char path[256];
+} ARCH;
+
+typedef struct {
+    ARCH arch[64];
+    size_t num;
+} ARCH_LIST;
+
 typedef struct {
     uint8_t mode;               // ENEMY:   0 ; VICTIM: 1
     char application[32];
@@ -53,21 +70,8 @@ typedef struct {
         T       std_deviation;  \
     }
 
-/*
-typedef struct {
-    char name[32];
-    union {
-        uint64_t *icycles;
-        double *dcycles;
-    };
-    uint64_t num_cycles;                    // This field holds the number of cycles that the structure was initiated with
-    uint64_t cycle_median;
-    uint64_t cycle_max;
-    uint64_t cycle_min;
-    uint64_t cycle_average;
-    uint64_t cycle_std_deviation;
-} Results;
-*/
+
+
 
 #define initializeResults(T, results, num_cycles, name) \
     T##_initializeResults(results, num_cycles, name);
@@ -75,6 +79,21 @@ typedef struct {
 #define destroyResults(T, results) \
     T##_destroyResults(results);
 
+/*
+ * Global variable declaration
+ */
+extern ARCH         SELECTED_ARCH;
+extern ARCH_LIST    AVAIL_ARCHS;
+
+extern void         *MODULE_HANDLE;
+extern CONFIG       *MODULE_CONFIG;
+
+extern void         (*LOAD_CONFIG)(void **);
+
+/*
+ * Function declaration
+ */
+void initializeFramework();
 void getInitialConfig(const char *input, CoreConfig **config);
 const char *makeString(CoreConfig *config);
 

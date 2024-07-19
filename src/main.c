@@ -12,7 +12,6 @@
 #include <string.h>
 #include <stdint.h>
 #include <unistd.h>
-#include <ctype.h>
 
 #include "tty.h"
 #include "processHandler.h"
@@ -20,7 +19,7 @@
 #include "bench.h"
 #include "calc.h"
 #include "plot.h"
-#include "tui.h"
+#include "cli.h"
 
 #define DEVICE "/dev/ttyUSB0"
 
@@ -38,13 +37,15 @@
 void callMakefiles(CoreConfig **config, uint8_t cacheColoring);
     
 int main(int32_t argc, char **argv) {
+    initializeFramework();
+
     TERM term;
-    if (tuiInit(&term, STDIN_FILENO, STDOUT_FILENO)) {
-        fprintf(stderr, "Error: TUI couldn't be initialized\n");
+    if (cliInit(&term, STDIN_FILENO, STDOUT_FILENO)) {
+        fprintf(stderr, "Error: CLI couldn't be initialized\n");
         return -1;
     }
 
-    tuiStart(&term);
+    cliStart(&term);
 
     ttyFD tty;
     CoreConfig *config[NUM_CORES] = { NULL };

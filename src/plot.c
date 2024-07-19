@@ -77,5 +77,5 @@ void plotBarWErrors(const char *output) {
         fflush(gnuplot);
     }
 
-    fclose(gnuplot);
+    pclose(gnuplot);
 }
