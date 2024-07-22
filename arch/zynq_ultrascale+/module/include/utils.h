@@ -2,10 +2,8 @@
 
 #include <sys/wait.h>
 
-#include "global.h"
+#include "api.h"
 
-#define MAKEFILE_PATH "Core%d/Debug"
-
-void callMakefiles(void **config);
+void callMakefiles(CONFIG *config);
 pid_t launchProcess(const char *path, ...);
-const char *makeString(CoreConfig *config);
+void makeString(COMP *comp, STR_P CFLAGS);

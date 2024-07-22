@@ -18,7 +18,7 @@ ARCH_LIST AVAIL_ARCHS;
 void *MODULE_HANDLE;
 CONFIG *MODULE_CONFIG;
 
-void (*LOAD_CONFIG)(void **);
+void (*BUILD_PROJECT)(CONFIG *);
 
 void initializeFramework() {
     FILE *archs;

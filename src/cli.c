@@ -7,6 +7,7 @@
 
 #include <errno.h>
 
+#include "utils.h"
 #include "cli.h"
 #include "cli_utils.h"
 
@@ -15,7 +16,8 @@ static LIST_ACTION parseListArg(TERM *term);
 static SET_ACTION parseSetArg(TERM *term);
 static uint8_t matchKey(TERM *term, const char *key);
 static uint8_t ignoreLine(TERM *term);
-static int64_t parseNum(TERM *term);
+static int64_t parseNumCLI(TERM *term);
+static void getWord(TERM *term, STR output, size_t max_size);
 
 /*
  * cliClear: Cleans the output descriptor
@@ -86,6 +88,7 @@ uint8_t cliStart(TERM *term) {
  */
 uint8_t cliGetInput(TERM *term) {
     if (write(term->out_descr, LINE_TRAIL, strlen(LINE_TRAIL)+1) != strlen(LINE_TRAIL)+1) return 1;
+    char buffer[128];
     switch (parseAction(term)) {
         case CLEAR:
             cliClear(term);
@@ -107,12 +110,13 @@ uint8_t cliGetInput(TERM *term) {
             }
             break;
         case LOAD:
-            loadConfig();
+            getWord(term, buffer, 128);
+            loadConfig(buffer);
             break;
         case SET:
             switch (parseSetArg(term)) {
                 case S_ARCH:
-                    selectArch(term, parseNum(term));
+                    selectArch(term, parseNumCLI(term));
                     break;
                 case S_ERROR:
                     return 1;
@@ -185,7 +189,6 @@ static ACTION parseAction(TERM *term) {
                 case 'I':
                     // Match for LI+ST
                     if (matchKey(term, "ST")) return LIST;
-                    goto lNACTION;
                 default:
                     goto lNACTION;
             }
@@ -224,7 +227,11 @@ static ACTION parseAction(TERM *term) {
  *      EXIT : The programs stops execution
  */
 static LIST_ACTION parseListArg(TERM *term) {
-    if (read(STDIN_FILENO, &term->lastchar, 1) <= 0) goto lERROR;
+    while (!isnotblank(term->lastchar)) {
+        if (term->lastchar == '\n') return L_NONE;
+        if (read(term->in_descr, &term->lastchar, 1) <= 0) goto lERROR;
+    }
+
     if (isalpha(term->lastchar))
         term->lastchar &= 0xDF;         // Capitalize letter
     
@@ -263,7 +270,10 @@ static LIST_ACTION parseListArg(TERM *term) {
  *      EXIT : The programs stops execution
  */
 static SET_ACTION parseSetArg(TERM *term) {
-    if (read(STDIN_FILENO, &term->lastchar, 1) <= 0) goto lERROR;
+    while (!isnotblank(term->lastchar)) {
+        if (term->lastchar == '\n') return S_NONE;
+        if (read(term->in_descr, &term->lastchar, 1) <= 0) goto lERROR;
+    }
     if (isalpha(term->lastchar))
         term->lastchar &= 0xDF;         // Capitalize letter
     
@@ -303,8 +313,18 @@ static SET_ACTION parseSetArg(TERM *term) {
  *      0 : The key is different from the input
  */
 static uint8_t matchKey(TERM *term, const char *key) {
-    if (*key == '\0') return 1;
     if (read(term->in_descr, &term->lastchar, 1)) {
+        if (*key == '\0') {
+            switch (term->lastchar) {
+                case ' ':
+                case '\0':
+                case '\t':
+                case '\n':
+                    return 1;
+                default:
+                    return 0;
+            }
+        }
         if (term->lastchar == '\n') return 0;
         term->lastchar &= 0xDF;
         if (term->lastchar== *key) return matchKey(term, key+1);
@@ -321,7 +341,7 @@ static uint8_t matchKey(TERM *term, const char *key) {
  *      1 : The key is matched
  *      0 : The key is different from the input
  */
-static int64_t parseNum(TERM *term) {
+static int64_t parseNumCLI(TERM *term) {
 
     while (!isdigit(term->lastchar)) {
         if (term->lastchar == '\n') return 0;
@@ -348,4 +368,37 @@ static uint8_t ignoreLine(TERM *term) {
 lERROR:
     perror("Error: Could not ignore line\n");
     return 1;
+}
+
+static void getWord(TERM *term, STR output, size_t max_size) {
+    while(!isnotblank(term->lastchar)) {
+        if (term->lastchar == '\n') return;
+        read(term->in_descr, &term->lastchar, 1);
+    }
+    // Buffer cursor positioned at the first character
+    // If the first character is '"' than scan until next '"'
+    STR_P char_ptr = output;
+    if(term->lastchar == '"') {
+        do {
+            read(term->in_descr, &term->lastchar, 1);
+            if (term->lastchar == '\n' || term->lastchar == '"') break;
+            *char_ptr++ = term->lastchar;
+        } while (char_ptr - output < max_size);
+    } else {
+        while (char_ptr - output < max_size) {
+            switch (term->lastchar) {
+                case '\0':
+                case '\n':
+                case ' ':
+                case '\t':
+                    goto END;
+                default:
+                    *char_ptr++ = term->lastchar;
+            }
+            read(term->in_descr, &term->lastchar, 1);
+        }
+    }
+
+    END:
+        *char_ptr = '\0';
 }

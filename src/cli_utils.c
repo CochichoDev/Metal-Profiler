@@ -6,6 +6,7 @@
 
 #include "cli.h"
 #include "cli_utils.h"
+#include "parsing.h"
 #include "global.h"
 
 uint8_t listArchs(TERM *term) {
@@ -49,16 +50,19 @@ void printConfig(TERM *term) {
     }
 
     COMP **comp_ptr = MODULE_CONFIG->COMPS;
+    FLAG *need;
+    char num[16];
     for (size_t cidx = 0 ; cidx < MODULE_CONFIG->NUM ; cidx++, comp_ptr++) {
         // Name of the component
         write(term->out_descr, (*comp_ptr)->NAME, strlen((*comp_ptr)->NAME));
+        write(term->out_descr, "\nID=", 5);
+        sprintf(num, "%d", (*comp_ptr)->ID);
+        write(term->out_descr, num, strlen(num));
 
         PROP *prop_ptr = (*comp_ptr)->PBUFFER->PROPS;
         for (size_t pidx = 0 ; pidx < (*comp_ptr)->PBUFFER->NUM ; pidx++, prop_ptr++) {
             write(term->out_descr, "\n\t", 2);
             write(term->out_descr, prop_ptr->NAME, strlen(prop_ptr->NAME));
-            FLAG *need;
-            char num[16];
             switch (prop_ptr->PTYPE) {
                 case pINT:
                     write(term->out_descr, MSG_INT0, sizeof(MSG_INT0));
@@ -147,24 +151,84 @@ void selectArch(TERM *term, size_t choice) {
     if (!(MODULE_CONFIG = (CONFIG *) dlsym(MODULE_HANDLE, "ARCH_CONFIG")))
         perror("Error: Could not access CONFIG variable");
 
-    if (!(LOAD_CONFIG = (void (*)(void**)) dlsym(MODULE_HANDLE, "callMakefiles")))
+    if (!(BUILD_PROJECT = (void (*)(CONFIG *)) dlsym(MODULE_HANDLE, "BUILD_PROJECT")))
         perror("Error: Could not access callMakefiles function");
 }
 
-void loadConfig() {
-    /*
-    void **config = malloc(sizeof(void*) * MODULE_CONFIG->num);
-    // Make sure that the memory that config points to is 0 initialized
-    memset(config, 0, sizeof(void*) * MODULE_CONFIG->num);
+/*
+ * This function does not correct the config file if additional proprieties/components are specified
+ * This function calls BUILD_PROJECT of the module with a CONFIG argument that does not necessarily have
+ * all the proprieties in the same order as specified by the module (some uneeded by be missing)
+ */
+void loadConfig(STR config_path) {
+    FILE *config_file;
+    if (!(config_file = fopen(config_path, "r"))) {
+        puts("Error: Could not open config file");
+        return;
+    }
 
-    for (size_t i = 0 ; i < MODULE_CONFIG->num ; i++)
-        *(config+i) = malloc(getTypeSize(MODULE_CONFIG->configptr[i].type));
+    CONFIG *conf = parseConfig(config_file);
+    if (!conf) {
+        puts("Error: Could not parse input config file");
+        return;
+    }
 
-    memcpy(*config, "Core0", 6);
-    memcpy(*(config+4), "Core1", 6);
-    memcpy(*(config+7), "Core2", 6);
-    memcpy(*(config+10), "Core3", 6);
+    // Go over all the components parsed
+    for (size_t m_comp_idx = 0 ; m_comp_idx < MODULE_CONFIG->NUM ; m_comp_idx++) {
+        // Get the corresponding index of the component being analyzed base on its index
+        size_t comp_idx;
+        for (comp_idx = 0 ; comp_idx < conf->NUM ; comp_idx++) 
+            if (MODULE_CONFIG->COMPS[m_comp_idx]->ID == conf->COMPS[comp_idx]->ID) break;
 
-    LOAD_CONFIG(config);
-    */
+        COMP *m_comp = MODULE_CONFIG->COMPS[m_comp_idx];
+        COMP *comp = conf->COMPS[comp_idx];
+
+        // Go over all the proprieties of the component in question
+        for (size_t m_prop_idx = 0 ; m_prop_idx < m_comp->PBUFFER->NUM ; m_prop_idx++) {
+            PROP *m_prop = m_comp->PBUFFER->PROPS + m_prop_idx;
+            size_t prop_idx;
+            // Get the corresponding propriety index based on propriety name
+            for (prop_idx = 0 ; prop_idx < comp->PBUFFER->NUM ; prop_idx++)
+                if (!strcmp(m_prop->NAME, comp->PBUFFER->PROPS[prop_idx].NAME)) break;
+
+            // If the propriety was not defined and it's needed throw an error
+            if (prop_idx == comp->PBUFFER->NUM && m_prop->NEED) {
+                printf("Error: Propriety %s was not defined\n", m_prop->NAME);
+                return;
+            }
+
+            PROP *prop = comp->PBUFFER->PROPS + prop_idx;
+
+            if (m_prop->PTYPE != prop->PTYPE)
+                puts("Error: Configs do not match the expected format");
+
+            STR_P *opt_idx = m_prop->OPTS;
+            switch (prop->PTYPE) {
+                case pDOUBLE:
+                    if (prop->fINIT > m_prop->fRANGE[1] || prop->fINIT < m_prop->fRANGE[0])
+                        goto lRANGE_ERROR;
+                    break;
+                case pINT:
+                    if (prop->iINIT > m_prop->iRANGE[1] || prop->iINIT < m_prop->iRANGE[0])
+                        goto lRANGE_ERROR;
+                    break;
+                case pSTR:
+                    while (*opt_idx != NULL) {
+                        puts(*opt_idx);
+                        if (!strcmp(*opt_idx, prop->sINIT)) break;
+                        opt_idx++;
+                    }
+                    if (*opt_idx == NULL) goto lRANGE_ERROR;
+                    break;
+                default:
+                    break;
+            } 
+            continue;
+            lRANGE_ERROR:
+                printf("Value of %s in component %d is out-of-bounds\n", prop->NAME, comp->ID);
+                //return;
+        }
+    }
+
+    BUILD_PROJECT(conf);
 }

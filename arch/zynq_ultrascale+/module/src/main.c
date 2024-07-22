@@ -1,13 +1,10 @@
 #include <stdio.h>
 
-#include "global.h"
 #include "utils.h"
 
-CoreConfig *config[NUM_CORES] = { NULL };
-
-void buildProject() {
+void BUILD_PROJECT(CONFIG *config) {
     puts("Makefile INFO");
-    //callMakefiles(config, 1);
+    callMakefiles(config);
     puts("Info: Binaries compiled");
     puts("*****************************************************");
 }

@@ -5,7 +5,7 @@ PROP proprieties_core0[13] = {
     {.NAME="APP", .PTYPE=pSTR, .NEED=1, .iRANGE={0,0}, .iINIT=0, .OPTS={"WRITE", "READ"}},
     {.NAME="SIZE", .PTYPE=pINT, .NEED=1, .iRANGE={1000,260000}, .iINIT=0, .OPTS=NULL},
     {.NAME="STRIDE", .PTYPE=pINT, .NEED=1, .iRANGE={40,128}, .iINIT=0, .OPTS=NULL},
-    {.NAME="LIMIT", .PTYPE=pINT, .NEED=1, .iRANGE={20,50}, .iINIT=0, .OPTS=NULL}
+    {.NAME="LIMIT", .PTYPE=pINT, .NEED=1, .iRANGE={20,100}, .iINIT=0, .OPTS=NULL}
 };
 
 PROP proprieties_core1[13] = {

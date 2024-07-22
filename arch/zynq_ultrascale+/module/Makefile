@@ -5,10 +5,12 @@ CC:=gcc
 SRC:=src
 BIN:=bin
 OBJ:=bin
+LIB:=lib
 INCLUDE:=include ../../../include/api
 
 CFLAGS:=
-CPPFLAGS:=$(foreach incdir,$(INCLUDE),-I$(incdir))
+CPPFLAGS:=$(foreach incdir,$(INCLUDE),-I$(incdir)) 
+LFLAGS=-L$(LIB)
 
 TARGET:=$(BIN)/dmodule.so
 SRC_FILES:=$(wildcard $(SRC)/*.c)
@@ -19,7 +21,7 @@ OBJ_FILES:=$(patsubst $(SRC)/%.c, $(OBJ)/%.o, $(SRC_FILES))
 all: $(TARGET)
 
 $(TARGET): $(OBJ_FILES)
-	$(CC) -Wall -shared $^ -o $@
+	$(CC) $^ $(LFLAGS) -Wl,--whole-archive -lapi -Wl,--no-whole-archive -shared -o $@
 
 -include $(patsubst $(OBJ)/%.o, $(OBJ)/%.d, $(OBJ_FILES))
 $(OBJ)/%.o: $(SRC)/%.c

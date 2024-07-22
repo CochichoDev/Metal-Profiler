@@ -5,34 +5,11 @@
 #include <stdarg.h>
 #include <unistd.h>
 
+#include "api.h"
 #include "global.h"
 #include "utils.h"
 
-void callMakefiles(void **config) {
-    // config contains all the argument per order defined in data array in global.h
-    CoreConfig *core_config;
-    core_config = calloc(4, sizeof(CoreConfig));
-
-    for (size_t i = 0 ; i < NUM_CORES ; i++) {
-        if (*config)
-            memcpy(core_config[i].application, (STR_P) *config, strlen((STR_P) *config)+1);
-        config++;
-
-        if (*config)
-            core_config[i].target_size = *((INT *) *config);
-        config++;
-        
-        if (*config)
-            core_config[i].stride = *((INT *) *config);
-        config++;
-
-        if (i == 0) {
-            core_config[i].limit = *((INT *) *config);
-            config++;
-        }
-    
-    }
-
+void callMakefiles(CONFIG *config) {
     FLAG cacheColoring = 1;
     pid_t make_pids[NUM_CORES] = { 0 };
     pid_t make_standalone;
@@ -45,57 +22,62 @@ void callMakefiles(void **config) {
     waitpid(make_standalone, NULL, 0);
 
     for (uint8_t i = 0 ; i < NUM_CORES ; i++) {
-        if (config[i] != NULL) {
-            const char *CFLAGS = makeString(config[i]);
+        COMP *core_ptr;
+        if (GET_COMP_BY_IDX(config, i, &core_ptr) != -1) {
+            char CFLAGS[512];
+            makeString(core_ptr, CFLAGS);
             puts(CFLAGS);
             char PATH[64];
             sprintf(PATH, MAKEFILE_PATH, i);
             make_pids[i] = launchProcess("/bin/make", "make", "-C", PATH, "clean", "all", CFLAGS, NULL);
-            free((void *) CFLAGS);
         }
     }
+    
     for (uint8_t i = 0 ; i < NUM_CORES ; i++) {
         if (make_pids[i]) {
             waitpid(make_pids[i], NULL, 0);
         }
     }
-    free(core_config);
+    
 }
 
-const char *makeString(CoreConfig *config) {
-    char *CFLAGS = (char *) malloc(512);
+void makeString(COMP *comp, STR_P CFLAGS) {
     memcpy(CFLAGS, "CFLAGS=", 8);
     char app_def[16] = "-D";
     char size_def[32] = "-DTARGET_SIZE=";
     char stride_def[32] = "-DSTRIDE=";
     char limit_def[32] = "-DLIMIT=";
-    char times_def[32] = "-DTIMES=";
-    strcat(app_def, config->application);
-    char times_str[4];
-    sprintf(times_str, "%d", config->times);
-    strcat(times_def, times_str);
+
+    char *app; 
+    GET_PROP_BY_NAME(comp, "APP", &app);
+    strcat(app_def, app);
+
+    INT size;
     char size_str[16];
-    sprintf(size_str, "%d", config->target_size);
+    GET_PROP_BY_NAME(comp, "SIZE", &size);
+    sprintf(size_str, "%d", size);
     strcat(size_def, size_str);
-    strcat(size_def, " ");
+
+    INT stride;
     char stride_str[32];
-    sprintf(stride_str, "%d", config->stride);
+    GET_PROP_BY_NAME(comp, "STRIDE", &stride);
+    sprintf(stride_str, "%d", stride);
     strcat(stride_def, stride_str);
-    char limit_str[16];
-    sprintf(limit_str, "%d", config->limit);
-    strcat(limit_def, limit_str);
-    
+
+    INT limit;
+    if (GET_PROP_BY_NAME(comp, "LIMIT", &limit) != -1) {
+        char limit_str[16];
+        sprintf(limit_str, "%d", limit);
+        strcat(limit_def, limit_str);
+        
+        strcat(CFLAGS, limit_def);
+        strcat(CFLAGS, " ");
+    }
     strcat(CFLAGS, app_def);
-    strcat(CFLAGS, " ");
-    strcat(CFLAGS, times_def);
     strcat(CFLAGS, " ");
     strcat(CFLAGS, size_def);
     strcat(CFLAGS, " ");
     strcat(CFLAGS, stride_def);
-    strcat(CFLAGS, " ");
-    strcat(CFLAGS, limit_def);
-
-    return CFLAGS;
 }
 
 pid_t launchProcess(const char *path, ...) {

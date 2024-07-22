@@ -88,7 +88,7 @@ extern ARCH_LIST    AVAIL_ARCHS;
 extern void         *MODULE_HANDLE;
 extern CONFIG       *MODULE_CONFIG;
 
-extern void         (*LOAD_CONFIG)(void **);
+extern void         (*BUILD_PROJECT)(CONFIG *);
 
 /*
  * Function declaration

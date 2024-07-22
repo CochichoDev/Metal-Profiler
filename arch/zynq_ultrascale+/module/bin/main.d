@@ -1,2 +1,1 @@
-bin/main.o: src/main.c include/global.h ../../../include/api/api.h \
- include/utils.h
+bin/main.o: src/main.c include/utils.h ../../../include/api/api.h
