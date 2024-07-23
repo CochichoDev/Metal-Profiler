@@ -1,5 +1,5 @@
 /*
-* Developed by Diogo Cochicho
+ * Developed by Diogo Cochicho
  */
 
 #include <sys/types.h>
