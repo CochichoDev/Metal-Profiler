@@ -1,4 +1,0 @@
-1. Clean unecessary code
-2. Change all types to standard
-3. Standardize parsing (for example parseNumber and parseNumberCLI)
-4. Create separate function to validate parsed config file
