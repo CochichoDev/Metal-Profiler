@@ -1,4 +1,10 @@
 #include <string.h>
+#include <stdarg.h>
+#include <signal.h>
+#include <unistd.h> 
+#include <stdlib.h> 
+#include <stdio.h>
+#include <fcntl.h>
 
 #include "api/api.h"
 
@@ -11,7 +17,7 @@
  *      out : Returns the pointer to the corresponding component
  *      default : Returns the index from the base pointer of the COMPS pointer of the CONFIG
  */
-size_t GET_COMP_BY_IDX(CONFIG *in1, INT in2, COMP **out) {
+size_t GET_COMP_BY_IDX(CONFIG *in1, T_INT in2, COMP **out) {
     for (size_t idx = 0 ; idx < in1->NUM ; idx++) {
         if (in1->COMPS[idx]->ID == in2) {
             *out = in1->COMPS[idx];
@@ -31,25 +37,78 @@ size_t GET_COMP_BY_IDX(CONFIG *in1, INT in2, COMP **out) {
  *      default : Returns the index from the base pointer of the PROPS pointer of the PBUFFER
  *                  associated PBUFFER of the component inputed
  */
-size_t GET_PROP_BY_NAME(COMP *in1, STR_P in2, VOID *out) {
+size_t GET_PROP_BY_NAME(COMP *in1, T_PSTR in2, T_VOID *out) {
     for (size_t idx = 0 ; idx < in1->PBUFFER->NUM ; idx++) {
         if (!strcmp(in1->PBUFFER->PROPS[idx].NAME, in2)) {
             switch (in1->PBUFFER->PROPS[idx].PTYPE) {
                 case pINT:
-                    *(INT *) out = in1->PBUFFER->PROPS[idx].iINIT;
+                    *(T_INT *) out = in1->PBUFFER->PROPS[idx].iINIT;
                     break;
                 case pDOUBLE:
-                    *(DOUBLE *) out = in1->PBUFFER->PROPS[idx].fINIT;
+                    *(T_DOUBLE *) out = in1->PBUFFER->PROPS[idx].fINIT;
                     break;
                 case pSTR:
-                    *(STR_P *) out = in1->PBUFFER->PROPS[idx].sINIT;
+                    *(T_PSTR *) out = in1->PBUFFER->PROPS[idx].sINIT;
                     break;
                 case pCHAR:
-                    *(CHAR *) out = in1->PBUFFER->PROPS[idx].iINIT;
+                    *(T_CHAR *) out = in1->PBUFFER->PROPS[idx].iINIT;
                     break;
             }
             return idx;
         }
     }
     return -1;
+}
+
+
+pid_t RUN_PROCESS_IMAGE(T_INT *new_descr, const T_PSTR image_path, ...) {
+    va_list va;
+    const char *args[16];
+
+    va_start(va, image_path);
+    uint8_t idx;
+    for (idx = 0; idx < sizeof(args)/sizeof(char*); idx++) {
+        const char *arg = va_arg(va, char*);
+        if (!arg) break;
+        args[idx] = arg;
+    }
+    // The execv function needs to be ended with a NULL pointer
+    args[idx] = NULL;
+    va_end(va);
+
+
+    pid_t child_process = fork();
+
+    /*
+     * In case the current process is the child
+     * change the process image to the one demanded
+     */
+    if (child_process == -1) { 
+        perror("Error: Could not fork the current process");
+        exit(1);
+    }
+    if (!child_process) {
+        if (new_descr) {
+            close(STDIN_FILENO);
+            dup(new_descr[0]);
+            close(STDOUT_FILENO);
+            dup(new_descr[1]);
+            close(STDERR_FILENO);
+            dup(new_descr[2]);
+        }
+        if(execv(image_path, (char**) args) == -1) {
+            perror("Error: Could not open the specified process image");
+            exit(1);
+        }
+    }
+
+    return child_process;
+}
+
+void KILL_PROCESS(pid_t process) {
+    kill(process, SIGTERM);
+    if (kill<0) {
+        perror("Error: Could not close child process");
+        exit(1);
+    }
 }

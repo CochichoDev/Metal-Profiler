@@ -26,13 +26,14 @@ typedef struct {
 } TERM;
 
 typedef enum {
-        NONE,
-        EXIT,
-        CLEAR,
-        LIST,
-        LOAD,
-        SET,
-        ERROR
+    NONE,
+    EXECUTE,
+    EXIT,
+    CLEAR,
+    LIST,
+    LOAD,
+    SET,
+    ERROR
 } ACTION;
 
 typedef enum {

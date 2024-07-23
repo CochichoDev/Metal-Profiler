@@ -16,8 +16,7 @@ static LIST_ACTION parseListArg(TERM *term);
 static SET_ACTION parseSetArg(TERM *term);
 static uint8_t matchKey(TERM *term, const char *key);
 static uint8_t ignoreLine(TERM *term);
-static int64_t parseNumCLI(TERM *term);
-static void getWord(TERM *term, STR output, size_t max_size);
+static void getWord(TERM *term, T_STR output, size_t max_size);
 
 /*
  * cliClear: Cleans the output descriptor
@@ -47,9 +46,9 @@ uint8_t cliInit(TERM *term, int in, int out) {
     if (!term)
         return 1;
 
-    if (fcntl(STDIN_FILENO, F_GETFL) == -1 || errno == EBADF) 
+    if (fcntl(in, F_GETFL) == -1 || errno == EBADF) 
         return 2;
-    if (fcntl(STDOUT_FILENO, F_GETFL) == -1 || errno == EBADF)
+    if (fcntl(out, F_GETFL) == -1 || errno == EBADF)
         return 2;
 
     term->in_descr = in;
@@ -94,6 +93,10 @@ uint8_t cliGetInput(TERM *term) {
             cliClear(term);
         case NONE:
             break;
+        case EXECUTE:
+            getWord(term, buffer, 128);
+            executeBench(term);
+            break;
         case EXIT:
             cliClose(term);
             return 1;
@@ -116,7 +119,8 @@ uint8_t cliGetInput(TERM *term) {
         case SET:
             switch (parseSetArg(term)) {
                 case S_ARCH:
-                    selectArch(term, parseNumCLI(term));
+                    getWord(term, buffer, 128);
+                    selectArch(term, parseNum(buffer));
                     break;
                 case S_ERROR:
                     return 1;
@@ -177,7 +181,7 @@ static ACTION parseAction(TERM *term) {
             switch (term->lastchar) {
                 // Match for EXE+CUTE
                 case 'E':
-                    if (matchKey(term, "CUTE")) return EXIT;
+                    if (matchKey(term, "CUTE")) return EXECUTE;
                 default:
                     goto lNACTION;
             }
@@ -332,32 +336,6 @@ static uint8_t matchKey(TERM *term, const char *key) {
     return 0;
 }
 
-
-/*
- * parseNum: Parse a number from the CLI
- * Parameters: 
- *      in_descr : Input descriptor from where it reads the data
- * Return values:
- *      1 : The key is matched
- *      0 : The key is different from the input
- */
-static int64_t parseNumCLI(TERM *term) {
-
-    while (!isdigit(term->lastchar)) {
-        if (term->lastchar == '\n') return 0;
-        read(term->in_descr, &term->lastchar, 1);
-    }
-
-    int64_t num = 0;
-    while (isdigit(term->lastchar)) {
-        num *= 10;
-        num += term->lastchar - 0x30;
-        read(term->in_descr, &term->lastchar, 1);
-    }
-
-    return num;
-}
-
 static uint8_t ignoreLine(TERM *term) {
     while(term->lastchar != '\n') {
         if (read(term->in_descr, &term->lastchar, 1) <= 0)
@@ -370,14 +348,14 @@ lERROR:
     return 1;
 }
 
-static void getWord(TERM *term, STR output, size_t max_size) {
+static void getWord(TERM *term, T_STR output, size_t max_size) {
     while(!isnotblank(term->lastchar)) {
         if (term->lastchar == '\n') return;
         read(term->in_descr, &term->lastchar, 1);
     }
     // Buffer cursor positioned at the first character
     // If the first character is '"' than scan until next '"'
-    STR_P char_ptr = output;
+    T_PSTR char_ptr = output;
     if(term->lastchar == '"') {
         do {
             read(term->in_descr, &term->lastchar, 1);

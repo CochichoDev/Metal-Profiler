@@ -3,16 +3,20 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <sys/types.h>
+
+
+
 #define BASEDIR "arch/"
 
 typedef char FLAG;
 
-typedef int32_t INT;
-typedef char CHAR;
-typedef double DOUBLE;
-typedef char STR[64];
-typedef char *STR_P;
-typedef void VOID;
+typedef int32_t T_INT;
+typedef char T_CHAR;
+typedef double T_DOUBLE;
+typedef char T_STR[64];
+typedef char *T_PSTR;
+typedef void T_VOID;
 
 /*
  * ###############################
@@ -33,7 +37,7 @@ typedef enum {
  * Propriety structure
  */
 typedef struct {
-    STR NAME;
+    T_STR NAME;
 
     pTYPE PTYPE;
     
@@ -41,17 +45,17 @@ typedef struct {
 
     // If the type is an int
     union {
-        INT iRANGE[2];
-        DOUBLE fRANGE[2];
+        T_INT iRANGE[2];
+        T_DOUBLE fRANGE[2];
     };
 
     union {
-        INT iINIT;
-        DOUBLE fINIT;
+        T_INT iINIT;
+        T_DOUBLE fINIT;
     };
         
-    STR_P OPTS[32];
-    STR sINIT;
+    T_PSTR OPTS[32];
+    T_STR sINIT;
 } PROP;
 
 
@@ -68,8 +72,8 @@ typedef struct {
  * Holds an ID, NAME and multiple proprieties
  */
 typedef struct {
-    INT ID;
-    STR NAME;
+    T_INT ID;
+    T_STR NAME;
     pBUFFER *PBUFFER;
 } COMP;
 
@@ -92,7 +96,7 @@ typedef struct {
  *      out : Returns the pointer to the corresponding component
  *      default : Returns the index from the base pointer of the COMPS pointer of the CONFIG
  */
-size_t GET_COMP_BY_IDX(CONFIG *in1, INT in2, COMP **out);
+size_t GET_COMP_BY_IDX(CONFIG *in1, T_INT in2, COMP **out);
 
 /*
  * GET_PROP_BY_NAME : Finds the propriety that the input name corresponds to
@@ -104,4 +108,8 @@ size_t GET_COMP_BY_IDX(CONFIG *in1, INT in2, COMP **out);
  *      default : Returns the index from the base pointer of the PROPS pointer of the PBUFFER
  *                  associated PBUFFER of the component inputed
  */
-size_t GET_PROP_BY_NAME(COMP *in1, STR_P in2, VOID *out);
+size_t GET_PROP_BY_NAME(COMP *in1, T_PSTR in2, T_VOID *out);
+
+
+pid_t RUN_PROCESS_IMAGE(T_INT *new_descr, const T_PSTR image_path, ...);
+void KILL_PROCESS(pid_t process);

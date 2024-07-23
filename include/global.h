@@ -89,15 +89,7 @@ extern void         *MODULE_HANDLE;
 extern CONFIG       *MODULE_CONFIG;
 
 extern void         (*BUILD_PROJECT)(CONFIG *);
+extern void         (*INIT_BENCH)(void);
+extern void         (*RUN_BENCH)(void);
+extern void         (*EXIT_BENCH)(void);
 
-/*
- * Function declaration
- */
-void initializeFramework();
-void getInitialConfig(const char *input, CoreConfig **config);
-const char *makeString(CoreConfig *config);
-
-void uint64_t_initializeResults(void *results_ptr, uint64_t num_cycles, const char *name);
-void double_initializeResults(void *results_ptr, uint64_t num_cycles, const char *name);
-void uint64_t_destroyResults(void *results_ptr);
-void double_destroyResults(void *results_ptr);

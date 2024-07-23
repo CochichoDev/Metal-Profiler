@@ -27,22 +27,7 @@ uint8_t listArchs(TERM *term) {
 #define MSG_INT3 "\n\t\tMAX: "
 #define MSG_INT4 "\n\t\tVALUE: "
 #define MSG_STR2 "\n\t\tVALUES: "
-#define ERROR_TYPE_NOT_IMPLEMENTED "Error: The configuration type has \
-                                    not yet been implemented\n"
-
-static uint8_t getTypeSize(pTYPE t) {
-    switch (t) {
-        case pINT:
-            return sizeof(INT);
-        case pSTR:
-            return sizeof(STR);
-        case pDOUBLE:
-            return sizeof(DOUBLE);
-        default:
-            return 0;
-    }
-}
-
+#define ERROR_TYPE_NOT_IMPLEMENTED "Error: The configuration type has not yet been implemented\n"
 void printConfig(TERM *term) {
     if (SELECTED_ARCH.name[0] == '\0') {
         write(term->out_descr, ERROR_ARCH, sizeof(ERROR_ARCH));
@@ -117,7 +102,7 @@ void printConfig(TERM *term) {
                     write(term->out_descr, need, strlen(need));
 
                     write(term->out_descr, MSG_STR2, sizeof(MSG_STR2));
-                    STR_P *ptr = prop_ptr->OPTS;
+                    T_PSTR *ptr = prop_ptr->OPTS;
                     while (*ptr != NULL) {
                         write(term->out_descr, "\n\t\t\t", 4);
                         write(term->out_descr, *ptr, strlen(*ptr));
@@ -148,11 +133,19 @@ void selectArch(TERM *term, size_t choice) {
 
     if (!(MODULE_HANDLE = dlopen(SELECTED_ARCH.path, RTLD_LAZY)))
         perror("Error: Could not open handle of module");
+
     if (!(MODULE_CONFIG = (CONFIG *) dlsym(MODULE_HANDLE, "ARCH_CONFIG")))
         perror("Error: Could not access CONFIG variable");
 
     if (!(BUILD_PROJECT = (void (*)(CONFIG *)) dlsym(MODULE_HANDLE, "BUILD_PROJECT")))
-        perror("Error: Could not access callMakefiles function");
+        perror("Error: Could not access BUILD_PROJECT function");
+
+    if (!(INIT_BENCH = (void (*)(void)) dlsym(MODULE_HANDLE, "INIT_BENCH")))
+        perror("Error: Could not access INIT_BENCH function");
+    if (!(RUN_BENCH = (void (*)(void)) dlsym(MODULE_HANDLE, "RUN_BENCH")))
+        perror("Error: Could not access RUN_BENCH function");
+    if (!(EXIT_BENCH = (void (*)(void)) dlsym(MODULE_HANDLE, "EXIT_BENCH")))
+        perror("Error: Could not access EXIT_BENCH function");
 }
 
 /*
@@ -160,7 +153,7 @@ void selectArch(TERM *term, size_t choice) {
  * This function calls BUILD_PROJECT of the module with a CONFIG argument that does not necessarily have
  * all the proprieties in the same order as specified by the module (some uneeded by be missing)
  */
-void loadConfig(STR config_path) {
+void loadConfig(T_STR config_path) {
     FILE *config_file;
     if (!(config_file = fopen(config_path, "r"))) {
         puts("Error: Could not open config file");
@@ -202,7 +195,7 @@ void loadConfig(STR config_path) {
             if (m_prop->PTYPE != prop->PTYPE)
                 puts("Error: Configs do not match the expected format");
 
-            STR_P *opt_idx = m_prop->OPTS;
+            T_PSTR *opt_idx = m_prop->OPTS;
             switch (prop->PTYPE) {
                 case pDOUBLE:
                     if (prop->fINIT > m_prop->fRANGE[1] || prop->fINIT < m_prop->fRANGE[0])
@@ -231,4 +224,10 @@ void loadConfig(STR config_path) {
     }
 
     BUILD_PROJECT(conf);
+}
+
+void executeBench(TERM *term) {
+    INIT_BENCH();
+    RUN_BENCH();
+    EXIT_BENCH();
 }

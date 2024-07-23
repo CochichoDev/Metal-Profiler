@@ -4,10 +4,67 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "t32.h"
 #include "bench.h"
 #include "processHandler.h"
 
+/*
+ *  Simply initializes the struct to all zeros and
+ *  the pointer to a memory block big enough to hold
+ *  the victim results
+ */
+void uint64_t_initializeResults(void *results_ptr, uint64_t num_cycles, const char *name) {
+    RESULTS(uint64_t) *results = results_ptr;
+    if (!results) {
+        perror("Error: Null results pointer cannot be derefenced\n");
+        exit(1);
+    }
+    strcpy(results->name, name);
+    results->median = 0;
+    results->max = 0;
+    results->min = 0;
+    results->average = 0;
+    results->std_deviation = 0;
+    results->cycles = (uint64_t *) malloc(sizeof(uint64_t)*num_cycles);
+    results->num_cycles = num_cycles;
+}
+void double_initializeResults(void *results_ptr, uint64_t num_cycles, const char *name) {
+    RESULTS(double) *results = results_ptr;
+    if (!results) {
+        perror("Error: Null results pointer cannot be derefenced\n");
+        exit(1);
+    }
+    strcpy(results->name, name);
+    results->median = 0;
+    results->max = 0;
+    results->min = 0;
+    results->average = 0;
+    results->std_deviation = 0;
+    results->cycles = (double *) malloc(sizeof(double)*num_cycles);
+    results->num_cycles = num_cycles;
+}
+
+void uint64_t_destroyResults(void *results_ptr) {
+    RESULTS(uint64_t) *results = results_ptr;
+    if (!results) {
+        perror("Error: Null results pointer cannot be derefenced\n");
+        exit(1);
+    }
+    free(results->cycles);
+}
+void double_destroyResults(void *results_ptr) {
+    RESULTS(double) *results = results_ptr;
+    if (!results) {
+        perror("Error: Null results pointer cannot be derefenced\n");
+        exit(1);
+    }
+    free(results->cycles);
+}
+
+
+
+
+
+/*
 uint64_t benchFullConfig(CoreConfig **config, ttyFD tty) {
     char buf[256];
     char script_query[256] = T32SCRIPT;
@@ -67,3 +124,4 @@ uint64_t benchIsolationConfig(CoreConfig **config, ttyFD tty) {
     printf("%lu\n", max);
     return max;
 }
+*/

@@ -21,7 +21,8 @@ OBJ_FILES:=$(patsubst $(SRC)/%.c, $(OBJ)/%.o, $(SRC_FILES))
 all: $(TARGET)
 
 $(TARGET): $(OBJ_FILES)
-	$(CC) $^ $(LFLAGS) -Wl,--whole-archive -lapi -Wl,--no-whole-archive -shared -o $@
+	$(CC) $^ $(LFLAGS) -lAMBapi -shared -o $@
+	#$(CC) $^ $(LFLAGS) -Wl,--whole-archive -lapi -Wl,--no-whole-archive -shared -o $@
 
 -include $(patsubst $(OBJ)/%.o, $(OBJ)/%.d, $(OBJ_FILES))
 $(OBJ)/%.o: $(SRC)/%.c

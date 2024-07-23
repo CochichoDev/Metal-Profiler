@@ -5,5 +5,4 @@
 #include "api.h"
 
 void callMakefiles(CONFIG *config);
-pid_t launchProcess(const char *path, ...);
-void makeString(COMP *comp, STR_P CFLAGS);
+void makeString(COMP *comp, T_PSTR CFLAGS);

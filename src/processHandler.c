@@ -9,7 +9,6 @@
 #include <stdio.h>
 
 #include "processHandler.h"
-#include "t32.h"
 
 /*
  * The variadic arguments need to finish with a null pointer
@@ -52,45 +51,6 @@ void killProcess(pid_t process) {
     kill(process, SIGTERM);
     if (kill<0) {
         perror("Error: Could not close child process");
-        exit(1);
-    }
-}
-
-void initializeTrace32Conn(const char *node, const char *port) {
-    if (T32_Config("NODE=", node) != T32_OK) {
-        perror("Error: Could not configure node on T32 connection\n");
-        exit(1);
-    }
-    if (T32_Config("PORT=", port) != T32_OK) {
-        perror("Error: Could not configure port on T32 connection\n");
-        exit(1);
-    }
-
-    while (1) {
-        if (T32_Init() == T32_OK) {
-            if (T32_Attach(T32_DEV_ICD) == T32_OK) {
-                printf("Info: Connection to Trace32 established\n");
-                break;
-            }
-        }
-        fprintf(stderr, "Error: Could not initilize T32 connection\n");
-        fprintf(stderr, "Info: Retrying connection...\n");
-        sleep(5);
-    }
-
-    puts("All T32 connection issues were sucessful");
-}
-
-void closeTrace32Conn() {
-    if (T32_Exit() != T32_OK) {
-        perror("Error: Could not close T32 connection\n");
-        exit(1);
-    }
-}
-
-void executeTrace32Script(const char *scriptname) {
-    if (T32_Cmd_f("DO %s", scriptname) != T32_OK) {
-        fprintf(stderr, "Error: Could not execute %s\n", scriptname);
         exit(1);
     }
 }

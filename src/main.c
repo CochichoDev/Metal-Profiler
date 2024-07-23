@@ -7,18 +7,12 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
-#include <string.h>
 #include <stdint.h>
 #include <unistd.h>
 
-#include "tty.h"
-#include "processHandler.h"
 #include "global.h"
-#include "bench.h"
-#include "calc.h"
-#include "plot.h"
+#include "utils.h"
 #include "cli.h"
 
 #define DEVICE "/dev/ttyUSB0"
@@ -34,10 +28,8 @@
     exit(1);                                                \
     }
 
-void callMakefiles(CoreConfig **config, uint8_t cacheColoring);
-    
 int main(int32_t argc, char **argv) {
-    initializeFramework();
+    loadAvailableArchs();
 
     TERM term;
     if (cliInit(&term, STDIN_FILENO, STDOUT_FILENO)) {
@@ -47,6 +39,7 @@ int main(int32_t argc, char **argv) {
 
     cliStart(&term);
 
+    /*
     ttyFD tty;
     CoreConfig *config[NUM_CORES] = { NULL };
     uint8_t cacheColoring = 0;
@@ -130,43 +123,7 @@ int main(int32_t argc, char **argv) {
 
     for (uint8_t i = 0 ; i < NUM_CORES ; i++)
         free(config[i]);
-
-    return 0;
-}
-
-void callMakefiles(CoreConfig **config, uint8_t cacheColoring) {
-    //pid_t make_META_pids[NUM_CORES] = { 0 };
-    pid_t make_pids[NUM_CORES] = { 0 };
-    pid_t make_standalone;
-    if (cacheColoring) {
-        make_standalone = launchProcess("/bin/make", "make", "-C", "Meta/psu_cortexa53_0/standalone_domain/bsp/psu_cortexa53_0/libsrc/standalone_v7_6/src", "EXTRA_COMPILER_FLAGS=-DCacheColoring", NULL);
-    } else {
-        make_standalone = launchProcess("/bin/make", "make", "-C", "Meta/psu_cortexa53_0/standalone_domain/bsp/psu_cortexa53_0/libsrc/standalone_v7_6/src", NULL);
-    }
-    waitpid(make_standalone, NULL, 0);
-    /*
-    make_META_pids[0] = launchProcess("/bin/make", "make", "-C", "Meta/psu_cortexa53_0/standalone_domain/bsp", NULL);
-    make_META_pids[1] = launchProcess("/bin/make", "make", "-C", "Meta/psu_cortexa53_0/standalone_domain/bsp", NULL);
-    make_META_pids[2] = launchProcess("/bin/make", "make", "-C", "Meta/psu_cortexa53_0/standalone_domain/bsp", NULL);
-    make_META_pids[3] = launchProcess("/bin/make", "make", "-C", "Meta/psu_cortexa53_0/standalone_domain/bsp", NULL);
-    for (size_t i = 0 ; i < NUM_CORES ; i++) {
-        waitpid(make_META_pids[i], NULL, 0);
-    }
     */
 
-    for (uint8_t i = 0 ; i < NUM_CORES ; i++) {
-        if (config[i] != NULL) {
-            const char *CFLAGS = makeString(config[i]);
-            puts(CFLAGS);
-            char PATH[64];
-            sprintf(PATH, MAKEFILE_PATH, i);
-            make_pids[i] = launchProcess("/bin/make", "make", "-C", PATH, "clean", "all", CFLAGS, NULL);
-            free((void *) CFLAGS);
-        }
-    }
-    for (uint8_t i = 0 ; i < NUM_CORES ; i++) {
-        if (make_pids[i]) {
-            waitpid(make_pids[i], NULL, 0);
-        }
-    }
+    return 0;
 }
