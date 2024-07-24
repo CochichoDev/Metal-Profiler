@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <string.h>
 #include <sys/types.h>
 
 
@@ -11,12 +12,13 @@
 
 typedef char FLAG;
 
-typedef int32_t T_INT;
-typedef char T_CHAR;
-typedef double T_DOUBLE;
-typedef char T_STR[64];
-typedef char *T_PSTR;
-typedef void T_VOID;
+typedef int32_t     T_INT;
+typedef uint32_t    T_UINT;
+typedef char        T_CHAR;
+typedef double      T_DOUBLE;
+typedef char        T_STR[64];
+typedef char        *T_PSTR;
+typedef void        T_VOID;
 
 /*
  * ###############################
@@ -81,6 +83,26 @@ typedef struct {
     COMP *COMPS[16];
     size_t NUM;
 } CONFIG;
+
+/*
+ * Generic type of Results
+ */
+typedef struct {
+    T_STR       NAME;
+    size_t      NUM;
+    T_VOID      *DATA;
+    enum {
+        R_INT,
+        R_DOUBLE
+    }           TYPE;
+} RESULT;
+
+
+#define INITIALIZE_RESULTS(T, results, num_cycles, name) \
+    __T##_initializeResults(results, num_cycles, name);
+
+#define DESTROY_RESULTS(T, results) \
+    __T##_destroyResults(results);
 
 /*
  * ###############################

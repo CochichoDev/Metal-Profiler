@@ -9,10 +9,10 @@ SRC:=src
 BIN:=bin
 OBJ:=obj
 LIB:=lib
-INCLUDE:=include
+INCLUDE:=include include/api
 
 CFLAGS:=
-CPPFLAGS:=-I$(INCLUDE)
+CPPFLAGS:=$(foreach inc, $(INCLUDE), -I$(inc))
 LFLAGS:=-L$(BIN)
 
 TARGET:=$(BIN)/autometalbench
