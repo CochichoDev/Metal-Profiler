@@ -5,6 +5,8 @@
 #pragma once
 #include <termio.h>
 
+#include "api.h"
+
 /* baudrate settings are defined in <asm/termbits.h>, which is
 included by <termios.h> */
 #define BAUDRATE B115200
@@ -17,7 +19,8 @@ included by <termios.h> */
 typedef struct s_ttyFD {
     int fd;
     struct termios oldtio;
-} ttyFD;
+} FD_TTY;
 
-ttyFD openUltrascaleTTY(const char *path);
-void closeUltrascaleTTY(ttyFD fd);
+FD_TTY INIT_TTY(const char *path);
+void READ_TTY_TO_RESULT(FD_TTY tty, RESULT *result, T_CHAR marker);
+void CLOSE_TTY(FD_TTY fd);

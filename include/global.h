@@ -12,8 +12,6 @@
 #define ARCHS_PATH "arch/"
 #define ARCH_CONFIG "archs.txt"
 
-#define DEVICE "/dev/ttyUSB0"
-
 #define MAKEFILE0 "Core0/Debug"
 #define MAKEFILE1 "Core1/Debug"
 
@@ -56,28 +54,6 @@ typedef struct {
     uint32_t limit;
 } CoreConfig;
 
-/*
- * Generic type of Results
- */
-#define RESULTS(T)              \
-    struct {                    \
-        char    name[64];       \
-        size_t  num_cycles;     \
-        T*      cycles;         \
-        T       median;         \
-        T       average;        \
-        T       max, min;       \
-        T       std_deviation;  \
-    }
-
-
-
-
-#define initializeResults(T, results, num_cycles, name) \
-    T##_initializeResults(results, num_cycles, name);
-
-#define destroyResults(T, results) \
-    T##_destroyResults(results);
 
 /*
  * Global variable declaration
@@ -85,11 +61,11 @@ typedef struct {
 extern ARCH         SELECTED_ARCH;
 extern ARCH_LIST    AVAIL_ARCHS;
 
-extern void         *MODULE_HANDLE;
+extern T_VOID       *MODULE_HANDLE;
 extern CONFIG       *MODULE_CONFIG;
 
-extern void         (*BUILD_PROJECT)(CONFIG *);
-extern void         (*INIT_BENCH)(void);
-extern void         (*RUN_BENCH)(void);
-extern void         (*EXIT_BENCH)(void);
+extern T_VOID       (*BUILD_PROJECT)(CONFIG *);
+extern T_VOID       (*INIT_BENCH)(T_VOID);
+extern RESULT       *(*RUN_BENCH)(T_VOID);
+extern T_VOID       (*EXIT_BENCH)(T_VOID);
 

@@ -2,7 +2,43 @@
 #include <stdio.h>
 
 #include "api/t32_i.h"
+#include "api.h"
 #include "api/t32.h"
+
+/*
+ * INIT_T32 : Launches TRACE32 process and connects to it via the t32 api
+ * PARAMETERS:
+ *      path_to_exec : Path to t32 executable 
+ * RETURN:
+ *      pid_t : PID of the T32 process or -1 if error
+ */
+pid_t INIT_T32(T_PSTR path_to_exec) {
+    // Get the name of the executable
+    T_PSTR slash_marker = path_to_exec;
+    T_PSTR last_slash = path_to_exec;
+    while (*slash_marker != '\0') {
+        if (*slash_marker == '/')
+            last_slash = slash_marker;
+        slash_marker++;
+    }
+    last_slash++;
+
+    pid_t t32 = RUN_PROCESS_IMAGE(NULL, path_to_exec, last_slash, NULL);
+    if (t32 == -1)
+        return -1;
+    sleep(1);
+    INIT_T32_CONN("localhost", "20000");
+    return t32;
+}
+
+T_INT CLOSE_T32(pid_t t32_pid) {
+    if (T32_Exit() != T32_OK) {
+        perror("Error: Could not close T32 connection\n");
+        return -1;
+    }
+    KILL_PROCESS(t32_pid);
+    return 0;
+}
 
 T_INT INIT_T32_CONN(const char *node, const char *port) {
     if (T32_Config("NODE=", node) != T32_OK) {

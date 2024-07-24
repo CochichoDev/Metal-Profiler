@@ -9,11 +9,11 @@ SRC:=src
 BIN:=bin
 OBJ:=obj
 LIB:=lib
-INCLUDE:=include
+INCLUDE:=include include/api
 
 CFLAGS:=
-CPPFLAGS:=-I$(INCLUDE)
-LFLAGS:=-L$(LIB) 
+CPPFLAGS:=$(foreach inc, $(INCLUDE), -I$(inc))
+LFLAGS:=-L$(BIN)
 
 TARGET:=$(BIN)/autometalbench
 TARGET_API:=$(BIN)/libAMBapi.so

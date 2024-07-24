@@ -14,13 +14,14 @@
  *      in1 : The associated config
  *      in2 : The index of the component to be searched for
  * RETURN:
- *      out : Returns the pointer to the corresponding component
+ *      out : Returns the pointer to the corresponding component if the pointer is not NULL
  *      default : Returns the index from the base pointer of the COMPS pointer of the CONFIG
  */
 size_t GET_COMP_BY_IDX(CONFIG *in1, T_INT in2, COMP **out) {
     for (size_t idx = 0 ; idx < in1->NUM ; idx++) {
         if (in1->COMPS[idx]->ID == in2) {
-            *out = in1->COMPS[idx];
+            if (out != NULL)
+                *out = in1->COMPS[idx];
             return idx;
         }
     }
@@ -33,27 +34,28 @@ size_t GET_COMP_BY_IDX(CONFIG *in1, T_INT in2, COMP **out) {
  *      in1 : The associated component
  *      in2 : The name of the propriety to be searched for
  * RETURN:
- *      out : Returns the value the corresponding propriety
+ *      out : Returns the value the corresponding propriety if the pointer passed is not NULL
  *      default : Returns the index from the base pointer of the PROPS pointer of the PBUFFER
  *                  associated PBUFFER of the component inputed
  */
 size_t GET_PROP_BY_NAME(COMP *in1, T_PSTR in2, T_VOID *out) {
     for (size_t idx = 0 ; idx < in1->PBUFFER->NUM ; idx++) {
         if (!strcmp(in1->PBUFFER->PROPS[idx].NAME, in2)) {
-            switch (in1->PBUFFER->PROPS[idx].PTYPE) {
-                case pINT:
-                    *(T_INT *) out = in1->PBUFFER->PROPS[idx].iINIT;
-                    break;
-                case pDOUBLE:
-                    *(T_DOUBLE *) out = in1->PBUFFER->PROPS[idx].fINIT;
-                    break;
-                case pSTR:
-                    *(T_PSTR *) out = in1->PBUFFER->PROPS[idx].sINIT;
-                    break;
-                case pCHAR:
-                    *(T_CHAR *) out = in1->PBUFFER->PROPS[idx].iINIT;
-                    break;
-            }
+            if (out != NULL)
+                switch (in1->PBUFFER->PROPS[idx].PTYPE) {
+                    case pINT:
+                        *(T_INT *) out = in1->PBUFFER->PROPS[idx].iINIT;
+                        break;
+                    case pDOUBLE:
+                        *(T_DOUBLE *) out = in1->PBUFFER->PROPS[idx].fINIT;
+                        break;
+                    case pSTR:
+                        *(T_PSTR *) out = in1->PBUFFER->PROPS[idx].sINIT;
+                        break;
+                    case pCHAR:
+                        *(T_CHAR *) out = in1->PBUFFER->PROPS[idx].iINIT;
+                        break;
+                }
             return idx;
         }
     }
@@ -85,7 +87,7 @@ pid_t RUN_PROCESS_IMAGE(T_INT *new_descr, const T_PSTR image_path, ...) {
      */
     if (child_process == -1) { 
         perror("Error: Could not fork the current process");
-        exit(1);
+        return -1;
     }
     if (!child_process) {
         if (new_descr) {
@@ -98,7 +100,7 @@ pid_t RUN_PROCESS_IMAGE(T_INT *new_descr, const T_PSTR image_path, ...) {
         }
         if(execv(image_path, (char**) args) == -1) {
             perror("Error: Could not open the specified process image");
-            exit(1);
+            return -1;
         }
     }
 
