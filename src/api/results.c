@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "api.h"
+#include "api/api.h"
 #include "results.h"
 
 /*
@@ -11,8 +12,9 @@
  *  the victim results
  */
 void __T_UINT_initializeResults(RESULT *results_ptr, T_UINT num_cycles, const T_PSTR name) {
+    results_ptr = malloc(sizeof(RESULT));
     if (!results_ptr) {
-        perror("Error: Null results pointer cannot be derefenced\n");
+        fprintf(stderr, "Error: Null results pointer cannot be derefenced\n");
         exit(1);
     }
     strcpy(results_ptr->NAME, name);
@@ -21,8 +23,9 @@ void __T_UINT_initializeResults(RESULT *results_ptr, T_UINT num_cycles, const T_
     results_ptr->TYPE = R_INT;
 }
 void __T_DOUBLE_initializeResults(RESULT *results_ptr, T_UINT num_cycles, const T_PSTR name) {
+    results_ptr = malloc(sizeof(RESULT));
     if (!results_ptr) {
-        perror("Error: Null results pointer cannot be derefenced\n");
+        fprintf(stderr, "Error: Null results pointer cannot be derefenced\n");
         exit(1);
     }
     strcpy(results_ptr->NAME, name);
@@ -33,15 +36,16 @@ void __T_DOUBLE_initializeResults(RESULT *results_ptr, T_UINT num_cycles, const 
 
 void __T_UINT_destroyResults(RESULT *results_ptr) {
     if (!results_ptr) {
-        perror("Error: Null results pointer cannot be derefenced\n");
+        fprintf(stderr, "Error: Null results pointer cannot be derefenced\n");
         exit(1);
     }
     free(results_ptr->DATA);
 }
 void __T_DOUBLE_destroyResults(RESULT *results_ptr) {
     if (!results_ptr) {
-        perror("Error: Null results pointer cannot be derefenced\n");
+        fprintf(stderr, "Error: Null results pointer cannot be derefenced\n");
         exit(1);
     }
     free(results_ptr->DATA);
+    free(results_ptr);
 }
