@@ -33,6 +33,7 @@ uint8_t listConfigs(TERM *term) {
 }
 
 #define ERROR_ARCH "Error: No architecture has been selected\n"
+#define ERROR_CONFIG "Error: No config has been selected\n"
 #define MSG_INT0 "\n\t\tType: INT"
 #define MSG_STR0 "\n\t\tType: STR"
 #define MSG1 "\n\t\tMandatory: "
@@ -169,6 +170,10 @@ T_VOID selectArch(TERM *term, size_t choice) {
  * all the proprieties in the same order as specified by the module (some uneeded by be missing)
  */
 T_VOID loadConfig(TERM *term, T_UINT config_option) {
+    if (SELECTED_ARCH.name[0] == '\0') {
+        write(term->out_descr, ERROR_ARCH, sizeof(ERROR_ARCH));
+        return;
+    }
     if (config_option < 0 || 
         config_option >= AVAIL_CONFIGS.num) 
     {
@@ -250,6 +255,10 @@ T_VOID loadConfig(TERM *term, T_UINT config_option) {
 }
 
 T_VOID executeBench(TERM *term, size_t iter) {
+    if (!MODULE_CONFIG) {
+        write(term->out_descr, ERROR_CONFIG, sizeof(ERROR_ARCH));
+        return;
+    }
     INIT_BENCH();
     RESULT *results;
     for (size_t idx = 0; idx < iter; idx++) {
