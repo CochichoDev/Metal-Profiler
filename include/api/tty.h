@@ -22,5 +22,4 @@ typedef struct s_ttyFD {
 } FD_TTY;
 
 FD_TTY INIT_TTY(const char *path);
-void READ_TTY_TO_RESULT(FD_TTY tty, RESULT *result, T_CHAR marker);
 void CLOSE_TTY(FD_TTY fd);

@@ -114,13 +114,14 @@ uint8_t cliGetInput(TERM *term) {
             break;
         case LOAD:
             getWord(term, buffer, 128);
-            loadConfig(buffer);
+            loadConfig(term, parseNum(buffer));
             break;
         case SET:
             switch (parseSetArg(term)) {
                 case S_ARCH:
                     getWord(term, buffer, 128);
                     selectArch(term, parseNum(buffer));
+                    listConfigs(term);
                     break;
                 case S_ERROR:
                     return 1;
@@ -382,6 +383,16 @@ static void getWord(TERM *term, T_STR output, size_t max_size) {
 }
 
 void cliPrintProgress(TERM *term, size_t cur, size_t max) {
-    size_t progress = cur * 10 / max;
+    write(term->out_descr, tLINEUP, strlen(tLINEUP)+1);
+    write(term->out_descr, tCLEARLINE, strlen(tCLEARLINE)+1);
+    write(term->out_descr, tHOMELINE, strlen(tHOMELINE)+1);
 
+    size_t progress = cur * 10 / max;
+    write(term->out_descr, "[", 1);
+    for (size_t idx = 0; idx < progress; idx++) 
+        write(term->out_descr, "#", 1);
+
+    for (size_t idx = progress; idx < 10; idx++) 
+        write(term->out_descr, " ", 2);
+    write(term->out_descr, "]\n", 3);
 }

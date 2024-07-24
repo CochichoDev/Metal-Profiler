@@ -6,9 +6,12 @@
 /*
  * CONSTANT DEFINITION
  */
-#define tESC     "\x1B"
-#define tCLEAR   tESC"[2J"
-#define tHOME    tESC"[H"
+#define tESC        "\x1B" 
+#define tCLEAR      tESC"[2J"
+#define tCLEARLINE  tESC"[2K"
+#define tHOME       tESC"[H"
+#define tHOMELINE   tESC"[0G"
+#define tLINEUP     tESC"[1A"
 
 #define WELCOME_MSG     "########################################\n     \
                         \rWELCOME TO AUTOMETALBENCH\n                   \
@@ -54,4 +57,5 @@ uint8_t cliClear(TERM *term);
 uint8_t cliGetInput(TERM *term);
 uint8_t cliLog(TERM *term);
 uint8_t cliClose(TERM *term);
+void cliPrintProgress(TERM *term, size_t cur, size_t max);
 

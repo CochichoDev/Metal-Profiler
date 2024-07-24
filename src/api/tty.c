@@ -8,10 +8,8 @@
 #include <stdio.h>
 #include <strings.h>
 #include <unistd.h>
-#include <ctype.h>
 
 #include "tty.h"
-#include "api.h"
 
 FD_TTY INIT_TTY(const char *path) {
     int fd;
@@ -90,28 +88,6 @@ FD_TTY INIT_TTY(const char *path) {
     return (FD_TTY) {fd, oldtio};
 }
 
-void READ_TTY_TO_RESULT(FD_TTY tty, RESULT *result, T_CHAR marker) {
-    T_CHAR buf[256];
-    
-    volatile FLAG stop = 0;
-    T_UINT read_bytes = 0;
-    for (uint32_t idx = 0 ; stop == 0 ; ) {
-        read_bytes = read(tty.fd,buf,255); 
-        buf[read_bytes]='\0';          
-        if (buf[0] == marker) stop=1;
-        if (isdigit(buf[0])) {
-            switch (result->TYPE) {
-                case R_INT:
-                    sscanf(buf, "%u", ((T_UINT *)result->DATA)+idx);
-                    printf("%u\n", *(((T_UINT *)result->DATA)+idx));
-                    break;
-                case R_DOUBLE:
-                    sscanf(buf, "%lf", (T_DOUBLE *)(result->DATA+idx));
-            }
-            idx++;
-        }
-    }
-}
 
 void CLOSE_TTY(FD_TTY tty) {
     /* restore the old port settings */

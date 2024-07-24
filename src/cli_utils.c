@@ -1,4 +1,3 @@
-#include <cstddef>
 #include <dlfcn.h>
 #include <stdio.h>
 #include <string.h>
@@ -6,6 +5,7 @@
 #include <stdlib.h>
 
 #include "results.h"
+#include "utils.h"
 #include "api.h"
 #include "cli.h"
 #include "cli_utils.h"
@@ -16,6 +16,16 @@ uint8_t listArchs(TERM *term) {
     char buf[256];
     for (size_t i = 0; i < AVAIL_ARCHS.num ; i++) {
         sprintf(buf, "[%ld]\t%s\n", i, AVAIL_ARCHS.arch[i].name); 
+        write(term->out_descr, buf, strlen(buf));
+    }
+    
+    return 0;
+}
+
+uint8_t listConfigs(TERM *term) {
+    char buf[256];
+    for (size_t i = 0; i < AVAIL_CONFIGS.num ; i++) {
+        sprintf(buf, "[%ld]\t%s\n", i, AVAIL_CONFIGS.config[i].name); 
         write(term->out_descr, buf, strlen(buf));
     }
     
@@ -149,6 +159,8 @@ T_VOID selectArch(TERM *term, size_t choice) {
         fprintf(stderr, "Error: Could not access RUN_BENCH  function (%s)\n", dlerror());
     if (!(EXIT_BENCH = (T_VOID (*)(void)) dlsym(MODULE_HANDLE, "EXIT_BENCH")))
         fprintf(stderr, "Error: Could not access EXIT_BENCH   function (%s)\n", dlerror());
+
+    loadAvailableConfigs();
 }
 
 /*
@@ -156,9 +168,17 @@ T_VOID selectArch(TERM *term, size_t choice) {
  * This function calls BUILD_PROJECT of the module with a CONFIG argument that does not necessarily have
  * all the proprieties in the same order as specified by the module (some uneeded by be missing)
  */
-T_VOID loadConfig(T_STR config_path) {
+T_VOID loadConfig(TERM *term, T_UINT config_option) {
+    if (config_option < 0 || 
+        config_option >= AVAIL_CONFIGS.num) 
+    {
+        write(term->out_descr, ERROR_OPTION, sizeof(ERROR_OPTION));
+        return;
+    }
+
+    FCONFIG SELECTED_CONFIG = AVAIL_CONFIGS.config[config_option];
     FILE *config_file;
-    if (!(config_file = fopen(config_path, "r"))) {
+    if (!(config_file = fopen(SELECTED_CONFIG.path, "r"))) {
         puts("Error: Could not open config file");
         return;
     }
@@ -233,7 +253,8 @@ T_VOID executeBench(TERM *term, size_t iter) {
     INIT_BENCH();
     RESULT *results;
     for (size_t idx = 0; idx < iter; idx++) {
-         results = RUN_BENCH();
+        cliPrintProgress(term, idx, iter);
+        results = RUN_BENCH();
     }
     EXIT_BENCH();
 }

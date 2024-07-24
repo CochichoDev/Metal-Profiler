@@ -46,13 +46,14 @@ typedef struct {
 } ARCH_LIST;
 
 typedef struct {
-    uint8_t mode;               // ENEMY:   0 ; VICTIM: 1
-    char application[32];
-    uint8_t times;
-    uint32_t target_size;
-    uint16_t stride;
-    uint32_t limit;
-} CoreConfig;
+    char name[128];
+    char path[256];
+} FCONFIG;
+
+typedef struct {
+    FCONFIG config[128];
+    size_t num;
+} FCONFIG_LIST;
 
 
 /*
@@ -60,6 +61,8 @@ typedef struct {
  */
 extern ARCH         SELECTED_ARCH;
 extern ARCH_LIST    AVAIL_ARCHS;
+
+extern FCONFIG_LIST        AVAIL_CONFIGS;
 
 extern T_VOID       *MODULE_HANDLE;
 extern CONFIG       *MODULE_CONFIG;

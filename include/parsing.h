@@ -29,5 +29,5 @@
 /*
  * Function declarations
  */
-CoreConfig *parseCoreConfig(FILE *fd);
+//CoreConfig *parseCoreConfig(FILE *fd);
 CONFIG *parseConfig(FILE *fd);
