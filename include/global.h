@@ -61,11 +61,11 @@ typedef struct {
 extern ARCH         SELECTED_ARCH;
 extern ARCH_LIST    AVAIL_ARCHS;
 
-extern void         *MODULE_HANDLE;
+extern T_VOID       *MODULE_HANDLE;
 extern CONFIG       *MODULE_CONFIG;
 
-extern void         (*BUILD_PROJECT)(CONFIG *);
-extern void         (*INIT_BENCH)(void);
-extern void         (*RUN_BENCH)(void);
-extern void         (*EXIT_BENCH)(void);
+extern T_VOID       (*BUILD_PROJECT)(CONFIG *);
+extern T_VOID       (*INIT_BENCH)(T_VOID);
+extern RESULT       *(*RUN_BENCH)(T_VOID);
+extern T_VOID       (*EXIT_BENCH)(T_VOID);
 

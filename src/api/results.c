@@ -10,7 +10,7 @@
  *  the pointer to a memory block big enough to hold
  *  the victim results
  */
-void __uint32_t_initializeResults(RESULT *results_ptr, T_UINT num_cycles, const T_PSTR name) {
+void __T_UINT_initializeResults(RESULT *results_ptr, T_UINT num_cycles, const T_PSTR name) {
     if (!results_ptr) {
         perror("Error: Null results pointer cannot be derefenced\n");
         exit(1);
@@ -20,7 +20,7 @@ void __uint32_t_initializeResults(RESULT *results_ptr, T_UINT num_cycles, const 
     results_ptr->NUM = num_cycles;
     results_ptr->TYPE = R_INT;
 }
-void __double_initializeResults(RESULT *results_ptr, T_UINT num_cycles, const T_PSTR name) {
+void __T_DOUBLE_initializeResults(RESULT *results_ptr, T_UINT num_cycles, const T_PSTR name) {
     if (!results_ptr) {
         perror("Error: Null results pointer cannot be derefenced\n");
         exit(1);
@@ -31,14 +31,14 @@ void __double_initializeResults(RESULT *results_ptr, T_UINT num_cycles, const T_
     results_ptr->TYPE = R_DOUBLE;
 }
 
-void __uint32_t_destroyResults(RESULT *results_ptr) {
+void __T_UINT_destroyResults(RESULT *results_ptr) {
     if (!results_ptr) {
         perror("Error: Null results pointer cannot be derefenced\n");
         exit(1);
     }
     free(results_ptr->DATA);
 }
-void __double_destroyResults(RESULT *results_ptr) {
+void __T_DOUBLE_destroyResults(RESULT *results_ptr) {
     if (!results_ptr) {
         perror("Error: Null results pointer cannot be derefenced\n");
         exit(1);

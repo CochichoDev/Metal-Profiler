@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+#include "results.h"
+#include "api.h"
 #include "cli.h"
 #include "cli_utils.h"
 #include "parsing.h"
@@ -28,7 +30,7 @@ uint8_t listArchs(TERM *term) {
 #define MSG_INT4 "\n\t\tVALUE: "
 #define MSG_STR2 "\n\t\tVALUES: "
 #define ERROR_TYPE_NOT_IMPLEMENTED "Error: The configuration type has not yet been implemented\n"
-void printConfig(TERM *term) {
+T_VOID printConfig(TERM *term) {
     if (SELECTED_ARCH.name[0] == '\0') {
         write(term->out_descr, ERROR_ARCH, sizeof(ERROR_ARCH));
         return;
@@ -118,7 +120,7 @@ void printConfig(TERM *term) {
 
 #define ERROR_OPTION "Error: The selected option is not available\n"
 #define SELECT_MSG "%s was successfully selected\n"
-void selectArch(TERM *term, size_t choice) {
+T_VOID selectArch(TERM *term, size_t choice) {
     if (choice < 0 || 
         choice >= AVAIL_ARCHS.num) 
     {
@@ -137,14 +139,14 @@ void selectArch(TERM *term, size_t choice) {
     if (!(MODULE_CONFIG = (CONFIG *) dlsym(MODULE_HANDLE, "ARCH_CONFIG")))
         perror("Error: Could not access CONFIG variable");
 
-    if (!(BUILD_PROJECT = (void (*)(CONFIG *)) dlsym(MODULE_HANDLE, "BUILD_PROJECT")))
+    if (!(BUILD_PROJECT = (T_VOID (*)(CONFIG *)) dlsym(MODULE_HANDLE, "BUILD_PROJECT")))
         perror("Error: Could not access BUILD_PROJECT function");
 
-    if (!(INIT_BENCH = (void (*)(void)) dlsym(MODULE_HANDLE, "INIT_BENCH")))
+    if (!(INIT_BENCH = (T_VOID (*)(void)) dlsym(MODULE_HANDLE, "INIT_BENCH")))
         perror("Error: Could not access INIT_BENCH function");
-    if (!(RUN_BENCH = (void (*)(void)) dlsym(MODULE_HANDLE, "RUN_BENCH")))
+    if (!(RUN_BENCH = (RESULT *(*)(T_VOID)) dlsym(MODULE_HANDLE, "RUN_BENCH")))
         perror("Error: Could not access RUN_BENCH function");
-    if (!(EXIT_BENCH = (void (*)(void)) dlsym(MODULE_HANDLE, "EXIT_BENCH")))
+    if (!(EXIT_BENCH = (T_VOID (*)(void)) dlsym(MODULE_HANDLE, "EXIT_BENCH")))
         perror("Error: Could not access EXIT_BENCH function");
 }
 
@@ -153,7 +155,7 @@ void selectArch(TERM *term, size_t choice) {
  * This function calls BUILD_PROJECT of the module with a CONFIG argument that does not necessarily have
  * all the proprieties in the same order as specified by the module (some uneeded by be missing)
  */
-void loadConfig(T_STR config_path) {
+T_VOID loadConfig(T_STR config_path) {
     FILE *config_file;
     if (!(config_file = fopen(config_path, "r"))) {
         puts("Error: Could not open config file");
@@ -219,15 +221,15 @@ void loadConfig(T_STR config_path) {
             continue;
             lRANGE_ERROR:
                 printf("Value of %s in component %d is out-of-bounds\n", prop->NAME, comp->ID);
-                //return;
+                return;
         }
     }
 
     BUILD_PROJECT(conf);
 }
 
-void executeBench(TERM *term) {
+T_VOID executeBench(TERM *term) {
     INIT_BENCH();
-    RUN_BENCH();
+    RESULT *results = RUN_BENCH();
     EXIT_BENCH();
 }

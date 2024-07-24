@@ -99,10 +99,10 @@ typedef struct {
 
 
 #define INITIALIZE_RESULTS(T, results, num_cycles, name) \
-    __T##_initializeResults(results, num_cycles, name);
+    __##T##_initializeResults(results, num_cycles, name);
 
 #define DESTROY_RESULTS(T, results) \
-    __T##_destroyResults(results);
+    __##T##_destroyResults(results);
 
 /*
  * ###############################
