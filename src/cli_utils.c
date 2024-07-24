@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <dlfcn.h>
 #include <stdio.h>
 #include <string.h>
@@ -228,8 +229,11 @@ T_VOID loadConfig(T_STR config_path) {
     BUILD_PROJECT(conf);
 }
 
-T_VOID executeBench(TERM *term) {
+T_VOID executeBench(TERM *term, size_t iter) {
     INIT_BENCH();
-    RESULT *results = RUN_BENCH();
+    RESULT *results;
+    for (size_t idx = 0; idx < iter; idx++) {
+         results = RUN_BENCH();
+    }
     EXIT_BENCH();
 }

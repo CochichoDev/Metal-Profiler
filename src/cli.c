@@ -95,7 +95,7 @@ uint8_t cliGetInput(TERM *term) {
             break;
         case EXECUTE:
             getWord(term, buffer, 128);
-            executeBench(term);
+            executeBench(term, parseNum(buffer));
             break;
         case EXIT:
             cliClose(term);
@@ -379,4 +379,9 @@ static void getWord(TERM *term, T_STR output, size_t max_size) {
 
     END:
         *char_ptr = '\0';
+}
+
+void cliPrintProgress(TERM *term, size_t cur, size_t max) {
+    size_t progress = cur * 10 / max;
+
 }

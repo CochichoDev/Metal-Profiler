@@ -12,13 +12,12 @@
  *  the victim results
  */
 void __T_UINT_initializeResults(RESULT *results_ptr, T_UINT num_cycles, const T_PSTR name) {
-    results_ptr = malloc(sizeof(RESULT));
     if (!results_ptr) {
         fprintf(stderr, "Error: Null results pointer cannot be derefenced\n");
         exit(1);
     }
     strcpy(results_ptr->NAME, name);
-    results_ptr->DATA = (T_UINT *) malloc(sizeof(T_UINT)*num_cycles);
+    results_ptr->DATA = malloc(sizeof(T_UINT)*num_cycles);
     results_ptr->NUM = num_cycles;
     results_ptr->TYPE = R_INT;
 }
@@ -29,7 +28,7 @@ void __T_DOUBLE_initializeResults(RESULT *results_ptr, T_UINT num_cycles, const 
         exit(1);
     }
     strcpy(results_ptr->NAME, name);
-    results_ptr->DATA = (T_DOUBLE *) malloc(sizeof(T_DOUBLE)*num_cycles);
+    results_ptr->DATA = malloc(sizeof(T_DOUBLE)*num_cycles);
     results_ptr->NUM = num_cycles;
     results_ptr->TYPE = R_DOUBLE;
 }
@@ -47,5 +46,4 @@ void __T_DOUBLE_destroyResults(RESULT *results_ptr) {
         exit(1);
     }
     free(results_ptr->DATA);
-    free(results_ptr);
 }

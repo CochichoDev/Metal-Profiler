@@ -95,19 +95,21 @@ void READ_TTY_TO_RESULT(FD_TTY tty, RESULT *result, T_CHAR marker) {
     
     volatile FLAG stop = 0;
     T_UINT read_bytes = 0;
-    for (uint32_t idx = 0 ; stop == 0 ; idx++) {
+    for (uint32_t idx = 0 ; stop == 0 ; ) {
         read_bytes = read(tty.fd,buf,255); 
         buf[read_bytes]='\0';          
         if (buf[0] == marker) stop=1;
         if (isdigit(buf[0])) {
             switch (result->TYPE) {
                 case R_INT:
-                    sscanf(buf, "%u", (T_INT *)(result->DATA+idx));
+                    sscanf(buf, "%u", ((T_UINT *)result->DATA)+idx);
+                    printf("%u\n", *(((T_UINT *)result->DATA)+idx));
+                    break;
                 case R_DOUBLE:
                     sscanf(buf, "%lf", (T_DOUBLE *)(result->DATA+idx));
             }
+            idx++;
         }
-        puts(buf);
     }
 }
 
