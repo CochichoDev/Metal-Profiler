@@ -12,15 +12,18 @@
  * RETURN:
  *      pid_t : PID of the T32 process or -1 if error
  */
-pid_t INIT_T32(const T_PSTR path_to_exec) {
+pid_t INIT_T32(T_PSTR path_to_exec) {
     // Get the name of the executable
     T_PSTR slash_marker = path_to_exec;
-    while (*path_to_exec != '\0') 
-        if (*path_to_exec == '\\') 
-            slash_marker = path_to_exec;
-    slash_marker++;
+    T_PSTR last_slash = path_to_exec;
+    while (*slash_marker != '\0') {
+        if (*slash_marker == '/')
+            last_slash = slash_marker;
+        slash_marker++;
+    }
+    last_slash++;
 
-    pid_t t32 = RUN_PROCESS_IMAGE(NULL, path_to_exec, slash_marker, NULL);
+    pid_t t32 = RUN_PROCESS_IMAGE(NULL, path_to_exec, last_slash, NULL);
     if (t32 == -1)
         return -1;
     sleep(1);

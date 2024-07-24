@@ -27,15 +27,11 @@ API_OBJ_FILES:=$(patsubst $(SRC)/api/%.c, $(OBJ)/%.o, $(API_SRC_FILES))
 all: $(TARGET)
 
 $(TARGET): $(OBJ_FILES) $(TARGET_API)
-	$(CC) $(LFLAGS) -lAMBapi -Wall $(filter %.o, $^) -o $@
+	$(CC) $(LFLAGS) -Wall $(filter %.o, $^) -o $@ -lAMBapi 
 
 $(TARGET_API): $(API_OBJ_FILES)
 	$(CC) -Wall -shared $^ -o $(TARGET_API)
 	$(CP) $@ $(LIB)/$(notdir $@)
-
-
-#$(TARGET_API): $(API_OBJ_FILES)
-#	$(AR) rcs $@ $^  
 
 -include $(patsubst $(OBJ)/%.o, $(OBJ)/%.d, $(OBJ_FILES))
 -include $(patsubst $(OBJ)/%.o, $(OBJ)/%.d, $(API_OBJ_FILES))

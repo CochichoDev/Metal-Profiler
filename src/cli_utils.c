@@ -134,20 +134,20 @@ T_VOID selectArch(TERM *term, size_t choice) {
     write(term->out_descr, sel_msg, strlen(sel_msg));
 
     if (!(MODULE_HANDLE = dlopen(SELECTED_ARCH.path, RTLD_LAZY)))
-        perror("Error: Could not open handle of module");
+        fprintf(stderr, "Error: Could not open handle of module (%s)\n", dlerror());
 
     if (!(MODULE_CONFIG = (CONFIG *) dlsym(MODULE_HANDLE, "ARCH_CONFIG")))
-        perror("Error: Could not access CONFIG variable");
+        fprintf(stderr, "Error: Could not access CONFIG variable (%s)\n", dlerror());
 
     if (!(BUILD_PROJECT = (T_VOID (*)(CONFIG *)) dlsym(MODULE_HANDLE, "BUILD_PROJECT")))
-        perror("Error: Could not access BUILD_PROJECT function");
+        fprintf(stderr, "Error: Could not access BUILD_PROJECT function (%s)\n", dlerror());
 
     if (!(INIT_BENCH = (T_VOID (*)(void)) dlsym(MODULE_HANDLE, "INIT_BENCH")))
-        perror("Error: Could not access INIT_BENCH function");
+        fprintf(stderr, "Error: Could not access INIT_BENCH function (%s)\n", dlerror());
     if (!(RUN_BENCH = (RESULT *(*)(T_VOID)) dlsym(MODULE_HANDLE, "RUN_BENCH")))
-        perror("Error: Could not access RUN_BENCH function");
+        fprintf(stderr, "Error: Could not access RUN_BENCH  function (%s)\n", dlerror());
     if (!(EXIT_BENCH = (T_VOID (*)(void)) dlsym(MODULE_HANDLE, "EXIT_BENCH")))
-        perror("Error: Could not access EXIT_BENCH function");
+        fprintf(stderr, "Error: Could not access EXIT_BENCH   function (%s)\n", dlerror());
 }
 
 /*
