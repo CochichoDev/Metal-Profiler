@@ -164,6 +164,18 @@ T_VOID selectArch(TERM *term, size_t choice) {
     loadAvailableConfigs();
 }
 
+T_VOID listOutputTypes() {
+
+    fprintf(stdout, "GRAPH OPTIONS:\n");
+    for (size_t idx = 0 ; idx < NUM_OUTPUT_GRAPHS ; idx++ ) {
+        fprintf(stdout, "\t%s\n", OUTPUT_GRAPH_OPTIONS[idx]);
+    }
+    fprintf(stdout, "DATA OPTIONS:\n");
+    for (size_t idx = 0 ; idx < NUM_OUTPUT_DATA ; idx++ ) {
+        fprintf(stdout, "\t%s\n", OUTPUT_DATA_OPTIONS[idx]);
+    }
+}
+
 /*
  * This function does not correct the config file if additional proprieties/components are specified
  * This function calls BUILD_PROJECT of the module with a CONFIG argument that does not necessarily have

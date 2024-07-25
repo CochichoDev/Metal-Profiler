@@ -19,6 +19,7 @@ typedef double      T_DOUBLE;
 typedef char        T_STR[64];
 typedef char        *T_PSTR;
 typedef void        T_VOID;
+typedef int8_t      T_ERROR;
 
 /*
  * ###############################

@@ -110,3 +110,11 @@ double parseFloat(char *str) {
     return num;
 }
 
+T_VOID strToUpper(T_PSTR str) {
+    while (*str != '\0') {
+        if (isnotblank(*str)) {
+            *str = *str & 0xDF;         // Capitalize letter
+        }
+        str++;
+    }
+}

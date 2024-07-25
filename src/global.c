@@ -7,6 +7,14 @@
 
 #include "global.h"
 
+T_STR OUTPUT_GRAPH_OPTIONS[NUM_OUTPUT_GRAPHS] = {   {"SCATTER"},
+                                                    {"BARWERROR"}
+                                                };
+T_STR OUTPUT_DATA_OPTIONS[NUM_OUTPUT_DATA] =    {   {"CYCLES"},
+                                                    {"DEGRADATION"}
+                                                };
+OUTPUT_LIST OUTS;
+
 ARCH SELECTED_ARCH;
 ARCH_LIST AVAIL_ARCHS;
 

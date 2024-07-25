@@ -55,10 +55,32 @@ typedef struct {
     size_t num;
 } FCONFIG_LIST;
 
+#define NUM_OUTPUT_GRAPHS 2
+#define NUM_OUTPUT_DATA 2
+typedef struct {
+    T_STR NAME;
+    enum {
+        SCATTER,
+        BARWERROR
+    } GRAPH_TYPE;
+    enum {
+        CYCLES,
+        DEGRADATION
+    } DATA_TYPE;
+} OUTPUT;
+
+typedef struct s_OUTPUT_LIST {
+    OUTPUT *OUT;
+    struct s_OUTPUT_LIST *NEXT;
+} OUTPUT_LIST;
 
 /*
  * Global variable declaration
  */
+extern T_STR        OUTPUT_GRAPH_OPTIONS[NUM_OUTPUT_GRAPHS];
+extern T_STR        OUTPUT_DATA_OPTIONS[NUM_OUTPUT_DATA];
+extern OUTPUT_LIST  OUTS;
+
 extern ARCH         SELECTED_ARCH;
 extern ARCH_LIST    AVAIL_ARCHS;
 

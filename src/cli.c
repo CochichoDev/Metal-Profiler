@@ -10,13 +10,15 @@
 #include "utils.h"
 #include "cli.h"
 #include "cli_utils.h"
+#include "state.h"
 
 static ACTION parseAction(TERM *term);
 static LIST_ACTION parseListArg(TERM *term);
 static SET_ACTION parseSetArg(TERM *term);
+static HELP_ACTION parseHelpArg(TERM *term);
 static uint8_t matchKey(TERM *term, const char *key);
 static uint8_t ignoreLine(TERM *term);
-static void getWord(TERM *term, T_STR output, size_t max_size);
+static void getWord(TERM *term, T_PSTR output, size_t max_size);
 
 /*
  * cliClear: Cleans the output descriptor
@@ -88,6 +90,9 @@ uint8_t cliStart(TERM *term) {
 uint8_t cliGetInput(TERM *term) {
     if (write(term->out_descr, LINE_TRAIL, strlen(LINE_TRAIL)+1) != strlen(LINE_TRAIL)+1) return 1;
     char buffer[128];
+    char name[64] = {0};
+    char graph[32] = {0};
+    char data[32] = {0};
     switch (parseAction(term)) {
         case CLEAR:
             cliClear(term);
@@ -100,10 +105,24 @@ uint8_t cliGetInput(TERM *term) {
         case EXIT:
             cliClose(term);
             return 1;
+        case HELP:
+            switch(parseHelpArg(term)) {
+                case H_OUTPUT:
+                    listOutputTypes();
+                    break;
+                case H_ERROR:
+                    return 1;
+                case H_NONE:
+                    break;
+            }
+            break;
         case LIST:
             switch (parseListArg(term)) {
                 case L_CONFIG:
                     printConfig(term);
+                    break;
+                case L_OUTPUT:
+                    listSelectedOutputOptions();
                     break;
                 case L_ERROR:
                     return 1;
@@ -123,6 +142,17 @@ uint8_t cliGetInput(TERM *term) {
                     selectArch(term, parseNum(buffer));
                     listConfigs(term);
                     break;
+                case S_OUTPUT:
+                    // Get the type of graph
+                    getWord(term, graph, 32);
+                    strToUpper(graph);
+                    // Get the type of data
+                    getWord(term, data, 32);
+                    strToUpper(data);
+                    // Get the name
+                    getWord(term, name, 64);
+                    addOutputOption(graph, data, name);
+                    break;
                 case S_ERROR:
                     return 1;
                 case S_NONE:
@@ -138,6 +168,7 @@ uint8_t cliGetInput(TERM *term) {
     }
 
     ignoreLine(term);
+    bzero(buffer, 128);
 
     return 0;
 }
@@ -186,6 +217,10 @@ static ACTION parseAction(TERM *term) {
                 default:
                     goto lNACTION;
             }
+            goto lNACTION;
+        case 'H':
+            // Match for H+ELP
+            if (matchKey(term, "ELP")) return HELP;
             goto lNACTION;
         case 'L':
             if (matchKey(term, "OAD")) return LOAD;
@@ -245,6 +280,10 @@ static LIST_ACTION parseListArg(TERM *term) {
             // Match for C+ONFIG
             if (matchKey(term, "ONFIG")) return L_CONFIG;
             goto lNACTION;
+        case 'O':
+            // Match for O+UTPUT
+            if (matchKey(term, "UTPUT")) return L_OUTPUT;
+            goto lNACTION;
         case ' ':
         case '\0':
         case '\t':
@@ -287,6 +326,10 @@ static SET_ACTION parseSetArg(TERM *term) {
             // Match for A+RCH
             if (matchKey(term, "RCH")) return S_ARCH;
             goto lNACTION;
+        case 'O':
+            // Match for O+UTPUT
+            if (matchKey(term, "UTPUT")) return S_OUTPUT;
+            goto lNACTION;
         case ' ':
         case '\0':
         case '\t':
@@ -308,6 +351,49 @@ static SET_ACTION parseSetArg(TERM *term) {
         fprintf(stderr, "Set action not recognized\n");
         return S_NONE;
 }
+
+/* parseSetArg: Parses the input into arguments for list action
+ * Parameters: 
+ *      in : Input descriptor from where it reads the data
+ * Return values:
+ *      ERROR : The input is not recognized
+ *      EXIT : The programs stops execution
+ */
+static HELP_ACTION parseHelpArg(TERM *term) {
+    while (!isnotblank(term->lastchar)) {
+        if (term->lastchar == '\n') return H_NONE;
+        if (read(term->in_descr, &term->lastchar, 1) <= 0) goto lERROR;
+    }
+    if (isalpha(term->lastchar))
+        term->lastchar &= 0xDF;         // Capitalize letter
+    
+    switch (term->lastchar) {
+        case 'O':
+            // Match for O+UTPUT
+            if (matchKey(term, "UTPUT")) return H_OUTPUT;
+            goto lNACTION;
+        case ' ':
+        case '\0':
+        case '\t':
+            // Recursive call to ignore the blank character
+            return parseHelpArg(term);
+            break;
+        case '\n':
+            return H_NONE;
+        default:
+            goto lNACTION;
+    }
+
+    return 0;
+
+    lERROR:
+        perror("Error: Problem reading input\n");
+    return H_ERROR;
+    lNACTION:
+        fprintf(stderr, "Help action not recognized\n");
+        return H_NONE;
+}
+
 /*
  * matchKey: Matches the specified key with the input received from the descriptor
  * Parameters: 
@@ -349,7 +435,7 @@ lERROR:
     return 1;
 }
 
-static void getWord(TERM *term, T_STR output, size_t max_size) {
+static void getWord(TERM *term, T_PSTR output, size_t max_size) {
     while(!isnotblank(term->lastchar)) {
         if (term->lastchar == '\n') return;
         read(term->in_descr, &term->lastchar, 1);

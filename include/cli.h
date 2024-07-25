@@ -30,9 +30,10 @@ typedef struct {
 
 typedef enum {
     NONE,
+    CLEAR,
     EXECUTE,
     EXIT,
-    CLEAR,
+    HELP,
     LIST,
     LOAD,
     SET,
@@ -42,14 +43,22 @@ typedef enum {
 typedef enum {
     L_NONE,
     L_CONFIG,
+    L_OUTPUT,
     L_ERROR
 } LIST_ACTION;
 
 typedef enum {
     S_NONE,
     S_ARCH,
+    S_OUTPUT,
     S_ERROR
 } SET_ACTION;
+
+typedef enum {
+    H_NONE,
+    H_OUTPUT,
+    H_ERROR
+} HELP_ACTION;
 
 uint8_t cliInit(TERM *term, int in, int out);
 uint8_t cliStart(TERM *term);

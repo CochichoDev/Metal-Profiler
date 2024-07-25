@@ -17,3 +17,5 @@ void loadAvailableConfigs();
 
 int64_t parseNum(char *str);
 double parseFloat(char *str);
+
+T_VOID strToUpper(T_PSTR str);

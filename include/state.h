@@ -1,0 +1,4 @@
+#include "api.h"
+
+T_ERROR addOutputOption(T_PSTR graph, T_PSTR data, T_PSTR name);
+T_VOID listSelectedOutputOptions();
