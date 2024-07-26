@@ -13,7 +13,7 @@ T_STR OUTPUT_GRAPH_OPTIONS[NUM_OUTPUT_GRAPHS] = {   {"SCATTER"},
 T_STR OUTPUT_DATA_OPTIONS[NUM_OUTPUT_DATA] =    {   {"CYCLES"},
                                                     {"DEGRADATION"}
                                                 };
-OUTPUT_LIST OUTS;
+OUTPUT_LIST OUTPUT_LIST_SELECTED;
 
 ARCH SELECTED_ARCH;
 ARCH_LIST AVAIL_ARCHS;

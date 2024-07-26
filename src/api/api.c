@@ -15,7 +15,7 @@
  *      in2 : The index of the component to be searched for
  * RETURN:
  *      out : Returns the pointer to the corresponding component if the pointer is not NULL
- *      default : Returns the index from the base pointer of the COMPS pointer of the CONFIG
+ *      default : Returns the index from the base pointer of the COMPS pointer of the CONFIG or -1 if it doesn't exist
  */
 size_t GET_COMP_BY_IDX(CONFIG *in1, T_INT in2, COMP **out) {
     for (size_t idx = 0 ; idx < in1->NUM ; idx++) {

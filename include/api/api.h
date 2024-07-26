@@ -3,7 +3,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <string.h>
 #include <sys/types.h>
 
 
@@ -81,8 +80,9 @@ typedef struct {
 } COMP;
 
 typedef struct {
-    COMP *COMPS[16];
-    size_t NUM;
+    COMP        *COMPS[16];
+    size_t      VICTIM_ID;
+    size_t      NUM;
 } CONFIG;
 
 /*
@@ -94,13 +94,14 @@ typedef struct {
     T_VOID      *DATA;
     enum {
         R_INT,
+        R_UINT,
         R_DOUBLE
     }           TYPE;
 } RESULT;
 
 
-#define INITIALIZE_RESULTS(T, results, num_cycles, name) \
-    __##T##_initializeResults(results, num_cycles, name);
+#define INITIALIZE_RESULTS(T, p_results, num_cycles, name) \
+    __##T##_initializeResults(p_results, num_cycles, name);
 
 #define DESTROY_RESULTS(T, results) \
     __##T##_destroyResults(results);
@@ -116,8 +117,8 @@ typedef struct {
  *      in1 : The associated config
  *      in2 : The index of the component to be searched for
  * RETURN:
- *      out : Returns the pointer to the corresponding component
- *      default : Returns the index from the base pointer of the COMPS pointer of the CONFIG
+ *      out : Returns the pointer to the corresponding component if the pointer is not NULL
+ *      default : Returns the index from the base pointer of the COMPS pointer of the CONFIG or -1 if it doesn't exist
  */
 size_t GET_COMP_BY_IDX(CONFIG *in1, T_INT in2, COMP **out);
 

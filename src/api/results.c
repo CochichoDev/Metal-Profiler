@@ -21,7 +21,7 @@ void __T_UINT_initializeResults(RESULT *results_ptr, T_UINT num_cycles, const T_
     strcpy(results_ptr->NAME, name);
     results_ptr->DATA = malloc(sizeof(T_UINT)*num_cycles);
     results_ptr->NUM = num_cycles;
-    results_ptr->TYPE = R_INT;
+    results_ptr->TYPE = R_UINT;
 }
 void __T_DOUBLE_initializeResults(RESULT *results_ptr, T_UINT num_cycles, const T_PSTR name) {
     results_ptr = malloc(sizeof(RESULT));
@@ -63,7 +63,10 @@ void READ_TO_RESULT(T_INT in, RESULT *result, T_CHAR marker) {
             switch (result->TYPE) {
                 case R_INT:
                     sscanf(buf, "%u", ((T_UINT *)result->DATA)+idx);
-                    printf("%u\n", *(((T_UINT *)result->DATA)+idx));
+                    //printf("%u\n", *(((T_UINT *)result->DATA)+idx));
+                    break;
+                case R_UINT:
+                    sscanf(buf, "%u", ((T_UINT *)result->DATA)+idx);
                     break;
                 case R_DOUBLE:
                     sscanf(buf, "%lf", (T_DOUBLE *)(result->DATA+idx));

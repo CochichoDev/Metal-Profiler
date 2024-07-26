@@ -7,6 +7,8 @@
 #include <ctype.h>
 #include <string.h>
 
+#include "api.h"
+#include "global.h"
 #include "utils.h"
 #include "parsing.h"
 
@@ -88,6 +90,11 @@ CONFIG *parseConfig(FILE *fd) {
             printf("Error: Parser didn't manage to get propriety value in line %ld\n", line_num);
             return NULL;
         }
+    }
+
+    if (GET_COMP_BY_IDX(config, MODULE_CONFIG->VICTIM_ID, NULL) == -1) {
+        fprintf(stderr, "Error: The victim component (ID %ld) was not configured", MODULE_CONFIG->VICTIM_ID);
+        return NULL;
     }
 
     return config;

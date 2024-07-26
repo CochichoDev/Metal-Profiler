@@ -11,6 +11,7 @@
 #include "cli_utils.h"
 #include "parsing.h"
 #include "global.h"
+#include "bench.h"
 
 uint8_t listArchs(TERM *term) {
     char buf[256];
@@ -266,16 +267,25 @@ T_VOID loadConfig(TERM *term, T_UINT config_option) {
     BUILD_PROJECT(conf);
 }
 
-T_VOID executeBench(TERM *term, size_t iter) {
+T_VOID runExecution (TERM *term, size_t iter) {
     if (!MODULE_CONFIG) {
-        write(term->out_descr, ERROR_CONFIG, sizeof(ERROR_ARCH));
+        write(term->out_descr, ERROR_CONFIG, sizeof(ERROR_CONFIG));
         return;
     }
-    INIT_BENCH();
-    RESULT *results;
-    for (size_t idx = 0; idx < iter; idx++) {
-        cliPrintProgress(term, idx, iter);
-        results = RUN_BENCH();
+    if (!OUTPUT_LIST_SELECTED.OUT) {
+        fprintf(stderr, "Error: No output selected\n");
+        return;
     }
-    EXIT_BENCH();
+    RESULT *result_array = (RESULT *) malloc(sizeof(RESULT) * iter);
+
+    runBench(term, iter, result_array);
+
+    processResults(result_array, iter);
+    
+    // The type ihere doesn't matter, free will only need the origin address
+    for (size_t idx = 0; idx < iter; idx++)
+        DESTROY_RESULTS(T_UINT, result_array+idx);
+
+    free(result_array);
 }
+

@@ -100,7 +100,7 @@ uint8_t cliGetInput(TERM *term) {
             break;
         case EXECUTE:
             getWord(term, buffer, 128);
-            executeBench(term, parseNum(buffer));
+            runExecution(term, parseNum(buffer));
             break;
         case EXIT:
             cliClose(term);

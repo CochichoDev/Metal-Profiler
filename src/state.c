@@ -39,14 +39,14 @@ T_ERROR addOutputOption(T_PSTR graph, T_PSTR data, T_PSTR name) {
     }
 
     OUTPUT *entry;
-    if (!OUTS.OUT) {
+    if (!OUTPUT_LIST_SELECTED.OUT) {
         // The list is empty
-        OUTS.OUT = (OUTPUT *) malloc(sizeof(OUTPUT));
-        entry = OUTS.OUT;
+        OUTPUT_LIST_SELECTED.OUT = (OUTPUT *) malloc(sizeof(OUTPUT));
+        entry = OUTPUT_LIST_SELECTED.OUT;
         goto NEW_ENTRY;
     }
 
-    OUTPUT_LIST *iter = &OUTS, *prev;
+    OUTPUT_LIST *iter = &OUTPUT_LIST_SELECTED, *prev;
     while (iter != NULL) {
         if (!strcmp(iter->OUT->NAME, name)) {
             entry = iter->OUT;
@@ -72,12 +72,12 @@ UPDATE_ENTRY:
 }
 
 T_VOID listSelectedOutputOptions() {
-    if (!OUTS.OUT) {
+    if (!OUTPUT_LIST_SELECTED.OUT) {
         fprintf(stdout, "Info: No selected outputs\n");
         return;
     }
 
-    OUTPUT_LIST *iter = &OUTS;
+    OUTPUT_LIST *iter = &OUTPUT_LIST_SELECTED;
     size_t idx = 0;
     do {
         const T_PSTR graphTypeName = __getTypeName(OUTPUT_GRAPH_OPTIONS, NUM_OUTPUT_GRAPHS,iter->OUT->GRAPH_TYPE);
