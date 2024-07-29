@@ -39,14 +39,17 @@ T_ERROR addOutputOption(T_PSTR graph, T_PSTR data, T_PSTR name) {
     }
 
     OUTPUT *entry;
-    if (!OUTPUT_LIST_SELECTED.OUT) {
+    if (!OUTPUT_LIST_SELECTED) {
         // The list is empty
-        OUTPUT_LIST_SELECTED.OUT = (OUTPUT *) malloc(sizeof(OUTPUT));
-        entry = OUTPUT_LIST_SELECTED.OUT;
+        OUTPUT_LIST_SELECTED = (OUTPUT_LIST *) malloc(sizeof(OUTPUT_LIST));
+        if (!OUTPUT_LIST_SELECTED)
+            return -1;
+        OUTPUT_LIST_SELECTED->OUT = (OUTPUT *) malloc(sizeof(OUTPUT));
+        entry = OUTPUT_LIST_SELECTED->OUT;
         goto NEW_ENTRY;
     }
 
-    OUTPUT_LIST *iter = &OUTPUT_LIST_SELECTED, *prev;
+    OUTPUT_LIST *iter = OUTPUT_LIST_SELECTED, *prev = NULL;
     while (iter != NULL) {
         if (!strcmp(iter->OUT->NAME, name)) {
             entry = iter->OUT;
@@ -59,7 +62,7 @@ T_ERROR addOutputOption(T_PSTR graph, T_PSTR data, T_PSTR name) {
     // If this point reaches it means there is not an entry w\ the same type
     OUTPUT_LIST *new_list_entry = (OUTPUT_LIST *) malloc(sizeof(OUTPUT_LIST));
     new_list_entry->NEXT = NULL;
-    new_list_entry->OUT = (OUTPUT *) malloc(sizeof(OUTPUT_LIST));
+    new_list_entry->OUT = (OUTPUT *) malloc(sizeof(OUTPUT));
     prev->NEXT = new_list_entry;
     entry = new_list_entry->OUT;
 
@@ -72,12 +75,12 @@ UPDATE_ENTRY:
 }
 
 T_VOID listSelectedOutputOptions() {
-    if (!OUTPUT_LIST_SELECTED.OUT) {
+    if (!OUTPUT_LIST_SELECTED) {
         fprintf(stdout, "Info: No selected outputs\n");
         return;
     }
 
-    OUTPUT_LIST *iter = &OUTPUT_LIST_SELECTED;
+    OUTPUT_LIST *iter = OUTPUT_LIST_SELECTED;
     size_t idx = 0;
     do {
         const T_PSTR graphTypeName = __getTypeName(OUTPUT_GRAPH_OPTIONS, NUM_OUTPUT_GRAPHS,iter->OUT->GRAPH_TYPE);
@@ -87,4 +90,56 @@ T_VOID listSelectedOutputOptions() {
         fprintf(stdout, "[%ld]\t%s\tDATA: %s\tTYPE: %s\n", idx, iter->OUT->NAME, dataTypeName, graphTypeName);
         iter = iter->NEXT;
     } while (iter != NULL);
+}
+
+T_ERROR deleteOutputOption(T_PSTR name) {
+    OUTPUT_LIST *iter = OUTPUT_LIST_SELECTED;
+    OUTPUT_LIST *prev = NULL;
+
+    while (iter != NULL) {
+        if (!strcmp(name, iter->OUT->NAME)) {
+            if (prev) {
+                prev->NEXT = iter->NEXT;
+            } else {
+                OUTPUT_LIST_SELECTED = iter->NEXT;
+            }
+            free(iter->OUT);
+            free(iter);
+
+            return 0;
+        }
+
+        prev = iter;
+        iter = iter->NEXT;
+    }
+    return -1;
+}
+
+T_ERROR cleanState() {
+    // Clean INPUT_CONFIG
+    if (INPUT_CONFIG) {
+        for (size_t comp_idx = 0; comp_idx < INPUT_CONFIG->NUM; comp_idx++) {
+            COMP *comp = *(INPUT_CONFIG->COMPS + comp_idx);
+
+            free(comp->PBUFFER->PROPS);
+            free(comp->PBUFFER);
+            free(comp);
+        }
+        free(INPUT_CONFIG);
+        INPUT_CONFIG = NULL;
+    }
+
+    // Clean OUTPUT_LIST_SELECTED
+    OUTPUT_LIST *iter = OUTPUT_LIST_SELECTED;
+    while (iter != NULL) {
+        deleteOutputOption(iter->OUT->NAME);
+        iter = OUTPUT_LIST_SELECTED;
+    }
+
+    if (MODULE_HANDLE) {
+        dlclose(MODULE_HANDLE);
+        MODULE_HANDLE = NULL;
+    }
+
+    return 0;
 }

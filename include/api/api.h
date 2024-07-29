@@ -1,15 +1,21 @@
 #pragma once
 
+#include <dlfcn.h>
 #include <stddef.h>
 #include <stdint.h>
 
 #include <sys/types.h>
 
+#include "results.h"
+
 
 
 #define BASEDIR "arch/"
 
-typedef char FLAG;
+#define FALSE   0
+#define TRUE    1
+
+typedef int8_t      T_FLAG;
 
 typedef int32_t     T_INT;
 typedef uint32_t    T_UINT;
@@ -43,7 +49,7 @@ typedef struct {
 
     pTYPE PTYPE;
     
-    FLAG NEED;
+    T_FLAG NEED;
 
     // If the type is an int
     union {
@@ -85,18 +91,24 @@ typedef struct {
     size_t      NUM;
 } CONFIG;
 
+typedef struct {
+    T_VOID      *DATA;
+    size_t      SIZE;
+    enum {
+        G_INT,
+        G_UINT,
+        G_DOUBLE,
+        G_RESULT, 
+        G_METRICS
+    }           TYPE;
+} G_ARRAY;
+
 /*
  * Generic type of Results
  */
 typedef struct {
     T_STR       NAME;
-    size_t      NUM;
-    T_VOID      *DATA;
-    enum {
-        R_INT,
-        R_UINT,
-        R_DOUBLE
-    }           TYPE;
+    G_ARRAY     ARRAY;
 } RESULT;
 
 
@@ -137,3 +149,15 @@ size_t GET_PROP_BY_NAME(COMP *in1, T_PSTR in2, T_VOID *out);
 
 pid_t RUN_PROCESS_IMAGE(T_INT *new_descr, const T_PSTR image_path, ...);
 void KILL_PROCESS(pid_t process);
+
+/*
+ * #############################
+ * INTERNAL FUNCTION DECLARATION
+ * #############################
+ */
+void __T_UINT_initializeResults(RESULT *results_ptr, T_UINT num_cycles, const T_PSTR name);
+void __T_DOUBLE_initializeResults(RESULT *results_ptr, T_UINT num_cycles, const T_PSTR name);
+void __T_UINT_destroyResults(RESULT *results_ptr);
+void __T_DOUBLE_destroyResults(RESULT *results_ptr);
+
+void READ_TO_RESULT(T_INT in, RESULT *result, T_CHAR marker);

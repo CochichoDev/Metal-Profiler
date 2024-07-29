@@ -1,10 +1,9 @@
 #pragma once
 
 #include "global.h"
-#include "cli.h"
 
-T_ERROR runBench(TERM *term, size_t iter, RESULT *result_array);
-T_VOID processResults(RESULT *result_array, size_t num);
+T_ERROR runBench(size_t iter, RESULT *result_array);
+T_VOID processResults(G_ARRAY *result_data);
 
 /*
 uint64_t benchFullConfig(CoreConfig **config, ttyFD tty);

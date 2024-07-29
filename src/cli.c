@@ -104,6 +104,7 @@ uint8_t cliGetInput(TERM *term) {
             break;
         case EXIT:
             cliClose(term);
+            cleanState();
             return 1;
         case HELP:
             switch(parseHelpArg(term)) {

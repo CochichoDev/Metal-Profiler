@@ -64,7 +64,7 @@ typedef struct {
         BARWERROR
     } GRAPH_TYPE;
     enum {
-        CYCLES,
+        RAW,
         DEGRADATION
     } DATA_TYPE;
 } OUTPUT;
@@ -79,7 +79,8 @@ typedef struct s_OUTPUT_LIST {
  */
 extern T_STR        OUTPUT_GRAPH_OPTIONS[NUM_OUTPUT_GRAPHS];
 extern T_STR        OUTPUT_DATA_OPTIONS[NUM_OUTPUT_DATA];
-extern OUTPUT_LIST  OUTPUT_LIST_SELECTED;
+
+extern OUTPUT_LIST  *OUTPUT_LIST_SELECTED;
 
 extern ARCH         SELECTED_ARCH;
 extern ARCH_LIST    AVAIL_ARCHS;
@@ -88,6 +89,7 @@ extern FCONFIG_LIST        AVAIL_CONFIGS;
 
 extern T_VOID       *MODULE_HANDLE;
 extern CONFIG       *MODULE_CONFIG;
+extern CONFIG       *INPUT_CONFIG;
 
 extern T_VOID       (*BUILD_PROJECT)(CONFIG *);
 extern T_VOID       (*INIT_BENCH)(T_VOID);

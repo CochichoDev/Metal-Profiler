@@ -6,22 +6,25 @@
 #include <unistd.h>
 
 #include "global.h"
+#include "api.h"
 
 T_STR OUTPUT_GRAPH_OPTIONS[NUM_OUTPUT_GRAPHS] = {   {"SCATTER"},
                                                     {"BARWERROR"}
                                                 };
-T_STR OUTPUT_DATA_OPTIONS[NUM_OUTPUT_DATA] =    {   {"CYCLES"},
+T_STR OUTPUT_DATA_OPTIONS[NUM_OUTPUT_DATA] =    {   {"RAW"},
                                                     {"DEGRADATION"}
                                                 };
-OUTPUT_LIST OUTPUT_LIST_SELECTED;
+
+OUTPUT_LIST *OUTPUT_LIST_SELECTED = NULL;
 
 ARCH SELECTED_ARCH;
 ARCH_LIST AVAIL_ARCHS;
 
 FCONFIG_LIST AVAIL_CONFIGS;
 
-T_VOID *MODULE_HANDLE;
-CONFIG *MODULE_CONFIG;
+T_VOID *MODULE_HANDLE = NULL;
+CONFIG *MODULE_CONFIG = NULL;
+CONFIG *INPUT_CONFIG = NULL;
 
 T_VOID (*BUILD_PROJECT)(CONFIG *);
 T_VOID (*INIT_BENCH)(T_VOID);

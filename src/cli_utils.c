@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#include "results.h"
 #include "utils.h"
 #include "api.h"
 #include "cli.h"
@@ -12,6 +11,8 @@
 #include "parsing.h"
 #include "global.h"
 #include "bench.h"
+#include "plot.h"
+#include "results.h"
 
 uint8_t listArchs(TERM *term) {
     char buf[256];
@@ -50,7 +51,7 @@ T_VOID printConfig(TERM *term) {
     }
 
     COMP **comp_ptr = MODULE_CONFIG->COMPS;
-    FLAG *need;
+    T_PSTR need;
     char num[16];
     for (size_t cidx = 0 ; cidx < MODULE_CONFIG->NUM ; cidx++, comp_ptr++) {
         // Name of the component
@@ -201,8 +202,9 @@ T_VOID loadConfig(TERM *term, T_UINT config_option) {
         return;
     }
 
-    CONFIG *conf = parseConfig(config_file);
-    if (!conf) {
+    INPUT_CONFIG = parseConfig(config_file);
+    fclose(config_file);
+    if (!INPUT_CONFIG) {
         puts("Error: Could not parse input config file");
         return;
     }
@@ -211,11 +213,11 @@ T_VOID loadConfig(TERM *term, T_UINT config_option) {
     for (size_t m_comp_idx = 0 ; m_comp_idx < MODULE_CONFIG->NUM ; m_comp_idx++) {
         // Get the corresponding index of the component being analyzed base on its index
         size_t comp_idx;
-        for (comp_idx = 0 ; comp_idx < conf->NUM ; comp_idx++) 
-            if (MODULE_CONFIG->COMPS[m_comp_idx]->ID == conf->COMPS[comp_idx]->ID) break;
+        for (comp_idx = 0 ; comp_idx < INPUT_CONFIG->NUM ; comp_idx++) 
+            if (MODULE_CONFIG->COMPS[m_comp_idx]->ID == INPUT_CONFIG->COMPS[comp_idx]->ID) break;
 
         COMP *m_comp = MODULE_CONFIG->COMPS[m_comp_idx];
-        COMP *comp = conf->COMPS[comp_idx];
+        COMP *comp = INPUT_CONFIG->COMPS[comp_idx];
 
         // Go over all the proprieties of the component in question
         for (size_t m_prop_idx = 0 ; m_prop_idx < m_comp->PBUFFER->NUM ; m_prop_idx++) {
@@ -264,7 +266,7 @@ T_VOID loadConfig(TERM *term, T_UINT config_option) {
         }
     }
 
-    BUILD_PROJECT(conf);
+    BUILD_PROJECT(INPUT_CONFIG);
 }
 
 T_VOID runExecution (TERM *term, size_t iter) {
@@ -272,20 +274,24 @@ T_VOID runExecution (TERM *term, size_t iter) {
         write(term->out_descr, ERROR_CONFIG, sizeof(ERROR_CONFIG));
         return;
     }
-    if (!OUTPUT_LIST_SELECTED.OUT) {
+    if (!OUTPUT_LIST_SELECTED) {
         fprintf(stderr, "Error: No output selected\n");
         return;
     }
-    RESULT *result_array = (RESULT *) malloc(sizeof(RESULT) * iter);
+    RESULT *result_data = (RESULT *) malloc(sizeof(RESULT) * iter);
 
-    runBench(term, iter, result_array);
+    runBench(iter, result_data);
 
-    processResults(result_array, iter);
+    // processResults only accepts a G_ARRAY of type RESULT
+    G_ARRAY result_array = {.TYPE = G_RESULT, .DATA = result_data, .SIZE = iter};
+
+    processResults(&result_array);
+    plotResults();
     
     // The type ihere doesn't matter, free will only need the origin address
     for (size_t idx = 0; idx < iter; idx++)
-        DESTROY_RESULTS(T_UINT, result_array+idx);
+        DESTROY_RESULTS(T_UINT, result_data+idx);
 
-    free(result_array);
+    free(result_data);
 }
 
