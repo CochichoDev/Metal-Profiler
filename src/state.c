@@ -41,7 +41,7 @@ T_ERROR addOutputOption(T_PSTR graph, T_PSTR data, T_PSTR name) {
     OUTPUT *entry;
     if (!OUTPUT_LIST_SELECTED) {
         // The list is empty
-        OUTPUT_LIST_SELECTED = (OUTPUT_LIST *) malloc(sizeof(OUTPUT_LIST));
+        OUTPUT_LIST_SELECTED = (OUTPUT_LIST *) calloc(1, sizeof(OUTPUT_LIST));
         if (!OUTPUT_LIST_SELECTED)
             return -1;
         OUTPUT_LIST_SELECTED->OUT = (OUTPUT *) malloc(sizeof(OUTPUT));
@@ -60,7 +60,7 @@ T_ERROR addOutputOption(T_PSTR graph, T_PSTR data, T_PSTR name) {
     }
 
     // If this point reaches it means there is not an entry w\ the same type
-    OUTPUT_LIST *new_list_entry = (OUTPUT_LIST *) malloc(sizeof(OUTPUT_LIST));
+    OUTPUT_LIST *new_list_entry = (OUTPUT_LIST *) calloc(1, sizeof(OUTPUT_LIST));
     new_list_entry->NEXT = NULL;
     new_list_entry->OUT = (OUTPUT *) malloc(sizeof(OUTPUT));
     prev->NEXT = new_list_entry;

@@ -469,17 +469,17 @@ static void getWord(TERM *term, T_PSTR output, size_t max_size) {
         *char_ptr = '\0';
 }
 
-void cliPrintProgress(TERM *term, size_t cur, size_t max) {
-    write(term->out_descr, tLINEUP, strlen(tLINEUP)+1);
-    write(term->out_descr, tCLEARLINE, strlen(tCLEARLINE)+1);
-    write(term->out_descr, tHOMELINE, strlen(tHOMELINE)+1);
+void cliPrintProgress(size_t cur, size_t max) {
+    write(STDOUT_FILENO, tLINEUP, strlen(tLINEUP)+1);
+    write(STDOUT_FILENO, tCLEARLINE, strlen(tCLEARLINE)+1);
+    write(STDOUT_FILENO, tHOMELINE, strlen(tHOMELINE)+1);
 
     size_t progress = cur * 10 / max;
-    write(term->out_descr, "[", 1);
+    write(STDOUT_FILENO, "[", 1);
     for (size_t idx = 0; idx < progress; idx++) 
-        write(term->out_descr, "#", 1);
+        write(STDOUT_FILENO, "#", 1);
 
     for (size_t idx = progress; idx < 10; idx++) 
-        write(term->out_descr, " ", 2);
-    write(term->out_descr, "]\n", 3);
+        write(STDOUT_FILENO, " ", 2);
+    write(STDOUT_FILENO, "]\n", 3);
 }

@@ -66,5 +66,5 @@ uint8_t cliClear(TERM *term);
 uint8_t cliGetInput(TERM *term);
 uint8_t cliLog(TERM *term);
 uint8_t cliClose(TERM *term);
-void cliPrintProgress(TERM *term, size_t cur, size_t max);
+void cliPrintProgress(size_t cur, size_t max);
 

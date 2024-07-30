@@ -8,27 +8,29 @@
 #include "calc.h"
 #include "global.h"
 #include "utils.h"
+#include "cli.h"
 
 T_ERROR runBench(size_t iter, RESULT *result_array) {
     INIT_BENCH();
     for (size_t idx = 0; idx < iter; idx++) {
-        //cliPrintProgress(term, idx, iter);
+        cliPrintProgress(idx, iter);
         RESULT *result = RUN_BENCH();
         if (!result) {
             fprintf(stderr, "Error: Couldn't get result data from the module\n");
         }
+        result->ARRAY.SIZE -= IGNORE_LIMIT;
         switch (result->ARRAY.TYPE) {
             case G_INT:
                 INITIALIZE_RESULTS(T_UINT, result_array+idx, result->ARRAY.SIZE, result->NAME);
-                memcpy(result_array[idx].ARRAY.DATA, result->ARRAY.DATA, sizeof(T_UINT)*result->ARRAY.SIZE);
+                memcpy(result_array[idx].ARRAY.DATA, result->ARRAY.DATA + IGNORE_LIMIT*sizeof(T_UINT), sizeof(T_UINT)*result->ARRAY.SIZE);
                 break;
             case G_UINT:
                 INITIALIZE_RESULTS(T_UINT, result_array+idx, result->ARRAY.SIZE, result->NAME);
-                memcpy(result_array[idx].ARRAY.DATA, result->ARRAY.DATA, sizeof(T_UINT)*result->ARRAY.SIZE);
+                memcpy(result_array[idx].ARRAY.DATA, result->ARRAY.DATA + IGNORE_LIMIT*sizeof(T_UINT), sizeof(T_UINT)*result->ARRAY.SIZE);
                 break;
             case G_DOUBLE:
                 INITIALIZE_RESULTS(T_DOUBLE, result_array+idx, result->ARRAY.SIZE, result->NAME);
-                memcpy(result_array[idx].ARRAY.DATA, result->ARRAY.DATA, sizeof(T_DOUBLE)*result->ARRAY.SIZE);
+                memcpy(result_array[idx].ARRAY.DATA, result->ARRAY.DATA + IGNORE_LIMIT*sizeof(T_DOUBLE), sizeof(T_DOUBLE)*result->ARRAY.SIZE);
             default:
                 break;
         }
@@ -94,6 +96,7 @@ T_VOID processResults(G_ARRAY *result_array) {
                            
                     
                 raw_saved = TRUE;
+                puts("HERE");
                 break;
 
             case DEGRADATION:
@@ -143,6 +146,7 @@ T_VOID processResults(G_ARRAY *result_array) {
                 G_ARRAY *deg_result_array = &iso_result_array;
                 for (size_t deg_result_idx = 0 ; deg_result_idx < deg_result_array->SIZE ; deg_result_idx++) {
                     RESULT *result_data = ((RESULT *)deg_result_array->DATA) + deg_result_idx;
+                    result_data->ARRAY.TYPE = G_DOUBLE;
                     result_data->ARRAY.SIZE = deg_array[deg_result_idx].SIZE;
                     result_data->ARRAY.DATA = deg_array[deg_result_idx].DATA;
                     strcpy(result_data->NAME, (((RESULT *)result_array->DATA)[deg_result_idx].NAME));

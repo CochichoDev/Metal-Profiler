@@ -235,7 +235,7 @@ T_VOID saveDataRESULTS(const T_PSTR output, G_ARRAY *result_array) {
         fprintf(output_file, "%12ld", r_idx);
         for (size_t c_idx = 0 ; c_idx < result_array->SIZE ; c_idx++) {
             if (r_idx >= result_data[c_idx].ARRAY.SIZE) {
-                fprintf(output_file, "%12d", 0);
+                fprintf(output_file, "%12s", " ");
             } else {
                 switch (result_data[c_idx].ARRAY.TYPE) {
                     case G_INT:
@@ -244,6 +244,7 @@ T_VOID saveDataRESULTS(const T_PSTR output, G_ARRAY *result_array) {
                         break;
                     case G_DOUBLE:
                         fprintf(output_file, "%12lf", ((T_DOUBLE*) result_data[c_idx].ARRAY.DATA)[r_idx]);
+                        break;
                     default:
                         break;
                 }

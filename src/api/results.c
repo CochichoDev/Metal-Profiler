@@ -53,21 +53,24 @@ void READ_TO_RESULT(T_INT in, RESULT *result, T_CHAR marker) {
     for (uint32_t idx = 0 ; stop == 0 ; ) {
         read_bytes = read(in,buf,255); 
         buf[read_bytes]='\0';          
-        if (buf[0] == marker) stop=1;
+        if (buf[0] == marker) {
+            stop=1;
+        }
         if (isdigit(buf[0])) {
             switch (result->ARRAY.TYPE) {
                 case G_INT:
                     sscanf(buf, "%u", ((T_UINT *)result->ARRAY.DATA)+idx);
-                    //printf("%u\n", *(((T_UINT *)result->DATA)+idx));
+                    //printf("%u\n", *(((T_UINT *)result->ARRAY.DATA)+idx));
                     break;
                 case G_UINT:
                     sscanf(buf, "%u", ((T_UINT *)result->ARRAY.DATA)+idx);
+                    //printf("%u\n", *(((T_UINT *)result->ARRAY.DATA)+idx));
                     break;
                 case G_DOUBLE:
                     sscanf(buf, "%lf", ((T_DOUBLE *)result->ARRAY.DATA)+idx);
                 default:
                     break;
-            }
+            } 
             idx++;
         }
     }
