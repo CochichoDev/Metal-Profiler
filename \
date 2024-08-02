@@ -1,0 +1,130 @@
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "platform.h"
+#include "xil_exception.h"
+#include "xil_printf.h"
+#include "xil_cache.h"
+#include "PMU.h"
+#include "timer.h"
+#include "GIC.h"
+#include "xtime_l.h"
+#include "xil_mmu.h"
+#include <time.h>
+#include <assert.h>
+#include <math.h>
+
+#include <unistd.h>
+
+/*
+ *  DUMMY DEFINITIONS FOR WARNING AVOIDANCE
+ */
+#if !defined(ACCESS_METHOD)
+#define ACCESS_METHOD(TARGET) 
+#endif
+#if !defined(HEADER)
+#define HEADER ; ; 
+#endif
+#if !defined(TARGET_SIZE)
+#define TARGET_SIZE 4*128*64
+#endif
+#if !defined(STRIDE)
+#define STRIDE 64
+#endif
+
+#define ENEMY
+
+#include "definitions.h"
+
+
+extern u8 __buf_start_1;
+
+static void stay_idle(uint32_t itrID) {
+    gicd_disable_int(VTIMER_ID);
+    *REG_GIC_GICC_EOIR = itrID;
+    time_handler(1);
+    gicd_enable_int(VTIMER_ID);
+
+    printf("Idle...\n");
+    __asm__ __volatile__("wfi\n\t");
+
+}
+
+static void mem_monitor(uint32_t itrID) {
+    static const u64 budget = 1e5;
+    static const u64 threshold = 1e4;
+    static int64_t avail = budget;
+    static u8 IDLE = 0;
+
+    uint64_t l2_wb = read_pmevcntr(1);
+
+    printf("#1 -> L2_WB: %lld\n", l2_wb);
+    printf("#1 -> Avail budget: %lld\n", avail);
+    avail-=l2_wb;
+    avail+=1e2;
+
+
+
+    if (avail <= 0)
+        IDLE = 1;
+    else if (avail >= threshold)
+        IDLE = 0;
+
+    printf("IDLE %d\n", IDLE);
+    reset_pmc_events();
+
+    if (IDLE)
+        stay_idle(itrID);
+
+}
+
+void irq_handler() {
+    // Read the irq ID
+    uint32_t itrID = *REG_GIC_GICC_IAR;
+
+    switch (itrID & 0x1FFU) {
+        case 0x1B:
+            // This ID corresponds to the CNTV irq
+            //printf("The IRQ ID corresponds to the CNTV\n");
+            mem_monitor(itrID);
+            break;
+        default:
+            printf("The IRQ ID is %d\n", itrID);
+            break;
+    }
+    fflush(stdout);
+
+    // Mark the interruption as inactive or pending
+    gicd_disable_int(VTIMER_ID);
+    *REG_GIC_GICC_EOIR = itrID;
+    time_handler(10);
+    gicd_enable_int(VTIMER_ID);
+}
+
+int main(int argc, char *argv[]) {
+    register volatile u8 *target = &__buf_start_1;
+    Xil_ExceptionRegisterHandler(XIL_EXCEPTION_ID_IRQ_INT, &irq_handler, NULL);
+
+    initPMU();
+    //initGICv3();
+    initGICC();
+    gicd_config(VTIMER_ID, GIC_GICD_ICFGR_EDGE);
+    gicd_clear_pending(VTIMER_ID);
+    gicd_enable_int(VTIMER_ID);
+
+    time_handler(10);
+    enable_irq();
+
+    reset_pmc_events();
+
+    for (HEADER) {
+         for (register int i = 0 ; i < TARGET_SIZE ; i += STRIDE) {
+            printf("RUNNING...\n");
+            ACCESS_METHOD(target+i);
+        }
+    }
+
+    disable_cntv();
+    gicd_disable_int(VTIMER_ID);
+}
+

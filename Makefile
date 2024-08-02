@@ -10,6 +10,7 @@ BIN:=bin
 OBJ:=obj
 LIB:=lib
 INCLUDE:=include include/api
+ARCH:=arch
 
 CFLAGS:=
 CPPFLAGS:=$(foreach inc, $(INCLUDE), -I$(inc))
@@ -22,6 +23,8 @@ API_SRC_FILES:=$(wildcard $(SRC)/api/*.c)
 OBJ_FILES:=$(patsubst $(SRC)/%.c, $(OBJ)/%.o, $(SRC_FILES))
 API_OBJ_FILES:=$(patsubst $(SRC)/api/%.c, $(OBJ)/%.o, $(API_SRC_FILES))
 
+ARCH_LIBS:=$(foreach module, $(sort $(dir $(wildcard $(ARCH)/*/module/))), $(module)lib)
+
 .PHONY: clean all 
 
 all: $(TARGET)
@@ -32,6 +35,7 @@ $(TARGET): $(OBJ_FILES) $(TARGET_API)
 $(TARGET_API): $(API_OBJ_FILES)
 	$(CC) -Wall -shared $^ -o $(TARGET_API)
 	$(CP) $@ $(LIB)/$(notdir $@)
+	$(foreach dir, $(ARCH_LIBS), $(CP) $@ $(dir)/)
 
 -include $(patsubst $(OBJ)/%.o, $(OBJ)/%.d, $(OBJ_FILES))
 -include $(patsubst $(OBJ)/%.o, $(OBJ)/%.d, $(API_OBJ_FILES))

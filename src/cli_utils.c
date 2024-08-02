@@ -216,6 +216,9 @@ T_VOID loadConfig(TERM *term, T_UINT config_option) {
         for (comp_idx = 0 ; comp_idx < INPUT_CONFIG->NUM ; comp_idx++) 
             if (MODULE_CONFIG->COMPS[m_comp_idx]->ID == INPUT_CONFIG->COMPS[comp_idx]->ID) break;
 
+        // In case no component was found for the corresponding ID continue to search for next
+        if (comp_idx == INPUT_CONFIG->NUM) continue;
+
         COMP *m_comp = MODULE_CONFIG->COMPS[m_comp_idx];
         COMP *comp = INPUT_CONFIG->COMPS[comp_idx];
 

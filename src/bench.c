@@ -13,7 +13,7 @@
 T_ERROR runBench(size_t iter, RESULT *result_array) {
     INIT_BENCH();
     for (size_t idx = 0; idx < iter; idx++) {
-        cliPrintProgress(idx, iter);
+        //cliPrintProgress(idx, iter);
         RESULT *result = RUN_BENCH();
         if (!result) {
             fprintf(stderr, "Error: Couldn't get result data from the module\n");
@@ -96,7 +96,6 @@ T_VOID processResults(G_ARRAY *result_array) {
                            
                     
                 raw_saved = TRUE;
-                puts("HERE");
                 break;
 
             case DEGRADATION:
