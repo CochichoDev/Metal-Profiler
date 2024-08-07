@@ -121,11 +121,11 @@ T_VOID initMetricsFromArray(const G_ARRAY *input_array, const T_PSTR output_name
 
         case G_DOUBLE:
             local_cpy = malloc(sizeof(T_DOUBLE)*input_array->SIZE);
-            memcpy(local_cpy, input_array->DATA, sizeof(G_DOUBLE) * input_array->SIZE);
+            memcpy(local_cpy, input_array->DATA, sizeof(T_DOUBLE) * input_array->SIZE);
             //
             // Process data
             T_DOUBLE *f_data = (T_DOUBLE *) local_cpy;
-            T_DOUBLE tmp;
+            T_DOUBLE tmp = f_data[0];
             for (size_t i = 0 ; i < input_array->SIZE-1 ; i++) {
                 for (size_t j = i+1 ; j < input_array->SIZE ; j++) {
                     if (f_data[j] < f_data[i]) {

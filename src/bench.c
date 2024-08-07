@@ -13,24 +13,24 @@
 T_ERROR runBench(size_t iter, RESULT *result_array) {
     INIT_BENCH();
     for (size_t idx = 0; idx < iter; idx++) {
-        //cliPrintProgress(idx, iter);
+        cliPrintProgress(idx, iter);
         RESULT *result = RUN_BENCH();
         if (!result) {
             fprintf(stderr, "Error: Couldn't get result data from the module\n");
         }
-        result->ARRAY.SIZE -= IGNORE_LIMIT;
+        size_t result_size = result->ARRAY.SIZE - IGNORE_LIMIT;
         switch (result->ARRAY.TYPE) {
             case G_INT:
-                INITIALIZE_RESULTS(T_UINT, result_array+idx, result->ARRAY.SIZE, result->NAME);
-                memcpy(result_array[idx].ARRAY.DATA, result->ARRAY.DATA + IGNORE_LIMIT*sizeof(T_UINT), sizeof(T_UINT)*result->ARRAY.SIZE);
+                INITIALIZE_RESULTS(T_UINT, result_array+idx, result_size, result->NAME);
+                memcpy(result_array[idx].ARRAY.DATA, result->ARRAY.DATA + IGNORE_LIMIT*sizeof(T_UINT), sizeof(T_UINT)*result_size);
                 break;
             case G_UINT:
-                INITIALIZE_RESULTS(T_UINT, result_array+idx, result->ARRAY.SIZE, result->NAME);
-                memcpy(result_array[idx].ARRAY.DATA, result->ARRAY.DATA + IGNORE_LIMIT*sizeof(T_UINT), sizeof(T_UINT)*result->ARRAY.SIZE);
+                INITIALIZE_RESULTS(T_UINT, result_array+idx, result_size, result->NAME);
+                memcpy(result_array[idx].ARRAY.DATA, result->ARRAY.DATA + IGNORE_LIMIT*sizeof(T_UINT), sizeof(T_UINT)*result_size);
                 break;
             case G_DOUBLE:
-                INITIALIZE_RESULTS(T_DOUBLE, result_array+idx, result->ARRAY.SIZE, result->NAME);
-                memcpy(result_array[idx].ARRAY.DATA, result->ARRAY.DATA + IGNORE_LIMIT*sizeof(T_DOUBLE), sizeof(T_DOUBLE)*result->ARRAY.SIZE);
+                INITIALIZE_RESULTS(T_DOUBLE, result_array+idx, result_size, result->NAME);
+                memcpy(result_array[idx].ARRAY.DATA, result->ARRAY.DATA + IGNORE_LIMIT*sizeof(T_DOUBLE), sizeof(T_DOUBLE)*result_size);
             default:
                 break;
         }
@@ -113,6 +113,7 @@ T_VOID processResults(G_ARRAY *result_array) {
                 BUILD_PROJECT(cfg_iso);
 
                 runBench(iso_result_array.SIZE, iso_result_array.DATA);
+                free(cfg_iso);
 
                 G_ARRAY *deg_array = calloc(result_array->SIZE, sizeof(G_ARRAY));
                 // Since the calculateDegradation takes the result data in an array format
@@ -135,6 +136,10 @@ T_VOID processResults(G_ARRAY *result_array) {
                 }
 
                 calculateDegradation(input_iso_array, result_array->SIZE, input_result_array, result_array->SIZE, deg_array);
+
+                free(input_iso_array);
+                free(input_result_array);
+
 
                 // Need to case G_ARRAY of G_DOUBLE to G_ARRAY of G_RESULT)
                 // Instead of allocating more memory, simply use the one for the iso_result_array (same type and size
@@ -161,6 +166,7 @@ T_VOID processResults(G_ARRAY *result_array) {
 
                 METRICS *deg_metrics = deg_metrics_array.DATA;
                 
+                
                 for (size_t idx = 0; idx < result_array->SIZE; idx++) {
                     sprintf(metric_name, "METRIC_%ld", idx);
                     initMetricsFromArray(deg_array + idx, metric_name, deg_metrics+idx);
@@ -179,10 +185,7 @@ T_VOID processResults(G_ARRAY *result_array) {
                 }
                 free(iso_result_array.DATA);
                 free(deg_metrics_array.DATA);
-                free(input_result_array);
-                free(input_iso_array);
                 free(deg_array);
-                free(cfg_iso);
 
                 degradation_saved = TRUE;
 

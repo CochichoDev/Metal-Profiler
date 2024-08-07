@@ -53,7 +53,6 @@ void READ_TO_RESULT(T_INT in, RESULT *result, T_CHAR marker) {
     for (uint32_t idx = 0 ; stop == 0 ; ) {
         read_bytes = read(in,buf,255); 
         buf[read_bytes]='\0';          
-        puts(buf);
         if (buf[0] == marker) {
             stop=1;
         }
