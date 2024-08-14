@@ -8,21 +8,33 @@
 
 #include "results.h"
 
-
-
 #define BASEDIR "arch/"
 
 #define FALSE   0
 #define TRUE    1
+
+#define NEEDED          0b00000001
+#define OPTIMIZABLE     0b00000010
+#define MITIGATION      0b00000100
+
+#define IS_MITIGATION(X)   \
+                (((X) >> 2) & 1U)
+
+#define IS_OPTIMIZABLE(X)   \
+                (((X) >> 1) & 1U)
+
+#define IS_NEDDED(X)   \
+                (((X) >> 0) & 1U)
 
 typedef int8_t      T_FLAG;
 
 typedef int32_t     T_INT;
 typedef uint32_t    T_UINT;
 typedef char        T_CHAR;
+typedef uint8_t     T_UCHAR;
 typedef double      T_DOUBLE;
 typedef char        T_STR[64];
-typedef char        *T_PSTR;
+typedef char       *T_PSTR;
 typedef void        T_VOID;
 typedef int8_t      T_ERROR;
 
@@ -49,7 +61,7 @@ typedef struct {
 
     pTYPE PTYPE;
     
-    T_FLAG NEED;
+    T_FLAG FLAGS;
 
     // If the type is an int
     union {
@@ -61,11 +73,15 @@ typedef struct {
         T_INT iINIT;
         T_DOUBLE fINIT;
     };
+
+    union {
+        T_INT iSTEP;
+        T_DOUBLE fSTEP;
+    };
         
     T_PSTR OPTS[32];
     T_STR sINIT;
 } PROP;
-
 
 /*
  * Buffer strucutre holding multiple proprieties
@@ -127,7 +143,7 @@ typedef struct {
  * GET_COMP_BY_IDX : Finds the component that the input index corresponds to
  * PARAMETERS:
  *      in1 : The associated config
- *      in2 : The index of the component to be searched for
+ *      in2 : The ID of the component to be searched for
  * RETURN:
  *      out : Returns the pointer to the corresponding component if the pointer is not NULL
  *      default : Returns the index from the base pointer of the COMPS pointer of the CONFIG or -1 if it doesn't exist

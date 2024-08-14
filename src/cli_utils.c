@@ -12,9 +12,9 @@
 #include "global.h"
 #include "bench.h"
 #include "plot.h"
-#include "results.h"
+#include "state.h"
 
-uint8_t listArchs(TERM *term) {
+T_ERROR listArchs(TERM *term) {
     char buf[256];
     for (size_t i = 0; i < AVAIL_ARCHS.num ; i++) {
         sprintf(buf, "[%ld]\t%s\n", i, AVAIL_ARCHS.arch[i].name); 
@@ -24,21 +24,57 @@ uint8_t listArchs(TERM *term) {
     return 0;
 }
 
-uint8_t listConfigs(TERM *term) {
+T_ERROR listConfigs(TERM *term) {
     char buf[256];
+    fprintf(stdout, "Available configurations:\n");
     for (size_t i = 0; i < AVAIL_CONFIGS.num ; i++) {
-        sprintf(buf, "[%ld]\t%s\n", i, AVAIL_CONFIGS.config[i].name); 
+        sprintf(buf, "\t[%ld]\t%s\n", i, AVAIL_CONFIGS.config[i].name); 
         write(term->out_descr, buf, strlen(buf));
     }
     
     return 0;
 }
 
+T_ERROR listState() {
+    fprintf(stdout, "\n");
+    fprintf(stdout, "+++++++++++++++++++++++++++++++++++++++++\n");
+    if (SELECTED_ARCH.name[0] == '\0') {
+        fprintf(stdout, "ARCH:\tNone\n");
+        goto END;
+    }
+
+    fprintf(stdout, "ARCH:\t%s\n", SELECTED_ARCH.name);
+
+    fprintf(stdout, "\n");
+    if (AVAIL_CONFIGS.selected == -1) {
+        fprintf(stdout, "CONFIG:\tNone\n");
+        goto END;
+    }
+    fprintf(stdout, "CONFIG:\t%s\n", AVAIL_CONFIGS.config[AVAIL_CONFIGS.selected].name);
+
+    fprintf(stdout, "\n");
+    if (OUTPUT_LIST_SELECTED == NULL) {
+        fprintf(stdout, "Outputs:\tNone\n");
+        goto END;
+    }
+    fprintf(stdout, "Outputs:\n");
+    listSelectedOutputOptions();
+
+END:
+    fprintf(stdout, "+++++++++++++++++++++++++++++++++++++++++\n");
+    fprintf(stdout, "\n");
+
+    return 0;
+}
+
+
+
 #define ERROR_ARCH "Error: No architecture has been selected\n"
 #define ERROR_CONFIG "Error: No config has been selected\n"
 #define MSG_INT0 "\n\t\tType: INT"
 #define MSG_STR0 "\n\t\tType: STR"
 #define MSG1 "\n\t\tMandatory: "
+#define MSGOPTM "\n\t\tOptimizable: "
 #define MSG_INT2 "\n\t\tMIN: "
 #define MSG_INT3 "\n\t\tMAX: "
 #define MSG_INT4 "\n\t\tVALUE: "
@@ -51,7 +87,7 @@ T_VOID printConfig(TERM *term) {
     }
 
     COMP **comp_ptr = MODULE_CONFIG->COMPS;
-    T_PSTR need;
+    T_PSTR need, optimizable;
     char num[16];
     for (size_t cidx = 0 ; cidx < MODULE_CONFIG->NUM ; cidx++, comp_ptr++) {
         // Name of the component
@@ -69,9 +105,12 @@ T_VOID printConfig(TERM *term) {
                     write(term->out_descr, MSG_INT0, sizeof(MSG_INT0));
 
                     write(term->out_descr, MSG1, sizeof(MSG1));
-
-                    need = prop_ptr->NEED ? "YES" : "NO";
+                    need = IS_NEDDED(prop_ptr->FLAGS) ? "YES" : "NO";
                     write(term->out_descr, need, strlen(need));
+
+                    write(term->out_descr, MSGOPTM, sizeof(MSGOPTM));
+                    optimizable = IS_OPTIMIZABLE(prop_ptr->FLAGS) ? "YES" : "NO";
+                    write(term->out_descr, optimizable , strlen(optimizable ));
 
                     write(term->out_descr, MSG_INT2, sizeof(MSG_INT2));
                     sprintf(num, "%d", prop_ptr->iRANGE[0]);
@@ -92,8 +131,12 @@ T_VOID printConfig(TERM *term) {
 
                     write(term->out_descr, MSG1, sizeof(MSG1));
 
-                    need = prop_ptr->NEED ? "YES" : "NO";
+                    need = IS_NEDDED(prop_ptr->FLAGS) ? "YES" : "NO";
                     write(term->out_descr, need, strlen(need));
+
+                    write(term->out_descr, MSGOPTM, sizeof(MSGOPTM));
+                    optimizable = IS_OPTIMIZABLE(prop_ptr->FLAGS) ? "YES" : "NO";
+                    write(term->out_descr, optimizable , strlen(optimizable ));
 
                     write(term->out_descr, MSG_INT2, sizeof(MSG_INT2));
                     sprintf(num, "%f", prop_ptr->fRANGE[0]);
@@ -113,9 +156,12 @@ T_VOID printConfig(TERM *term) {
                     write(term->out_descr, MSG_STR0, sizeof(MSG_STR0));
 
                     write(term->out_descr, MSG1, sizeof(MSG1));
-
-                    need = prop_ptr->NEED ? "YES" : "NO";
+                    need = IS_NEDDED(prop_ptr->FLAGS) ? "YES" : "NO";
                     write(term->out_descr, need, strlen(need));
+
+                    write(term->out_descr, MSGOPTM, sizeof(MSGOPTM));
+                    optimizable = IS_OPTIMIZABLE(prop_ptr->FLAGS) ? "YES" : "NO";
+                    write(term->out_descr, optimizable , strlen(optimizable ));
 
                     write(term->out_descr, MSG_STR2, sizeof(MSG_STR2));
                     T_PSTR *ptr = prop_ptr->OPTS;
@@ -167,7 +213,6 @@ T_VOID selectArch(TERM *term, size_t choice) {
 }
 
 T_VOID listOutputTypes() {
-
     fprintf(stdout, "GRAPH OPTIONS:\n");
     for (size_t idx = 0 ; idx < NUM_OUTPUT_GRAPHS ; idx++ ) {
         fprintf(stdout, "\t%s\n", OUTPUT_GRAPH_OPTIONS[idx]);
@@ -195,6 +240,7 @@ T_VOID loadConfig(TERM *term, T_UINT config_option) {
         return;
     }
 
+    AVAIL_CONFIGS.selected = config_option;
     FCONFIG SELECTED_CONFIG = AVAIL_CONFIGS.config[config_option];
     FILE *config_file;
     if (!(config_file = fopen(SELECTED_CONFIG.path, "r"))) {
@@ -231,45 +277,59 @@ T_VOID loadConfig(TERM *term, T_UINT config_option) {
                 if (!strcmp(m_prop->NAME, comp->PBUFFER->PROPS[prop_idx].NAME)) break;
 
             // If the propriety was not defined and it's needed throw an error
-            if (prop_idx == comp->PBUFFER->NUM && m_prop->NEED) {
-                printf("Error: Propriety %s was not defined\n", m_prop->NAME);
-                return;
+            if (prop_idx == comp->PBUFFER->NUM && IS_NEDDED(m_prop->FLAGS)) {
+                fprintf(stderr, "Error: Propriety %s was not defined\n", m_prop->NAME);
+                goto ERROR;
             }
 
             PROP *prop = comp->PBUFFER->PROPS + prop_idx;
 
             if (m_prop->PTYPE != prop->PTYPE)
-                puts("Error: Configs do not match the expected format");
+                fprintf(stderr, "Error: Configs do not match the expected format");
+
+            if (( IS_OPTIMIZABLE(prop->FLAGS) && !IS_OPTIMIZABLE(m_prop->FLAGS) ) ||
+                ( IS_MITIGATION(prop->FLAGS) && !IS_MITIGATION(m_prop->FLAGS) )) {
+                fprintf(stderr, "Error: Propriety %s cannot possess the specified flag\n", prop->NAME);
+                goto ERROR;
+            }
 
             T_PSTR *opt_idx = m_prop->OPTS;
             switch (prop->PTYPE) {
                 case pDOUBLE:
                     if (prop->fINIT > m_prop->fRANGE[1] || prop->fINIT < m_prop->fRANGE[0])
                         goto lRANGE_ERROR;
+                    memcpy(prop->fRANGE, m_prop->fRANGE, sizeof(m_prop->fRANGE));
                     break;
                 case pINT:
                     if (prop->iINIT > m_prop->iRANGE[1] || prop->iINIT < m_prop->iRANGE[0])
                         goto lRANGE_ERROR;
+                    memcpy(prop->iRANGE, m_prop->iRANGE, sizeof(m_prop->iRANGE));
                     break;
                 case pSTR:
                     while (*opt_idx != NULL) {
-                        puts(*opt_idx);
                         if (!strcmp(*opt_idx, prop->sINIT)) break;
                         opt_idx++;
                     }
                     if (*opt_idx == NULL) goto lRANGE_ERROR;
+                    memcpy(prop->OPTS, m_prop->OPTS, sizeof(m_prop->OPTS));
                     break;
                 default:
                     break;
             } 
             continue;
             lRANGE_ERROR:
-                printf("Value of %s in component %d is out-of-bounds\n", prop->NAME, comp->ID);
-                return;
+                fprintf(stderr, "Error: Value of %s in component %d is out-of-bounds\n", prop->NAME, comp->ID);
+                goto ERROR;
         }
     }
 
     BUILD_PROJECT(INPUT_CONFIG);
+    return;
+
+ERROR:
+    fprintf(stderr, "Error: Input configuration %s not accepted\n", AVAIL_CONFIGS.config[AVAIL_CONFIGS.selected].name);
+    INPUT_CONFIG = NULL;
+    AVAIL_CONFIGS.selected = -1;
 }
 
 T_VOID runExecution (TERM *term, size_t iter) {

@@ -11,9 +11,11 @@
 #include "cli.h"
 #include "cli_utils.h"
 #include "state.h"
+#include "optimization.h"
 
 static ACTION parseAction(TERM *term);
 static LIST_ACTION parseListArg(TERM *term);
+static OPTIMIZE_ACTION parseOptimizeArg(TERM *term);
 static SET_ACTION parseSetArg(TERM *term);
 static HELP_ACTION parseHelpArg(TERM *term);
 static uint8_t matchKey(TERM *term, const char *key);
@@ -88,8 +90,10 @@ uint8_t cliStart(TERM *term) {
  *      1 : Encountered some error with input
  */
 uint8_t cliGetInput(TERM *term) {
+    listState();
     if (write(term->out_descr, LINE_TRAIL, strlen(LINE_TRAIL)+1) != strlen(LINE_TRAIL)+1) return 1;
-    char buffer[128];
+    char buffer[128] = {0};
+    // Additional buffers essential for parsing more actions
     char name[64] = {0};
     char graph[32] = {0};
     char data[32] = {0};
@@ -136,6 +140,22 @@ uint8_t cliGetInput(TERM *term) {
             getWord(term, buffer, 128);
             loadConfig(term, parseNum(buffer));
             break;
+        case OPTIMIZE:
+            switch (parseOptimizeArg(term)) {
+                case O_RS:
+                    getWord(term, buffer, 128);
+                    optimizeConfig(randomSearchNR, parseNum(buffer));
+                    break;
+                case O_SA:
+                    getWord(term, buffer, 128);
+                    optimizeConfig(simulatedAnnealing, parseNum(buffer));
+                    break;
+                case O_ERROR:
+                    return 1;
+                case O_NONE:
+                    break;
+            }
+            break;
         case SET:
             switch (parseSetArg(term)) {
                 case S_ARCH:
@@ -162,7 +182,6 @@ uint8_t cliGetInput(TERM *term) {
             }
             break;
         case ERROR:
-            //fprintf(stderr, "Error: The specified input does not match to any available action\n");
             return 1;
         default:
             break;
@@ -233,6 +252,10 @@ static ACTION parseAction(TERM *term) {
                 default:
                     goto lNACTION;
             }
+            goto lNACTION;
+        case 'O':
+            // Match for O+PTIMIZE
+            if (matchKey(term, "PTIMIZE")) return OPTIMIZE;
             goto lNACTION;
         case 'S':
             if (matchKey(term, "ET")) return SET;
@@ -305,6 +328,46 @@ static LIST_ACTION parseListArg(TERM *term) {
     lNACTION:
         fprintf(stderr, "List action not recognized\n");
         return L_NONE;
+}
+
+static OPTIMIZE_ACTION parseOptimizeArg(TERM *term) {
+    while (!isnotblank(term->lastchar)) {
+        if (term->lastchar == '\n') return O_NONE;
+        if (read(term->in_descr, &term->lastchar, 1) <= 0) goto lERROR;
+    }
+
+    if (isalpha(term->lastchar))
+        term->lastchar &= 0xDF;         // Capitalize letter
+    
+    switch (term->lastchar) {
+        case 'R':
+            // Match for R+S
+            if (matchKey(term, "S")) return O_RS;
+            goto lNACTION;
+        case 'S':
+            // Match for S+A
+            if (matchKey(term, "A")) return O_SA;
+            goto lNACTION;
+        case ' ':
+        case '\0':
+        case '\t':
+            // Recursive call to ignore the blank character
+            return parseOptimizeArg(term);
+            break;
+        case '\n':
+            return O_NONE;;
+        default:
+            goto lNACTION;
+    }
+
+    return 0;
+
+    lERROR:
+        perror("Error: Problem reading input\n");
+    return O_ERROR;
+    lNACTION:
+        fprintf(stderr, "Optimization action not recognized\n");
+        return O_NONE;
 }
 
 /* parseSetArg: Parses the input into arguments for list action

@@ -53,6 +53,7 @@ typedef struct {
 typedef struct {
     FCONFIG config[128];
     size_t num;
+    size_t selected;
 } FCONFIG_LIST;
 
 #define NUM_OUTPUT_GRAPHS 2

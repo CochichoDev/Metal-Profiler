@@ -12,7 +12,7 @@
  * GET_COMP_BY_IDX : Finds the component that the input index corresponds to
  * PARAMETERS:
  *      in1 : The associated config
- *      in2 : The index of the component to be searched for
+ *      in2 : The ID of the component to be searched for
  * RETURN:
  *      out : Returns the pointer to the corresponding component if the pointer is not NULL
  *      default : Returns the index from the base pointer of the COMPS pointer of the CONFIG or -1 if it doesn't exist

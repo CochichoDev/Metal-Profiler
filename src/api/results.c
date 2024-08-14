@@ -26,6 +26,7 @@ void __T_DOUBLE_initializeResults(RESULT *results_ptr, T_UINT num_cycles, const 
         fprintf(stderr, "Error: Null results pointer cannot be derefenced\n");
         exit(1);
     }
+    strcpy(results_ptr->NAME, name);
     INIT_GENERIC(T_DOUBLE, &(results_ptr->ARRAY), num_cycles);
 }
 

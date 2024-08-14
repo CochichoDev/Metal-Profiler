@@ -6,6 +6,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
+#include <wchar.h>
 
 T_PSTR getNameFromPath(T_PSTR path) {
     // Get the name of the executable
@@ -75,13 +76,38 @@ void loadAvailableConfigs() {
         i++;
     }
     AVAIL_CONFIGS.num = i;
+    AVAIL_CONFIGS.selected = -1;
 
     fclose(configs);
 }
 
+size_t itos(int num, char *str) {
+    if (num == 0) {
+        *str++ = '0';
+        *str = 0;
+        return 1;
+    }
+    char buf[16];
+    size_t idx = 0;
+    while (num) {
+        buf[idx++] = num % 10 + 0x30;
+        num /= 10;
+    }
+
+    size_t size = idx;
+        
+    while (idx > 0) {
+        *str++ = buf[--idx];
+    }
+
+    *str = '\0';
+    return size;
+}
+
 int64_t parseNum(T_PSTR str) {
+    if (str == NULL || *str == '\0') return 0;
     while (!isdigit(*str)) {
-        if (*str == '\n') return 0;
+        if (*str == '\n' || *str == '\0') return 0;
         str++;
     }
 
@@ -316,3 +342,22 @@ T_ERROR saveDataRESULTBATCH(const T_PSTR output, G_ARRAY *result_array, size_t s
     fclose(output_file);
     return 0;
 }
+
+
+size_t strProprietyIdxByPtr(T_PSTR *OPTS, T_PSTR prop) {
+    size_t idx = 0;
+    for ( ; OPTS[idx] != NULL; idx++) {
+        if (prop == OPTS[idx]) break;
+    }
+    return idx;
+}
+
+size_t strProprietyIdxByValue(T_PSTR *OPTS, T_PSTR prop) {
+    size_t idx = 0;
+    while (OPTS[idx] != NULL) {
+        if (!strcmp(prop, OPTS[idx])) break;
+        idx++;
+    }
+    return idx;
+}
+

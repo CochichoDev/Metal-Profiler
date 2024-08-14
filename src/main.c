@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <unistd.h>
 
+#include "api.h"
 #include "global.h"
 #include "utils.h"
 #include "cli.h"

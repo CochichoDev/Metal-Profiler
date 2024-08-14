@@ -10,27 +10,29 @@
 #include "utils.h"
 #include "cli.h"
 
-T_ERROR runBench(size_t iter, RESULT *result_array) {
+T_ERROR runBench(size_t iter, RESULT *results_input) {
     INIT_BENCH();
     for (size_t idx = 0; idx < iter; idx++) {
-        cliPrintProgress(idx, iter);
+        //cliPrintProgress(idx, iter);
         RESULT *result = RUN_BENCH();
         if (!result) {
             fprintf(stderr, "Error: Couldn't get result data from the module\n");
         }
-        size_t result_size = result->ARRAY.SIZE - IGNORE_LIMIT;
         switch (result->ARRAY.TYPE) {
             case G_INT:
-                INITIALIZE_RESULTS(T_UINT, result_array+idx, result_size, result->NAME);
-                memcpy(result_array[idx].ARRAY.DATA, result->ARRAY.DATA + IGNORE_LIMIT*sizeof(T_UINT), sizeof(T_UINT)*result_size);
+                INITIALIZE_RESULTS(T_UINT, results_input+idx, result->ARRAY.SIZE, result->NAME);
+                memcpy(results_input[idx].ARRAY.DATA, result->ARRAY.DATA, sizeof(T_UINT)*result->ARRAY.SIZE);
                 break;
             case G_UINT:
-                INITIALIZE_RESULTS(T_UINT, result_array+idx, result_size, result->NAME);
-                memcpy(result_array[idx].ARRAY.DATA, result->ARRAY.DATA + IGNORE_LIMIT*sizeof(T_UINT), sizeof(T_UINT)*result_size);
+                INITIALIZE_RESULTS(T_UINT, results_input+idx, result->ARRAY.SIZE, result->NAME);
+                memcpy(results_input[idx].ARRAY.DATA, result->ARRAY.DATA, sizeof(T_UINT)*result->ARRAY.SIZE);
+    
+
+
                 break;
             case G_DOUBLE:
-                INITIALIZE_RESULTS(T_DOUBLE, result_array+idx, result_size, result->NAME);
-                memcpy(result_array[idx].ARRAY.DATA, result->ARRAY.DATA + IGNORE_LIMIT*sizeof(T_DOUBLE), sizeof(T_DOUBLE)*result_size);
+                INITIALIZE_RESULTS(T_DOUBLE, results_input+idx, result->ARRAY.SIZE, result->NAME);
+                memcpy(results_input[idx].ARRAY.DATA, result->ARRAY.DATA, sizeof(T_DOUBLE)*result->ARRAY.SIZE);
             default:
                 break;
         }
@@ -44,11 +46,11 @@ T_ERROR runBench(size_t iter, RESULT *result_array) {
  *                  in the global OUTPUT_LIST and saves the data in files whose names
  *                  follow the convention.
  *
- *                  The input result_array must be well initialized, it is a generic array
+ *                  The input garray_result_input must be well initialized, it is a generic array
  *                  of RESULT elements.
  */
-T_VOID processResults(G_ARRAY *result_array) {
-    if (result_array->SIZE <= 0) {
+T_VOID processResults(G_ARRAY *garray_result_input) {
+    if (garray_result_input->SIZE <= 0) {
         fprintf(stderr, "Error: The number of results must be positive\n");
         return;
     }
@@ -56,8 +58,8 @@ T_VOID processResults(G_ARRAY *result_array) {
     T_FLAG raw_saved = FALSE;
     T_FLAG degradation_saved = FALSE;
 
-    G_ARRAY raw_metrics_array = {.SIZE = result_array->SIZE, .TYPE = G_METRICS, .DATA = NULL};
-    G_ARRAY deg_metrics_array = {.SIZE = result_array->SIZE, .TYPE = G_METRICS, .DATA = NULL};
+    G_ARRAY raw_metrics_array = {.SIZE = garray_result_input->SIZE, .TYPE = G_METRICS, .DATA = NULL};
+    G_ARRAY deg_metrics_array = {.SIZE = garray_result_input->SIZE, .TYPE = G_METRICS, .DATA = NULL};
 
     T_STR data_file_name_buf = { 0 };
     T_STR metric_file_name_buf = { 0 };
@@ -80,16 +82,16 @@ T_VOID processResults(G_ARRAY *result_array) {
                 strcpy(metric_file_name_buf, data_file_name_buf);
                 strcat(metric_file_name_buf, "_metrics");
                 
-                saveDataRESULTS(data_file_name_buf, result_array);
+                saveDataRESULTS(data_file_name_buf, garray_result_input);
                 
-                for (size_t idx = 0; idx < result_array->SIZE; idx++) {
+                for (size_t idx = 0; idx < garray_result_input->SIZE; idx++) {
                     sprintf(metric_name, "METRIC_%ld", idx);
-                    RESULT *cur_result = (RESULT *) result_array->DATA + idx;
+                    RESULT *cur_result = (RESULT *) garray_result_input->DATA + idx;
                     initMetricsFromArray(&cur_result->ARRAY, metric_name, raw_metrics+idx);
                 }
 
                 saveDataMETRICS(metric_file_name_buf, &raw_metrics_array);
-                for (size_t idx = 0; idx < result_array->SIZE; idx++) {
+                for (size_t idx = 0; idx < garray_result_input->SIZE; idx++) {
                     destroyMetrics(raw_metrics+idx);
                 }
                 free(raw_metrics);
@@ -101,64 +103,37 @@ T_VOID processResults(G_ARRAY *result_array) {
             case DEGRADATION:
                 if (degradation_saved) break;
 
-                // Calculate MEDIAN of isolation run
-                G_ARRAY iso_result_array = {.DATA = malloc(sizeof(RESULT) * result_array->SIZE), .SIZE = result_array->SIZE, .TYPE = G_RESULT};
+                G_ARRAY *garrays_std_deg = calloc(garray_result_input->SIZE, sizeof(G_ARRAY));
+                G_ARRAY *garrays_std_input = calloc(garray_result_input->SIZE, sizeof(G_ARRAY));
 
-                // Change configuration to only compile the isolated victim
-                CONFIG *cfg_iso = calloc(1, sizeof(CONFIG));
-                cfg_iso->NUM = 1;
-                cfg_iso->VICTIM_ID = INPUT_CONFIG->VICTIM_ID;
-                GET_COMP_BY_IDX(INPUT_CONFIG, cfg_iso->VICTIM_ID, cfg_iso->COMPS);
-                cfg_iso->VICTIM_ID = 0;         // Since it is the only component it possesses
-                BUILD_PROJECT(cfg_iso);
+                // Initialize garrays_std_deg
+                for (size_t result_idx = 0; result_idx < garray_result_input->SIZE; result_idx++) {
+                    garrays_std_input[result_idx].DATA = ((RESULT *) garray_result_input->DATA)[result_idx].ARRAY.DATA;
+                    garrays_std_input[result_idx].SIZE = ((RESULT *) garray_result_input->DATA)[result_idx].ARRAY.SIZE;
+                    garrays_std_input[result_idx].TYPE = ((RESULT *) garray_result_input->DATA)[result_idx].ARRAY.TYPE;
 
-                runBench(iso_result_array.SIZE, iso_result_array.DATA);
-                free(cfg_iso);
-
-                G_ARRAY *deg_array = calloc(result_array->SIZE, sizeof(G_ARRAY));
-                // Since the calculateDegradation takes the result data in an array format
-                G_ARRAY *input_result_array = malloc(result_array->SIZE * sizeof(G_ARRAY));
-                G_ARRAY *input_iso_array = malloc(iso_result_array.SIZE * sizeof(G_ARRAY));
-
-                // Transform RESULT array into std type array
-                for (size_t result_idx = 0; result_idx < result_array->SIZE; result_idx++) {
-                    input_result_array[result_idx].TYPE = ((RESULT *)result_array->DATA)[result_idx].ARRAY.TYPE;
-                    input_result_array[result_idx].SIZE = ((RESULT *)result_array->DATA)[result_idx].ARRAY.SIZE;
-                    input_result_array[result_idx].DATA = ((RESULT *)result_array->DATA)[result_idx].ARRAY.DATA;
-
-                    input_iso_array[result_idx].TYPE = ((RESULT *) (iso_result_array.DATA))[result_idx].ARRAY.TYPE;
-                    input_iso_array[result_idx].SIZE = ((RESULT *) (iso_result_array.DATA))[result_idx].ARRAY.SIZE;
-                    input_iso_array[result_idx].DATA = ((RESULT *) (iso_result_array.DATA))[result_idx].ARRAY.DATA;
-                    
-                    deg_array[result_idx].DATA = malloc(((RESULT *)result_array->DATA)[result_idx].ARRAY.SIZE * sizeof(T_DOUBLE));
-                    deg_array[result_idx].TYPE = G_DOUBLE;
-                    deg_array[result_idx].SIZE = ((RESULT *)result_array->DATA)[result_idx].ARRAY.SIZE;
+                    garrays_std_deg[result_idx].DATA = malloc(((RESULT *)garray_result_input->DATA)[result_idx].ARRAY.SIZE * sizeof(T_DOUBLE));
+                    garrays_std_deg[result_idx].TYPE = G_DOUBLE;
+                    garrays_std_deg[result_idx].SIZE = ((RESULT *)garray_result_input->DATA)[result_idx].ARRAY.SIZE;
                 }
 
-                calculateDegradation(input_iso_array, result_array->SIZE, input_result_array, result_array->SIZE, deg_array);
+                computeInterferenceDegradation(garrays_std_input, garray_result_input->SIZE, garrays_std_deg);
+                free(garrays_std_input);
 
-                free(input_iso_array);
-                free(input_result_array);
-
-
-                // Need to case G_ARRAY of G_DOUBLE to G_ARRAY of G_RESULT)
-                // Instead of allocating more memory, simply use the one for the iso_result_array (same type and size
-                // Deallocate the previousa allocated memory for each DATA of RESULT in iso_result_array
-                for (size_t result_idx = 0; result_idx < result_array->SIZE; result_idx++) {
-                    DESTROY_RESULTS(T_UINT, ((RESULT *)iso_result_array.DATA) + result_idx);          // Doesn't matter what type
-                }
-                G_ARRAY *deg_result_array = &iso_result_array;
-                for (size_t deg_result_idx = 0 ; deg_result_idx < deg_result_array->SIZE ; deg_result_idx++) {
-                    RESULT *result_data = ((RESULT *)deg_result_array->DATA) + deg_result_idx;
+                G_ARRAY garray_result_deg = {.DATA = calloc(garray_result_input->SIZE, sizeof(RESULT)), .SIZE = garray_result_input->SIZE, .TYPE = G_RESULT };
+                for (size_t deg_result_idx = 0 ; deg_result_idx < garray_result_deg.SIZE ; deg_result_idx++) {
+                    RESULT *result_data = ((RESULT *) garray_result_deg.DATA) + deg_result_idx;
                     result_data->ARRAY.TYPE = G_DOUBLE;
-                    result_data->ARRAY.SIZE = deg_array[deg_result_idx].SIZE;
-                    result_data->ARRAY.DATA = deg_array[deg_result_idx].DATA;
-                    strcpy(result_data->NAME, (((RESULT *)result_array->DATA)[deg_result_idx].NAME));
+                    result_data->ARRAY.SIZE = garrays_std_deg[deg_result_idx].SIZE;
+                    result_data->ARRAY.DATA = garrays_std_deg[deg_result_idx].DATA;
+                    strcpy(result_data->NAME, (((RESULT *) garray_result_input->DATA)[deg_result_idx].NAME));
                     strcat(result_data->NAME, "_DEG");
                 }
                 
                 strcat(data_file_name_buf, "_deg");
-                saveDataRESULTS(data_file_name_buf, deg_result_array);
+                saveDataRESULTS(data_file_name_buf, &garray_result_deg);
+                free(garray_result_deg.DATA);
+
 
                 if (!deg_metrics_array.DATA) {
                     deg_metrics_array.DATA = malloc(sizeof(METRICS) * deg_metrics_array.SIZE);
@@ -167,25 +142,22 @@ T_VOID processResults(G_ARRAY *result_array) {
                 METRICS *deg_metrics = deg_metrics_array.DATA;
                 
                 
-                for (size_t idx = 0; idx < result_array->SIZE; idx++) {
+                for (size_t idx = 0; idx < garray_result_input->SIZE; idx++) {
                     sprintf(metric_name, "METRIC_%ld", idx);
-                    initMetricsFromArray(deg_array + idx, metric_name, deg_metrics+idx);
+                    initMetricsFromArray(garrays_std_deg + idx, metric_name, deg_metrics+idx);
                 }
 
                 strcpy(metric_file_name_buf, data_file_name_buf);
                 strcat(metric_file_name_buf, "_metrics");
                 saveDataMETRICS(metric_file_name_buf, &deg_metrics_array);
-                for (size_t idx = 0; idx < result_array->SIZE; idx++) {
+                for (size_t idx = 0; idx < garray_result_input->SIZE; idx++) {
                     destroyMetrics(deg_metrics+idx);
                 }
-
-                // Clear memory allocations
-                for (size_t result_idx = 0; result_idx < result_array->SIZE; result_idx++) {
-                    free(deg_array[result_idx].DATA);
+                for (size_t result_idx = 0; result_idx < garray_result_input->SIZE; result_idx++) {
+                    free(garrays_std_deg[result_idx].DATA);
                 }
-                free(iso_result_array.DATA);
                 free(deg_metrics_array.DATA);
-                free(deg_array);
+                free(garrays_std_deg);
 
                 degradation_saved = TRUE;
 
@@ -196,64 +168,43 @@ T_VOID processResults(G_ARRAY *result_array) {
     }
 }
 
-/*
-uint64_t benchFullConfig(CoreConfig **config, ttyFD tty) {
-    char buf[256];
-    char script_query[256] = T32SCRIPT;
-    uint16_t read_bytes;
+T_VOID computeInterferenceDegradation(G_ARRAY *garrays_std_input, size_t num_garrays, G_ARRAY *garrays_std_deg) {
+    // Change configuration to only compile the isolated victim
+    CONFIG *cfg_iso = calloc(1, sizeof(CONFIG));
+    cfg_iso->NUM = 1;
+    cfg_iso->VICTIM_ID = INPUT_CONFIG->VICTIM_ID;
+    GET_COMP_BY_IDX(INPUT_CONFIG, cfg_iso->VICTIM_ID, cfg_iso->COMPS);
+    cfg_iso->VICTIM_ID = 0;         // Since it is the only component it possesses
 
-    for (size_t idx = 0 ; idx < NUM_CORES ; idx++) {
-        if (config)
-            strcat(script_query, " \"TRUE\"");
-        else
-            strcat(script_query, " \"FALSE\"");
-    }
-
-    executeTrace32Script(script_query);
-
-    volatile uint8_t STOP=FALSE;
-    uint64_t max = 0, curr = 0;
-    for (uint32_t idx = 0 ; STOP == FALSE ; idx++) {
-        read_bytes = read(tty.fd,buf,255); 
-        buf[read_bytes]=0;          
-        if (buf[0]=='F') STOP=TRUE;
-        if (isdigit(buf[0])) {
-            if (idx < IGNORE_LIMIT) continue;       // This is important to ensure we are working in the nominal scenario
-            sscanf(buf, "%lu", &curr);
-            if (curr > max) max = curr;
-        }
-    }
-
-    printf("%lu\n", max);
-    return max;
+    computeDegradation(garrays_std_input, num_garrays, garrays_std_deg, cfg_iso);
+    free(cfg_iso);
 }
 
-uint64_t benchIsolationConfig(CoreConfig **config, ttyFD tty) {
-    char buf[256];
-    char script_query[256] = T32SCRIPT;
-    strcat(script_query, " \"TRUE\"");
-    strcat(script_query, " \"FALSE\"");
-    strcat(script_query, " \"FALSE\"");
-    strcat(script_query, " \"FALSE\"");
-    uint16_t read_bytes;
+T_VOID computeDegradation(G_ARRAY *garrays_std_input, size_t num_garrays, G_ARRAY *garrays_std_deg, CONFIG *cfg) {
+    // Create and initialize garray_result_iso (a G_ARRAY of RESULT to store the isolation data)
+    G_ARRAY garray_result_iso = {.DATA = malloc(sizeof(RESULT) * num_garrays), .SIZE = num_garrays, .TYPE = G_RESULT};
 
-    executeTrace32Script(script_query);
+    BUILD_PROJECT(cfg);
+    runBench(garray_result_iso.SIZE, garray_result_iso.DATA);
 
-    volatile uint8_t STOP=FALSE;
-    uint64_t max = 0, curr = 0;
-    for (uint32_t idx = 0 ; STOP == FALSE ; idx++) {
-        read_bytes = read(tty.fd,buf,255); 
-        buf[read_bytes]=0;          
-        if (buf[0]=='F') STOP=TRUE;
-        if (isdigit(buf[0])) {
-            if (idx < IGNORE_LIMIT) continue;       // This is important to ensure we are working in the nominal scenario
-            sscanf(buf, "%lu", &curr);
+    // Since the calculateDegradation takes the result data in an array format
+    G_ARRAY *garrays_std_iso = malloc(garray_result_iso.SIZE * sizeof(G_ARRAY));
 
-            if (curr > max) max = curr;
-        }
+    // Transform GARRAY of RESULT into GARRAY of std type 
+    for (size_t result_idx = 0; result_idx < garray_result_iso.SIZE; result_idx++) {
+        garrays_std_iso[result_idx].TYPE = ((RESULT *) (garray_result_iso.DATA))[result_idx].ARRAY.TYPE;
+        garrays_std_iso[result_idx].SIZE = ((RESULT *) (garray_result_iso.DATA))[result_idx].ARRAY.SIZE;
+        garrays_std_iso[result_idx].DATA = ((RESULT *) (garray_result_iso.DATA))[result_idx].ARRAY.DATA;
     }
 
-    printf("%lu\n", max);
-    return max;
+    calculateDegradation(garrays_std_iso, num_garrays, garrays_std_input, num_garrays, garrays_std_deg);
+
+    // Need to case G_ARRAY of G_DOUBLE to G_ARRAY of G_RESULT)
+    // Instead of allocating more memory, simply use the one for the garray_result_iso (same type and size
+    // Deallocate the previousa allocated memory for each DATA of RESULT in garray_result_iso
+    for (size_t result_idx = 0; result_idx < garray_result_iso.SIZE; result_idx++) {
+        free(garrays_std_iso[result_idx].DATA);
+    }
+    free(garrays_std_iso);
+    free(garray_result_iso.DATA);
 }
-*/

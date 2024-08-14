@@ -30,12 +30,12 @@ ARCH_LIBS:=$(foreach module, $(sort $(dir $(wildcard $(ARCH)/*/module/))), $(mod
 all: $(TARGET)
 
 $(TARGET): $(OBJ_FILES) $(TARGET_API)
-	$(CC) $(LFLAGS) -Wall $(filter %.o, $^) -o $@ -Wl,--no-as-needed -ldl -lAMBapi
+	$(CC) $(LFLAGS) -Wall $(filter %.o, $^) -o $@ -Wl,--no-as-needed -ldl -lAMBapi -lcrypto
 
 $(TARGET_API): $(API_OBJ_FILES)
 	$(CC) -Wall -shared $^ -o $(TARGET_API)
 	$(CP) $@ $(LIB)/$(notdir $@)
-	$(foreach dir, $(ARCH_LIBS), $(CP) $@ $(dir)/)
+	tee $(foreach dir, $(ARCH_LIBS), $(dir)/$(notdir $@)) < $@ > /dev/null
 
 -include $(patsubst $(OBJ)/%.o, $(OBJ)/%.d, $(OBJ_FILES))
 -include $(patsubst $(OBJ)/%.o, $(OBJ)/%.d, $(API_OBJ_FILES))

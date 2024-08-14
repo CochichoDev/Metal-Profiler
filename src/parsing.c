@@ -43,7 +43,7 @@ CONFIG *parseConfig(FILE *fd) {
             config->COMPS[config->NUM] = component;
             config->NUM++;
 
-            printf("New ID: %d\n", component->ID);
+            printf("Info: New Component ID: %d\n", component->ID);
             continue;
         }
 
@@ -62,7 +62,7 @@ CONFIG *parseConfig(FILE *fd) {
         PROP *new_prop = prop_buffer->PROPS + prop_buffer->NUM -1;
         memcpy(new_prop->NAME, init_buffer_ptr, end_buffer_ptr-init_buffer_ptr);
         new_prop->NAME[end_buffer_ptr-init_buffer_ptr] = '\0';
-        printf("Propriety %s\t", new_prop->NAME);
+        printf("Info: Propriety %s\t", new_prop->NAME);
 
         end_buffer_ptr++;
         init_buffer_ptr = end_buffer_ptr;       
@@ -89,6 +89,30 @@ CONFIG *parseConfig(FILE *fd) {
         } else {
             printf("Error: Parser didn't manage to get propriety value in line %ld\n", line_num);
             return NULL;
+        }
+
+        // Extension for FLAGS
+        init_buffer_ptr = end_buffer_ptr;
+        GET_FIRST_OCUR(init_buffer_ptr, '[');
+        GET_FIRST_OCUR(end_buffer_ptr, ']');
+        
+        new_prop->FLAGS = 0;
+        while (init_buffer_ptr < end_buffer_ptr) {
+            GET_FIRST_CHAR(init_buffer_ptr);
+            switch (*init_buffer_ptr) {
+                case 'O':
+                    printf("Info: Propriety %s is optimizable\n", new_prop->NAME);
+                    new_prop->FLAGS |= OPTIMIZABLE;
+                    break;
+                case 'M':
+                    printf("Info: Propriety %s is a mitigation\n", new_prop->NAME);
+                    new_prop->FLAGS |= MITIGATION;
+                    break;
+                default:
+                    printf("Info: Propriety %s has an invalid attribute\n", new_prop->NAME);
+            }
+            init_buffer_ptr++;
+            GET_FIRST_CHAR(init_buffer_ptr);
         }
     }
 

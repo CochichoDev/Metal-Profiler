@@ -41,25 +41,38 @@ T_VOID __T_DOUBLE__calcMaxFromResults(RESULT *result_array, size_t num, T_DOUBLE
  *                      
  */
 T_VOID calcMaxFromArray(G_ARRAY *input_array, size_t num_elem, G_ARRAY *max_array) {
+    if (num_elem <= 0) return;
     for (size_t idx = 0; idx < num_elem; idx++) {
         switch (input_array[idx].TYPE) {
             case G_INT:
             case G_UINT:
+                if (input_array[idx].SIZE == 0) {
+                    fprintf(stderr, "Error: It is not possible to calculate the maximum of an array of 0 elements\n");
+                    ((T_UINT *)max_array->DATA)[idx] = 0;
+                    continue;
+                }
+
                 ((T_UINT *)max_array->DATA)[idx] = ((T_UINT *)input_array[idx].DATA)[0];
                 T_UINT *max = ((T_UINT *)max_array->DATA+idx);
 
                 for (size_t result_idx = 0; result_idx < input_array[idx].SIZE; result_idx++) {
                     T_UINT cur = *((T_UINT *)input_array[idx].DATA + result_idx);
-                    if (*max > cur) *max = cur;
+                    if (*max < cur) *max = cur;
                 }
                 break;
             case G_DOUBLE:
+                if (input_array[idx].SIZE == 0) {
+                    fprintf(stderr, "Error: It is not possible to calculate the maximum of an array of 0 elements\n");
+                    ((T_DOUBLE *)max_array->DATA)[idx] = 0;
+                    continue;
+                }
+
                 ((T_DOUBLE *)max_array->DATA)[idx] = ((T_DOUBLE *)input_array[idx].DATA)[0];
                 T_DOUBLE *dmax = ((T_DOUBLE *)max_array->DATA+idx);
 
                 for (size_t result_idx = 0; result_idx < input_array[idx].SIZE; result_idx++) {
                     T_DOUBLE cur = *((T_DOUBLE *)input_array[idx].DATA + result_idx);
-                    if (*dmax > cur) *dmax = cur;
+                    if (*dmax < cur) *dmax = cur;
                 }
                 break;
 
@@ -201,9 +214,9 @@ void calculateMetrics(void *results_ptr) {
  *                          
  *                          It is expected for the deg_array to be allocated. 
  */
-T_ERROR calculateDegradation(G_ARRAY *iso_data, size_t size_iso, G_ARRAY *result_array, size_t size_result, G_ARRAY *deg_array) {
+T_ERROR calculateDegradation(G_ARRAY *garrays_std_iso, size_t size_iso, G_ARRAY *garrays_std_full, size_t size_result, G_ARRAY *garrays_double_deg) {
     G_ARRAY iso_max;
-    switch (iso_data->TYPE) {
+    switch (garrays_std_iso->TYPE) {
         case G_INT:
         case G_UINT:
             iso_max.DATA = malloc(sizeof(T_UINT) * size_iso);
@@ -219,30 +232,31 @@ T_ERROR calculateDegradation(G_ARRAY *iso_data, size_t size_iso, G_ARRAY *result
             break;
     }
 
-    calcMaxFromArray(iso_data, size_iso, &iso_max);
+    calcMaxFromArray(garrays_std_iso, size_iso, &iso_max);
+    
     METRICS iso_metrics;
     initMetricsFromArray(&iso_max, "iso_metrics", &iso_metrics);
     free(iso_max.DATA);
 
     for (size_t result_idx = 0 ; result_idx < size_result ; result_idx++) {
-        for (size_t data_idx = 0; data_idx < result_array[result_idx].SIZE; data_idx++) {
-            switch (result_array[result_idx].TYPE) {
+        for (size_t data_idx = 0; data_idx < garrays_std_full[result_idx].SIZE; data_idx++) {
+            switch (garrays_std_full[result_idx].TYPE) {
                 case G_INT:
                 case G_UINT:
-                    if ((T_DOUBLE) ((T_UINT *) iso_metrics.MEDIAN.DATA)[0] == 0) {
-                        ((T_DOUBLE *)deg_array[result_idx].DATA)[data_idx] = 0;
+                    if (((T_UINT *) iso_metrics.MEDIAN.DATA)[0] == 0) {
+                        ((T_DOUBLE *)garrays_double_deg[result_idx].DATA)[data_idx] = 0;
                         continue;
                     }
-                    ((T_DOUBLE *)deg_array[result_idx].DATA)[data_idx] = \
-                        (T_DOUBLE) ((T_UINT *) result_array[result_idx].DATA)[data_idx] / (T_DOUBLE) ((T_UINT *) iso_metrics.MEDIAN.DATA)[0];
+                    ((T_DOUBLE *)garrays_double_deg[result_idx].DATA)[data_idx] = \
+                        (T_DOUBLE) ((T_UINT *) garrays_std_full[result_idx].DATA)[data_idx] / (T_DOUBLE) ((T_UINT *) iso_metrics.MEDIAN.DATA)[0];
                     break;
                 case G_DOUBLE:
                     if (((T_DOUBLE *) iso_metrics.MEDIAN.DATA)[0] == 0) {
-                        ((T_DOUBLE *)deg_array[result_idx].DATA)[data_idx] = 0;
+                        ((T_DOUBLE *)garrays_double_deg[result_idx].DATA)[data_idx] = 0;
                         continue;
                     }
-                    ((T_DOUBLE *)deg_array[result_idx].DATA)[data_idx] = \
-                        ((T_DOUBLE *) result_array[result_idx].DATA)[data_idx] / ((T_DOUBLE *) iso_metrics.MEDIAN.DATA)[0];
+                    ((T_DOUBLE *)garrays_double_deg[result_idx].DATA)[data_idx] = \
+                        ((T_DOUBLE *) garrays_std_full[result_idx].DATA)[data_idx] / ((T_DOUBLE *) iso_metrics.MEDIAN.DATA)[0];
                     break;
                 default:
                     break;

@@ -36,6 +36,7 @@ typedef enum {
     HELP,
     LIST,
     LOAD,
+    OPTIMIZE,
     SET,
     ERROR
 } ACTION;
@@ -46,6 +47,13 @@ typedef enum {
     L_OUTPUT,
     L_ERROR
 } LIST_ACTION;
+
+typedef enum {
+    O_NONE,
+    O_RS,
+    O_SA,
+    O_ERROR
+} OPTIMIZE_ACTION;
 
 typedef enum {
     S_NONE,

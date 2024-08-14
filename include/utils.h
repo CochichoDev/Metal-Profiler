@@ -16,6 +16,7 @@ T_PSTR getNameFromPath(T_PSTR path);
 void loadAvailableArchs();
 void loadAvailableConfigs();
 
+size_t itos(int num, char *str);
 int64_t parseNum(char *str);
 double parseFloat(char *str);
 
@@ -26,3 +27,6 @@ T_UINT numColumnInFile(FILE *file);
 T_VOID saveDataMETRICS(const T_PSTR output, G_ARRAY *metrics_array);
 T_VOID saveDataRESULTS(const T_PSTR output, G_ARRAY *result_data);
 T_ERROR saveDataRESULTBATCH(const T_PSTR output, G_ARRAY *result_array, size_t size_result_array);
+
+size_t strProprietyIdxByPtr(T_PSTR *OPTS, T_PSTR prop);
+size_t strProprietyIdxByValue(T_PSTR *OPTS, T_PSTR prop);

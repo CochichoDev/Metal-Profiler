@@ -20,6 +20,7 @@ typedef struct {
 T_VOID __T_UINT__calcMaxFromResults(RESULT *result_array, size_t num, T_INT *max_array);
 T_VOID __T_DOUBLE__calcMaxFromResults(RESULT *result_array, size_t num, T_DOUBLE *max_array);
 
+T_VOID calcMaxFromArray(G_ARRAY *input_array, size_t num_elem, G_ARRAY *max_array);
 
 T_VOID initMetricsFromArray(const G_ARRAY *input_array, const T_PSTR output_name, METRICS *output_metrics);
 T_VOID destroyMetrics(METRICS *metrics);

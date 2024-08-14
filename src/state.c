@@ -4,6 +4,7 @@
 
 #include "api.h"
 #include "global.h"
+#include "state.h"
 
 static T_UINT __getType(T_STR *type_options, size_t num_options, T_PSTR type) {
     for (size_t type_idx = 0 ; type_idx < num_options ; type_idx++ ) {
@@ -89,6 +90,7 @@ T_VOID listSelectedOutputOptions() {
         if (!dataTypeName) return;
         fprintf(stdout, "[%ld]\t%s\tDATA: %s\tTYPE: %s\n", idx, iter->OUT->NAME, dataTypeName, graphTypeName);
         iter = iter->NEXT;
+        idx++;
     } while (iter != NULL);
 }
 
@@ -117,17 +119,8 @@ T_ERROR deleteOutputOption(T_PSTR name) {
 
 T_ERROR cleanState() {
     // Clean INPUT_CONFIG
-    if (INPUT_CONFIG) {
-        for (size_t comp_idx = 0; comp_idx < INPUT_CONFIG->NUM; comp_idx++) {
-            COMP *comp = *(INPUT_CONFIG->COMPS + comp_idx);
-
-            free(comp->PBUFFER->PROPS);
-            free(comp->PBUFFER);
-            free(comp);
-        }
-        free(INPUT_CONFIG);
-        INPUT_CONFIG = NULL;
-    }
+    destroyConfig(INPUT_CONFIG);
+    INPUT_CONFIG = NULL;
 
     // Clean OUTPUT_LIST_SELECTED
     OUTPUT_LIST *iter = OUTPUT_LIST_SELECTED;
@@ -142,4 +135,17 @@ T_ERROR cleanState() {
     }
 
     return 0;
+}
+
+T_VOID destroyConfig(CONFIG *cfg) {
+    if (cfg) {
+        for (size_t comp_idx = 0; comp_idx < cfg->NUM; comp_idx++) {
+            COMP *comp = *(cfg->COMPS + comp_idx);
+
+            free(comp->PBUFFER->PROPS);
+            free(comp->PBUFFER);
+            free(comp);
+        }
+        free(cfg);
+    }
 }
