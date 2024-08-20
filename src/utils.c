@@ -3,10 +3,13 @@
 #include "utils.h"
 #include "calc.h"
 
+#include <assert.h>
+#include <stdlib.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include <wchar.h>
+#include <time.h>
 
 T_PSTR getNameFromPath(T_PSTR path) {
     // Get the name of the executable
@@ -81,7 +84,7 @@ void loadAvailableConfigs() {
     fclose(configs);
 }
 
-size_t itos(int num, char *str) {
+size_t a_itos(int num, char *str) {
     if (num == 0) {
         *str++ = '0';
         *str = 0;
@@ -104,7 +107,7 @@ size_t itos(int num, char *str) {
     return size;
 }
 
-int64_t parseNum(T_PSTR str) {
+int64_t parseNum(const char *str) {
     if (str == NULL || *str == '\0') return 0;
     while (!isdigit(*str)) {
         if (*str == '\n' || *str == '\0') return 0;
@@ -343,7 +346,6 @@ T_ERROR saveDataRESULTBATCH(const T_PSTR output, G_ARRAY *result_array, size_t s
     return 0;
 }
 
-
 size_t strProprietyIdxByPtr(T_PSTR *OPTS, T_PSTR prop) {
     size_t idx = 0;
     for ( ; OPTS[idx] != NULL; idx++) {
@@ -359,5 +361,64 @@ size_t strProprietyIdxByValue(T_PSTR *OPTS, T_PSTR prop) {
         idx++;
     }
     return idx;
+}
+
+CONFIG *const cloneConfig(CONFIG *const cfg) {
+    assert(cfg != NULL);
+
+    CONFIG *const clone = calloc(1, sizeof(CONFIG));
+
+    clone->NUM = cfg->NUM;
+    clone->VICTIM_ID = cfg->VICTIM_ID;
+    for (size_t idx = 0; idx < cfg->NUM; idx++) {
+        clone->COMPS[idx] = calloc(1, sizeof(COMP));
+        clone->COMPS[idx]->ID = cfg->COMPS[idx]->ID;
+        strncpy(clone->COMPS[idx]->NAME, cfg->COMPS[idx]->NAME, sizeof(T_STR));
+        clone->COMPS[idx]->PBUFFER = calloc(1, sizeof(pBUFFER));
+        clone->COMPS[idx]->PBUFFER->NUM = cfg->COMPS[idx]->PBUFFER->NUM;
+        clone->COMPS[idx]->PBUFFER->PROPS = calloc(cfg->COMPS[idx]->PBUFFER->NUM, sizeof(PROP));
+
+        for (size_t prop_idx = 0; prop_idx < cfg->COMPS[idx]->PBUFFER->NUM; prop_idx++) {
+            PROP *cur_prop = clone->COMPS[idx]->PBUFFER->PROPS + prop_idx;
+            memcpy(cur_prop, clone->COMPS[idx]->PBUFFER->PROPS + prop_idx, sizeof(PROP));
+        }
+    }
+
+    return clone;
+}
+
+T_INT uniformRandom(T_INT min, T_INT max) {
+    T_INT range = max - min + 1;
+    T_UCHAR range_nbit = 0;
+
+    srand(clock());
+    while ((1 << range_nbit) < range) {
+        range_nbit++;
+    }
+    // range_nbit has as many bits as needed to represent range
+    // since higher order bits in rand() are better distributed
+    // I'll take the minimum high-order bits to represent my
+    // distribution sampling
+    T_UCHAR num_randmax_bits = __builtin_popcount(RAND_MAX);
+    T_UCHAR shift = num_randmax_bits - range_nbit;
+
+
+    T_INT random_num;
+    do {
+        random_num = rand() >> shift;
+    } while (random_num >= range);
+
+    return (random_num + min);
+}
+
+T_INT binomialRandom(T_UINT n, T_DOUBLE p) {
+    T_INT successes = 0;
+
+    while (n > 0) {
+        if (uniformRandom(0, 255) < 255*p) successes++;
+        n--;
+    }
+
+    return successes;
 }
 

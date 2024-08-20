@@ -50,6 +50,10 @@ void INIT_BENCH() {
     } else {
         OPER += 2;
     }
+
+    if (GET_PROP_BY_NAME(comp0, "MITIGATION", NULL) != -1) {
+        OPER = 5;
+    }
 }
 
 RESULT *RUN_BENCH() {

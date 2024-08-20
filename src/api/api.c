@@ -17,7 +17,7 @@
  *      out : Returns the pointer to the corresponding component if the pointer is not NULL
  *      default : Returns the index from the base pointer of the COMPS pointer of the CONFIG or -1 if it doesn't exist
  */
-size_t GET_COMP_BY_IDX(CONFIG *in1, T_INT in2, COMP **out) {
+size_t GET_COMP_BY_IDX(CONFIG *in1, T_INT in2, const COMP **out) {
     for (size_t idx = 0 ; idx < in1->NUM ; idx++) {
         if (in1->COMPS[idx]->ID == in2) {
             if (out != NULL)
@@ -36,9 +36,9 @@ size_t GET_COMP_BY_IDX(CONFIG *in1, T_INT in2, COMP **out) {
  * RETURN:
  *      out : Returns the value the corresponding propriety if the pointer passed is not NULL
  *      default : Returns the index from the base pointer of the PROPS pointer of the PBUFFER
- *                  associated PBUFFER of the component inputed
+ *                  associated PBUFFER of the component inputed or -1 if not found
  */
-size_t GET_PROP_BY_NAME(COMP *in1, T_PSTR in2, T_VOID *out) {
+size_t GET_PROP_BY_NAME(const COMP *const in1, T_PSTR in2, T_VOID *out) {
     for (size_t idx = 0 ; idx < in1->PBUFFER->NUM ; idx++) {
         if (!strcmp(in1->PBUFFER->PROPS[idx].NAME, in2)) {
             if (out != NULL)

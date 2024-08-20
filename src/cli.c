@@ -144,15 +144,16 @@ uint8_t cliGetInput(TERM *term) {
             switch (parseOptimizeArg(term)) {
                 case O_RS:
                     getWord(term, buffer, 128);
-                    optimizeConfig(randomSearchNR, parseNum(buffer));
+                    //optimizeConfig(randomSearchNR, parseNum(buffer));
                     break;
                 case O_SA:
                     getWord(term, buffer, 128);
-                    optimizeConfig(simulatedAnnealing, parseNum(buffer));
+                    //optimizeConfig(simulatedAnnealing, parseNum(buffer));
                     break;
                 case O_ERROR:
                     return 1;
                 case O_NONE:
+                    optimizationTUI();
                     break;
             }
             break;

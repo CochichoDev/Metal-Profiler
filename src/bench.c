@@ -2,13 +2,14 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "bench.h"
 #include "api.h"
 #include "calc.h"
 #include "global.h"
 #include "utils.h"
-#include "cli.h"
+#include "state.h"
 
 T_ERROR runBench(size_t iter, RESULT *results_input) {
     INIT_BENCH();
@@ -173,11 +174,41 @@ T_VOID computeInterferenceDegradation(G_ARRAY *garrays_std_input, size_t num_gar
     CONFIG *cfg_iso = calloc(1, sizeof(CONFIG));
     cfg_iso->NUM = 1;
     cfg_iso->VICTIM_ID = INPUT_CONFIG->VICTIM_ID;
-    GET_COMP_BY_IDX(INPUT_CONFIG, cfg_iso->VICTIM_ID, cfg_iso->COMPS);
-    cfg_iso->VICTIM_ID = 0;         // Since it is the only component it possesses
+    GET_COMP_BY_IDX(INPUT_CONFIG, cfg_iso->VICTIM_ID, (const COMP **)cfg_iso->COMPS);
 
     computeDegradation(garrays_std_input, num_garrays, garrays_std_deg, cfg_iso);
     free(cfg_iso);
+}
+
+T_VOID computeProprietyDegradation(G_ARRAY *garrays_std_input, size_t num_garrays, G_ARRAY *garrays_std_deg) {
+    // Change configuration to only compile the isolated victim
+    CONFIG *cfg_mod = cloneConfig(INPUT_CONFIG);
+
+    const COMP *comp_ptr = NULL;
+    cfg_mod->NUM = 1;
+    cfg_mod->VICTIM_ID = INPUT_CONFIG->VICTIM_ID;
+    GET_COMP_BY_IDX(cfg_mod, cfg_mod->VICTIM_ID, &comp_ptr);
+    cfg_mod->COMPS[0] = (COMP*) comp_ptr;
+    
+    // Remove all Mitigation proprieties that are not marked as needed
+    for (size_t prop_idx = 0; prop_idx < comp_ptr->PBUFFER->NUM; prop_idx++) {
+        // The refered propriety must me a mitigation and not needed
+        if (!IS_MITIGATION((comp_ptr->PBUFFER->PROPS + prop_idx)->FLAGS)) continue;
+
+        if (!IS_NEDDED((comp_ptr->PBUFFER->PROPS + prop_idx)->FLAGS)) continue;
+
+        size_t prop_idx_aux = prop_idx;
+        for (; prop_idx_aux < comp_ptr->PBUFFER->NUM-1;  prop_idx_aux++) {
+            memcpy(comp_ptr->PBUFFER->PROPS + prop_idx_aux, comp_ptr->PBUFFER->PROPS + prop_idx_aux + 1, sizeof(PROP));
+        }
+        comp_ptr->PBUFFER->NUM--;
+    }
+
+
+    
+
+    computeDegradation(garrays_std_input, num_garrays, garrays_std_deg, cfg_mod);
+    destroyConfig(cfg_mod);
 }
 
 T_VOID computeDegradation(G_ARRAY *garrays_std_input, size_t num_garrays, G_ARRAY *garrays_std_deg, CONFIG *cfg) {

@@ -14,7 +14,7 @@ ARCH:=arch
 
 CFLAGS:=
 CPPFLAGS:=$(foreach inc, $(INCLUDE), -I$(inc))
-LFLAGS:=-L$(BIN)
+LFLAGS:=-L$(LIB)
 
 TARGET:=$(BIN)/autometalbench
 TARGET_API:=$(BIN)/libAMBapi.so
@@ -30,7 +30,7 @@ ARCH_LIBS:=$(foreach module, $(sort $(dir $(wildcard $(ARCH)/*/module/))), $(mod
 all: $(TARGET)
 
 $(TARGET): $(OBJ_FILES) $(TARGET_API)
-	$(CC) $(LFLAGS) -Wall $(filter %.o, $^) -o $@ -Wl,--no-as-needed -ldl -lAMBapi -lcrypto
+	$(CC) $(LFLAGS) -Wall $(filter %.o, $^) -o $@ -lTUI -Wl,--no-as-needed -ldl -lAMBapi -lcrypto
 
 $(TARGET_API): $(API_OBJ_FILES)
 	$(CC) -Wall -shared $^ -o $(TARGET_API)

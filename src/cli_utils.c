@@ -284,8 +284,10 @@ T_VOID loadConfig(TERM *term, T_UINT config_option) {
 
             PROP *prop = comp->PBUFFER->PROPS + prop_idx;
 
-            if (m_prop->PTYPE != prop->PTYPE)
-                fprintf(stderr, "Error: Configs do not match the expected format");
+            if (m_prop->PTYPE != prop->PTYPE) {
+                fprintf(stderr, "Error: Configs do not match the expected format (%s)\n", m_prop->NAME);
+                goto ERROR;
+            }
 
             if (( IS_OPTIMIZABLE(prop->FLAGS) && !IS_OPTIMIZABLE(m_prop->FLAGS) ) ||
                 ( IS_MITIGATION(prop->FLAGS) && !IS_MITIGATION(m_prop->FLAGS) )) {

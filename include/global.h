@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdio.h>
 
 #include "api/api.h"
 
@@ -97,3 +98,4 @@ extern T_VOID       (*INIT_BENCH)(T_VOID);
 extern RESULT       *(*RUN_BENCH)(T_VOID);
 extern T_VOID       (*EXIT_BENCH)(T_VOID);
 
+extern T_INT        OUTPUT_DESCRIPTOR;

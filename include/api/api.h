@@ -148,7 +148,7 @@ typedef struct {
  *      out : Returns the pointer to the corresponding component if the pointer is not NULL
  *      default : Returns the index from the base pointer of the COMPS pointer of the CONFIG or -1 if it doesn't exist
  */
-size_t GET_COMP_BY_IDX(CONFIG *in1, T_INT in2, COMP **out);
+size_t GET_COMP_BY_IDX(CONFIG *in1, T_INT in2, const COMP **out);
 
 /*
  * GET_PROP_BY_NAME : Finds the propriety that the input name corresponds to
@@ -160,7 +160,7 @@ size_t GET_COMP_BY_IDX(CONFIG *in1, T_INT in2, COMP **out);
  *      default : Returns the index from the base pointer of the PROPS pointer of the PBUFFER
  *                  associated PBUFFER of the component inputed
  */
-size_t GET_PROP_BY_NAME(COMP *in1, T_PSTR in2, T_VOID *out);
+size_t GET_PROP_BY_NAME(const COMP *const in1, T_PSTR in2, T_VOID *out);
 
 
 pid_t RUN_PROCESS_IMAGE(T_INT *new_descr, const T_PSTR image_path, ...);
