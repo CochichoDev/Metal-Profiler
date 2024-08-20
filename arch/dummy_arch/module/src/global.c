@@ -3,7 +3,7 @@
 
 PROP proprieties_core0[2] = {
     {.NAME="APP", .PTYPE=pSTR, .FLAGS=NEEDED|OPTIMIZABLE, .iRANGE={0,0}, .iINIT=0, .OPTS={"FLC", "LLC", "DRAM", NULL}},
-    {.NAME="LIMIT", .PTYPE=pINT, .FLAGS=NEEDED, .iRANGE={10,10000}, .iINIT=0, .OPTS=NULL, .iSTEP=10}
+    {.NAME="LIMIT", .PTYPE=pINT, .FLAGS=NEEDED, .iRANGE={10,10000}, .iINIT=0, .OPTS={NULL}, .iSTEP=10}
 };
 
 PROP proprieties_core1[1] = {

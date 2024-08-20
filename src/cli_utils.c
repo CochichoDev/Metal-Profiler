@@ -285,7 +285,7 @@ T_VOID loadConfig(TERM *term, T_UINT config_option) {
             PROP *prop = comp->PBUFFER->PROPS + prop_idx;
 
             if (m_prop->PTYPE != prop->PTYPE) {
-                fprintf(stderr, "Error: Configs do not match the expected format (%s)\n", m_prop->NAME);
+                fprintf(stderr, "Error: Propriety %s does not have expected type %d, should have type %d\n", prop->NAME, prop->PTYPE, m_prop->PTYPE);
                 goto ERROR;
             }
 

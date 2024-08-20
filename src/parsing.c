@@ -62,7 +62,7 @@ CONFIG *parseConfig(FILE *fd) {
         PROP *new_prop = prop_buffer->PROPS + prop_buffer->NUM -1;
         memcpy(new_prop->NAME, init_buffer_ptr, end_buffer_ptr-init_buffer_ptr);
         new_prop->NAME[end_buffer_ptr-init_buffer_ptr] = '\0';
-        printf("Info: Propriety %s\t", new_prop->NAME);
+        dprintf(OUTPUT_DESCRIPTOR, "Info: Propriety %s\t", new_prop->NAME);
 
         end_buffer_ptr++;
         init_buffer_ptr = end_buffer_ptr;       
@@ -74,18 +74,21 @@ CONFIG *parseConfig(FILE *fd) {
             if (*(end_buffer_ptr -1) == 'f') {
                 new_prop->fINIT = parseFloat(init_buffer_ptr);
                 new_prop->PTYPE = pDOUBLE;
+                dprintf(OUTPUT_DESCRIPTOR, "type %s\t", "DOUBLE");
+                dprintf(OUTPUT_DESCRIPTOR, "value %f\n", new_prop->fINIT);
             } else {
                 new_prop->iINIT = parseNum(init_buffer_ptr);
                 new_prop->PTYPE = pINT;
-
-                printf("value %d\n", new_prop->iINIT);
+                dprintf(OUTPUT_DESCRIPTOR, "type %s\t", "INT");
+                dprintf(OUTPUT_DESCRIPTOR, "value %d\n", new_prop->iINIT);
             }
         }
         else if (isalpha(*init_buffer_ptr)) {
             new_prop->PTYPE = pSTR;
             memcpy(new_prop->sINIT, init_buffer_ptr, end_buffer_ptr-init_buffer_ptr);
             new_prop->sINIT[end_buffer_ptr-init_buffer_ptr] = '\0';
-            printf("value %s\n", new_prop->sINIT);
+            dprintf(OUTPUT_DESCRIPTOR, "type %s\t", "STR");
+            dprintf(OUTPUT_DESCRIPTOR, "value %s\n", new_prop->sINIT);
         } else {
             printf("Error: Parser didn't manage to get propriety value in line %ld\n", line_num);
             return NULL;

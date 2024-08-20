@@ -69,6 +69,11 @@ static T_VOID returnExitButton(T_NODE *button, T_VOID **data) {
 }
 
 static T_VOID returnOKButton(T_NODE *button, T_VOID **data) {
+    if (INPUT_CONFIG == NULL) {
+        dprintf(OUTPUT_DESCRIPTOR, "Error: No config is selected yet\n");
+        return;
+    }
+
     T_NODE *optChoice = data[0];
     T_NODE *optAlgo = data[1];
     T_NODE *iterTextb = data[2];
