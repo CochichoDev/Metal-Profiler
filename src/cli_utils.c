@@ -301,11 +301,13 @@ T_VOID loadConfig(TERM *term, T_UINT config_option) {
                     if (prop->fINIT > m_prop->fRANGE[1] || prop->fINIT < m_prop->fRANGE[0])
                         goto lRANGE_ERROR;
                     memcpy(prop->fRANGE, m_prop->fRANGE, sizeof(m_prop->fRANGE));
+                    prop->fSTEP = m_prop->fSTEP;
                     break;
                 case pINT:
                     if (prop->iINIT > m_prop->iRANGE[1] || prop->iINIT < m_prop->iRANGE[0])
                         goto lRANGE_ERROR;
                     memcpy(prop->iRANGE, m_prop->iRANGE, sizeof(m_prop->iRANGE));
+                    prop->iSTEP = m_prop->iSTEP;
                     break;
                 case pSTR:
                     while (*opt_idx != NULL) {

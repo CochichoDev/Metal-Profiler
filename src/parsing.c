@@ -8,7 +8,7 @@
 #include <string.h>
 
 #include "api.h"
-#include "global.h"
+#include "apistate.h"
 #include "utils.h"
 #include "parsing.h"
 

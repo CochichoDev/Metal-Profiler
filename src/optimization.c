@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include "api.h"
+#include "apistate.h"
 #include "global.h"
 #include "optimization.h"
 #include "plot.h"
@@ -438,10 +439,13 @@ static T_DOUBLE objectiveMinimizeInterProp(OPT_MAP *mapGrid, PARAM_GRID param) {
 static PARAM_GRID randomSearch(OPT_MAP *mapGrid, PARAM_GRID param, size_t iterations, \
                                T_DOUBLE (*objectiveFunc)(OPT_MAP *, PARAM_GRID), \
                                const char* output) {
+
     // Define variables to register max degradation and best cur_paramss
     PARAM_GRID cur_params = cloneParams(mapGrid, param);
     T_DOUBLE best = objectiveFunc(mapGrid, cur_params);
     PARAM_GRID best_params = cloneParams(mapGrid, cur_params);
+    printParameterGrid(mapGrid, cur_params);
+    sleep(5);
 
     G_ARRAY garray_result_deg = {.SIZE = 1, .TYPE = G_RESULT, .DATA = malloc(sizeof(RESULT))};
     RESULT *deg_result = garray_result_deg.DATA;
@@ -453,11 +457,15 @@ static PARAM_GRID randomSearch(OPT_MAP *mapGrid, PARAM_GRID param, size_t iterat
         // Mutate cur_paramss
         for (size_t row_idx = 0; row_idx < mapGrid->NUM_COMP; row_idx++) {
             for (size_t cur_params_idx = 0; cur_params_idx < mapGrid->PROPS_P_ROW[row_idx]; cur_params_idx++) {
-                T_UCHAR random = uniformRandom(0, cur_params[row_idx][cur_params_idx].max);
-                //printf("%d\n", random);
-                cur_params[row_idx][cur_params_idx].cur = uniformRandom(0, random);
+                T_INT random = uniformRandom(0, cur_params[row_idx][cur_params_idx].max);
+                printf("%d\n", random);
+                sleep(3);
+                cur_params[row_idx][cur_params_idx].cur = random;
+
             }
         }
+        printParameterGrid(mapGrid, cur_params);
+        sleep(5);
 
         // Obtain objective
         T_DOUBLE new_objective = objectiveFunc(mapGrid, cur_params);
@@ -480,7 +488,10 @@ static PARAM_GRID randomSearch(OPT_MAP *mapGrid, PARAM_GRID param, size_t iterat
     DESTROY_RESULTS(T_DOUBLE, deg_result);
     free(garray_result_deg.DATA);
 
-    plotScatter("optimization_rs", "optimization_rs_scatter");
+    char output_rs_scatter[128] = "\0";
+    strncpy(output_rs_scatter, output_rs, 64);
+    strcat(output_rs_scatter, "_scatter");
+    plotScatter(output_rs, output_rs_scatter);
 
     return best_params;
 }
@@ -536,9 +547,9 @@ static PARAM_GRID randomSearchNR(OPT_MAP *mapGrid, PARAM_GRID param, size_t iter
             param_buffer[0] = '\0';
             for (size_t row_idx = 0; row_idx < mapGrid->NUM_COMP; row_idx++) {
                 for (size_t cur_params_idx = 0; cur_params_idx < mapGrid->PROPS_P_ROW[row_idx]; cur_params_idx++) {
-                    T_UCHAR random = uniformRandom(0, cur_params[row_idx][cur_params_idx].max);
+                    T_INT random = uniformRandom(0, cur_params[row_idx][cur_params_idx].max);
                     //printf("%d\n", random);
-                    cur_params[row_idx][cur_params_idx].cur = uniformRandom(0, random);
+                    cur_params[row_idx][cur_params_idx].cur = random;
                     itos(cur_params[row_idx][cur_params_idx].cur, num_buffer);
                     strcat(param_buffer, num_buffer);
                 }
@@ -582,13 +593,16 @@ static PARAM_GRID randomSearchNR(OPT_MAP *mapGrid, PARAM_GRID param, size_t iter
 
     char output_rsnr[64] = "\0";
     strncpy(output_rsnr, output, 63-5);
-    strcat(output_rsnr, "_rs");
+    strcat(output_rsnr, "_rsnr");
     saveDataRESULTS(output_rsnr, &garray_result_deg);
     DESTROY_RESULTS(T_DOUBLE, deg_result);
     free(garray_result_deg.DATA);
     free(hashes);
 
-    plotScatter("optimization_rs", "optimization_rs_scatter");
+    char output_rsnr_scatter[128] = "\0";
+    strncpy(output_rsnr_scatter, output_rsnr, 64);
+    strcat(output_rsnr_scatter, "_scatter");
+    plotScatter(output_rsnr, output_rsnr_scatter);
 
     return best_params;
 }
@@ -618,7 +632,7 @@ static PARAM_GRID simulatedAnnealing(OPT_MAP *mapGrid, PARAM_GRID param, size_t 
         // Mutate params
         for (size_t row_idx = 0; row_idx < mapGrid->NUM_COMP; row_idx++) {
             for (size_t param_idx = 0; param_idx < mapGrid->PROPS_P_ROW[row_idx]; param_idx++) {
-                T_UCHAR random = binomialRandom(param[row_idx][param_idx].max, 0.5);
+                T_INT random = binomialRandom(param[row_idx][param_idx].max, 0.5);
                 //printf("Noise %ld\n", random-param[row_idx][param_idx].max/2);
                 random += param[row_idx][param_idx].max * 1.5f;
                 temp_param[row_idx][param_idx].cur = (cur_params[row_idx][param_idx].cur + random) % (param[row_idx][param_idx].max + 1);
@@ -660,7 +674,10 @@ static PARAM_GRID simulatedAnnealing(OPT_MAP *mapGrid, PARAM_GRID param, size_t 
     DESTROY_RESULTS(T_DOUBLE, deg_result);
     free(garray_result_deg.DATA);
 
-    plotScatter("optimization_sa", "optimization_sa_scatter");
+    char output_sa_scatter[128] = "\0";
+    strncpy(output_sa_scatter, output_sa, 64);
+    strcat(output_sa_scatter, "_scatter");
+    plotScatter(output_sa, output_sa_scatter);
 
     return best_params;
 }

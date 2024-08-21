@@ -12,9 +12,9 @@
 #include <unistd.h>
 
 #include "api.h"
-#include "global.h"
 #include "utils.h"
 #include "cli.h"
+#include "apistate.h"
 
 #define DEVICE "/dev/ttyUSB0"
 

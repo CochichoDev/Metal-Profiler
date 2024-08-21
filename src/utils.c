@@ -402,8 +402,9 @@ T_INT uniformRandom(T_INT min, T_INT max) {
     T_UCHAR num_randmax_bits = __builtin_popcount(RAND_MAX);
     T_UCHAR shift = num_randmax_bits - range_nbit;
 
-
     T_INT random_num;
+
+
     do {
         random_num = rand() >> shift;
     } while (random_num >= range);
