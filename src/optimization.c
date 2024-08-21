@@ -457,8 +457,6 @@ static PARAM_GRID randomSearch(OPT_MAP *mapGrid, PARAM_GRID param, size_t iterat
     PARAM_GRID cur_params = cloneParams(mapGrid, param);
     T_DOUBLE best = objectiveFunc(mapGrid, cur_params);
     PARAM_GRID best_params = cloneParams(mapGrid, cur_params);
-    printParameterGrid(mapGrid, cur_params);
-    sleep(5);
 
     G_ARRAY garray_result_deg = {.SIZE = 1, .TYPE = G_RESULT, .DATA = malloc(sizeof(RESULT))};
     RESULT *deg_result = garray_result_deg.DATA;
@@ -471,14 +469,11 @@ static PARAM_GRID randomSearch(OPT_MAP *mapGrid, PARAM_GRID param, size_t iterat
         for (size_t row_idx = 0; row_idx < mapGrid->NUM_COMP; row_idx++) {
             for (size_t cur_params_idx = 0; cur_params_idx < mapGrid->PROPS_P_ROW[row_idx]; cur_params_idx++) {
                 T_INT random = uniformRandom(0, cur_params[row_idx][cur_params_idx].max);
-                fprintf(stdout, "%d\n", random);
-                sleep(3);
+                //fprintf(stdout, "%d\n", random);
                 cur_params[row_idx][cur_params_idx].cur = random;
 
             }
         }
-        printParameterGrid(mapGrid, cur_params);
-        sleep(5);
 
         // Obtain objective
         T_DOUBLE new_objective = objectiveFunc(mapGrid, cur_params);
