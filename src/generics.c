@@ -3,6 +3,7 @@
 
 #include "generics.h"
 #include "api.h"
+#include "apistate.h"
 
 T_VOID __T_INT__InitializeGeneric(G_ARRAY* gen_data, size_t size) {
     if (!gen_data) {

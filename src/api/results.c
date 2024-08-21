@@ -6,6 +6,7 @@
 
 #include "api.h"
 #include "api/api.h"
+#include "apistate.h"
 #include "generics.h"
 
 /*

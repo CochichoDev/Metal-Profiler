@@ -3,6 +3,5 @@
 
 #include "api.h"
 
-extern T_INT OUTPUT_DESCRIPTOR;
 
 #endif

@@ -100,14 +100,8 @@ pid_t RUN_PROCESS_IMAGE(T_INT *new_descr, const T_PSTR image_path, ...) {
             close(STDERR_FILENO);
             dup(new_descr[2]);
         }
-        /*
-        else {
-            close(STDOUT_FILENO);
-            dup(OUTPUT_DESCRIPTOR);
-            close(STDERR_FILENO);
-            dup(OUTPUT_DESCRIPTOR);
-        }
-        */
+       
+        
         if(execv(image_path, (char**) args) == -1) {
             perror("Error: Could not open the specified process image");
             return -1;

@@ -1,4 +1,5 @@
 #include "api.h"
+#include "apistate.h"
 #include "global.h"
 #include "utils.h"
 #include "calc.h"

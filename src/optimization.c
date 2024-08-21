@@ -1,9 +1,11 @@
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <openssl/sha.h>
 #include <unistd.h>
+#include <sys/types.h>
 
 #include "api.h"
 #include "apistate.h"
@@ -71,7 +73,7 @@ static T_VOID returnExitButton(T_NODE *button, T_VOID **data) {
 
 static T_VOID returnOKButton(T_NODE *button, T_VOID **data) {
     if (INPUT_CONFIG == NULL) {
-        dprintf(OUTPUT_DESCRIPTOR, "Error: No config is selected yet\n");
+        fprintf(stderr, "Error: No config is selected yet\n");
         return;
     }
 
@@ -87,7 +89,7 @@ static T_VOID returnOKButton(T_NODE *button, T_VOID **data) {
     T_INT iterations = parseNum(textb_get_text(iterTextb));
 
     if (!*output || !*textb_get_text(iterTextb)) {
-        dprintf(OUTPUT_DESCRIPTOR, "Error: Both iterations and output need to be specified in the textboxes\n");
+        fprintf(stderr, "Error: Both iterations and output need to be specified in the textboxes\n");
         return;
     }
 
@@ -177,8 +179,14 @@ T_VOID optimizationTUI() {
     /* TERMINAL */
     T_NODE *term = create_node_term((T_POSGRID) {1, 17}, WINDOW_WIDTH()-2, WINDOW_HEIGHT()-19);
     add_node(root, term);
-    OUTPUT_DESCRIPTOR = term_get_descriptor(term);
+    int OUTPUT_DESCRIPTOR = term_get_descriptor(term);
 
+    int old_stdout = dup(STDOUT_FILENO);
+    int old_stderr = dup(STDERR_FILENO);
+    close(STDOUT_FILENO);
+    int replaced_stdout = dup(OUTPUT_DESCRIPTOR);
+    close(STDERR_FILENO);
+    int replaced_stderr = dup(OUTPUT_DESCRIPTOR);
 
     draw();
     while(loopRun) {
@@ -189,7 +197,12 @@ T_VOID optimizationTUI() {
     free(data_exit);
     exit_tui(term_attr);
 
-    OUTPUT_DESCRIPTOR = STDOUT_FILENO;
+    close(replaced_stdout);
+    dup(old_stdout);
+    close(replaced_stderr);
+    dup(old_stderr);
+    close(old_stdout);
+    close(old_stderr);
 }
 
 /* PARAMETER HANDLING FUNCTIONS */
@@ -293,9 +306,9 @@ static T_VOID destroyParameterGrid(OPT_MAP *mapGrid, PARAM_GRID grid) {
 static T_VOID printParameterGrid(OPT_MAP *mapGrid, PARAM_GRID grid) {
     for (size_t row_idx = 0; row_idx < mapGrid->NUM_COMP; row_idx++) {
         for (size_t param_idx = 0; param_idx < mapGrid->PROPS_P_ROW[row_idx]; param_idx++) {
-            printf("%ld\t", grid[row_idx][param_idx].cur);
+            fprintf(stdout, "%ld\t", grid[row_idx][param_idx].cur);
         }
-        printf("\n");
+        fprintf(stdout, "\n");
     }
 }
 
@@ -458,7 +471,7 @@ static PARAM_GRID randomSearch(OPT_MAP *mapGrid, PARAM_GRID param, size_t iterat
         for (size_t row_idx = 0; row_idx < mapGrid->NUM_COMP; row_idx++) {
             for (size_t cur_params_idx = 0; cur_params_idx < mapGrid->PROPS_P_ROW[row_idx]; cur_params_idx++) {
                 T_INT random = uniformRandom(0, cur_params[row_idx][cur_params_idx].max);
-                printf("%d\n", random);
+                fprintf(stdout, "%d\n", random);
                 sleep(3);
                 cur_params[row_idx][cur_params_idx].cur = random;
 

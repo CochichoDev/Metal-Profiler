@@ -7,6 +7,7 @@
 
 #include "calc.h"
 #include "api.h"
+#include "apistate.h"
 
 T_VOID __T_UINT__calcMaxFromResults(RESULT *result_array, size_t num, T_INT *max_array) {
     for (size_t idx = 0; idx < num; idx++) {

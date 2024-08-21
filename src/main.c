@@ -30,8 +30,6 @@
     }
 
 int main(int32_t argc, char **argv) {
-    OUTPUT_DESCRIPTOR = STDOUT_FILENO;
-
     loadAvailableArchs();
 
     TERM term;

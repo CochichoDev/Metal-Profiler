@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include "api.h"
+#include "apistate.h"
 #include "global.h"
 #include "state.h"
 

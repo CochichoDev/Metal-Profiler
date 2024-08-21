@@ -12,6 +12,7 @@
 #include "cli_utils.h"
 #include "state.h"
 #include "optimization.h"
+#include "apistate.h"
 
 static ACTION parseAction(TERM *term);
 static LIST_ACTION parseListArg(TERM *term);
@@ -279,7 +280,7 @@ static ACTION parseAction(TERM *term) {
         perror("Error: Problem reading input\n");
         return ERROR;
     lNACTION:
-        fprintf(stderr, "Action not recognized\n");
+        fprintf(stdout, "Action not recognized\n");
         return NONE;
 }
 
@@ -327,7 +328,7 @@ static LIST_ACTION parseListArg(TERM *term) {
         perror("Error: Problem reading input\n");
     return L_ERROR;
     lNACTION:
-        fprintf(stderr, "List action not recognized\n");
+        fprintf(stdout, "List action not recognized\n");
         return L_NONE;
 }
 
@@ -367,7 +368,7 @@ static OPTIMIZE_ACTION parseOptimizeArg(TERM *term) {
         perror("Error: Problem reading input\n");
     return O_ERROR;
     lNACTION:
-        fprintf(stderr, "Optimization action not recognized\n");
+        fprintf(stdout, "Optimization action not recognized\n");
         return O_NONE;
 }
 
@@ -413,7 +414,7 @@ static SET_ACTION parseSetArg(TERM *term) {
         perror("Error: Problem reading input\n");
     return S_ERROR;
     lNACTION:
-        fprintf(stderr, "Set action not recognized\n");
+        fprintf(stdout, "Set action not recognized\n");
         return S_NONE;
 }
 
@@ -455,7 +456,7 @@ static HELP_ACTION parseHelpArg(TERM *term) {
         perror("Error: Problem reading input\n");
     return H_ERROR;
     lNACTION:
-        fprintf(stderr, "Help action not recognized\n");
+        fprintf(stdout, "Help action not recognized\n");
         return H_NONE;
 }
 

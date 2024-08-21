@@ -43,7 +43,7 @@ CONFIG *parseConfig(FILE *fd) {
             config->COMPS[config->NUM] = component;
             config->NUM++;
 
-            printf("Info: New Component ID: %d\n", component->ID);
+            fprintf(stdout, "Info: New Component ID: %d\n", component->ID);
             continue;
         }
 
@@ -53,7 +53,7 @@ CONFIG *parseConfig(FILE *fd) {
         if (*end_buffer_ptr == '\n' || \
             init_buffer_ptr == end_buffer_ptr) 
         {
-            printf("Error: Parser didn't manage to get propriety value in line %ld\n", line_num);
+            fprintf(stderr, "Error: Parser didn't manage to get propriety value in line %ld\n", line_num);
             return NULL;
         }
 
@@ -62,7 +62,7 @@ CONFIG *parseConfig(FILE *fd) {
         PROP *new_prop = prop_buffer->PROPS + prop_buffer->NUM -1;
         memcpy(new_prop->NAME, init_buffer_ptr, end_buffer_ptr-init_buffer_ptr);
         new_prop->NAME[end_buffer_ptr-init_buffer_ptr] = '\0';
-        dprintf(OUTPUT_DESCRIPTOR, "Info: Propriety %s\t", new_prop->NAME);
+        fprintf(stdout, "Info: Propriety %s\t", new_prop->NAME);
 
         end_buffer_ptr++;
         init_buffer_ptr = end_buffer_ptr;       
@@ -74,23 +74,23 @@ CONFIG *parseConfig(FILE *fd) {
             if (*(end_buffer_ptr -1) == 'f') {
                 new_prop->fINIT = parseFloat(init_buffer_ptr);
                 new_prop->PTYPE = pDOUBLE;
-                dprintf(OUTPUT_DESCRIPTOR, "type %s\t", "DOUBLE");
-                dprintf(OUTPUT_DESCRIPTOR, "value %f\n", new_prop->fINIT);
+                fprintf(stdout, "type %s\t", "DOUBLE");
+                fprintf(stdout, "value %f\n", new_prop->fINIT);
             } else {
                 new_prop->iINIT = parseNum(init_buffer_ptr);
                 new_prop->PTYPE = pINT;
-                dprintf(OUTPUT_DESCRIPTOR, "type %s\t", "INT");
-                dprintf(OUTPUT_DESCRIPTOR, "value %d\n", new_prop->iINIT);
+                fprintf(stdout, "type %s\t", "INT");
+                fprintf(stdout, "value %d\n", new_prop->iINIT);
             }
         }
         else if (isalpha(*init_buffer_ptr)) {
             new_prop->PTYPE = pSTR;
             memcpy(new_prop->sINIT, init_buffer_ptr, end_buffer_ptr-init_buffer_ptr);
             new_prop->sINIT[end_buffer_ptr-init_buffer_ptr] = '\0';
-            dprintf(OUTPUT_DESCRIPTOR, "type %s\t", "STR");
-            dprintf(OUTPUT_DESCRIPTOR, "value %s\n", new_prop->sINIT);
+            fprintf(stdout, "type %s\t", "STR");
+            fprintf(stdout, "value %s\n", new_prop->sINIT);
         } else {
-            printf("Error: Parser didn't manage to get propriety value in line %ld\n", line_num);
+            fprintf(stderr, "Error: Parser didn't manage to get propriety value in line %ld\n", line_num);
             return NULL;
         }
 
@@ -104,15 +104,15 @@ CONFIG *parseConfig(FILE *fd) {
             GET_FIRST_CHAR(init_buffer_ptr);
             switch (*init_buffer_ptr) {
                 case 'O':
-                    printf("Info: Propriety %s is optimizable\n", new_prop->NAME);
+                    fprintf(stdout, "Info: Propriety %s is optimizable\n", new_prop->NAME);
                     new_prop->FLAGS |= OPTIMIZABLE;
                     break;
                 case 'M':
-                    printf("Info: Propriety %s is a mitigation\n", new_prop->NAME);
+                    fprintf(stdout, "Info: Propriety %s is a mitigation\n", new_prop->NAME);
                     new_prop->FLAGS |= MITIGATION;
                     break;
                 default:
-                    printf("Info: Propriety %s has an invalid attribute\n", new_prop->NAME);
+                    fprintf(stdout, "Info: Propriety %s has an invalid attribute\n", new_prop->NAME);
             }
             init_buffer_ptr++;
             GET_FIRST_CHAR(init_buffer_ptr);

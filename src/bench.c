@@ -6,6 +6,7 @@
 
 #include "bench.h"
 #include "api.h"
+#include "apistate.h"
 #include "calc.h"
 #include "global.h"
 #include "utils.h"

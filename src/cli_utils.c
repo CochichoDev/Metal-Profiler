@@ -6,6 +6,7 @@
 
 #include "utils.h"
 #include "api.h"
+#include "apistate.h"
 #include "cli.h"
 #include "cli_utils.h"
 #include "parsing.h"
