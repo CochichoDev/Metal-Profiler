@@ -33,7 +33,10 @@ T_VOID __T_DOUBLE__InitializeGeneric(G_ARRAY* gen_data, size_t size) {
         return;
     }
 
-    gen_data->DATA = malloc(sizeof(T_DOUBLE) * size);
+    if ((gen_data->DATA = malloc(sizeof(T_DOUBLE) * size)) == NULL) {
+        fprintf(stderr, "Error: Fatal cannot allocate more memory\n");
+        exit(-1);
+    }
     gen_data->TYPE = G_DOUBLE;
     gen_data->SIZE = size;
 }

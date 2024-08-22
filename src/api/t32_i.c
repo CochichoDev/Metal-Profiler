@@ -1,9 +1,20 @@
 #include <unistd.h>
 #include <stdio.h>
+#include <signal.h>
+#include <string.h>
 
 #include "api/t32_i.h"
 #include "api.h"
+#include "apistate.h"
 #include "api/t32.h"
+
+T_ERROR KILL_T32(pid_t T32_pid) {
+    if (T32_pid > 0) {
+        kill(T32_pid, SIGKILL);
+        return 0;
+    }
+    return -1;
+}
 
 /*
  * INIT_T32 : Launches TRACE32 process and connects to it via the t32 api
@@ -23,13 +34,19 @@ pid_t INIT_T32(T_PSTR path_to_exec) {
     }
     last_slash++;
 
-    pid_t t32 = RUN_PROCESS_IMAGE(NULL, path_to_exec, last_slash, NULL);
-    if (t32 == -1)
+    pid_t t32_pid = RUN_PROCESS_IMAGE(NULL, path_to_exec, last_slash, NULL);
+    if (t32_pid == -1)
         return -1;
     sleep(1);
-    INIT_T32_CONN("localhost", "20000");
-    return t32;
+    if (INIT_T32_CONN("localhost", "20000") == -1) {
+        fprintf(stderr, "Error: Could not connect to T32, restarting process...\n");
+        KILL_T32(t32_pid);
+        sleep(1);
+        return INIT_T32(path_to_exec);
+    }
+    return t32_pid;
 }
+
 
 T_INT CLOSE_T32(pid_t t32_pid) {
     if (T32_Exit() != T32_OK) {
@@ -50,7 +67,8 @@ T_INT INIT_T32_CONN(const char *node, const char *port) {
         return 1;
     }
 
-    while (1) {
+    T_UINT max_tries = 3;
+    while (max_tries > 0) {
         if (T32_Init() == T32_OK) {
             if (T32_Attach(T32_DEV_ICD) == T32_OK) {
                 fprintf(stderr, "Info: Connection to Trace32 established\n");
@@ -60,6 +78,10 @@ T_INT INIT_T32_CONN(const char *node, const char *port) {
         fprintf(stderr, "Error: Could not initilize T32 connection\n");
         fprintf(stderr, "Info: Retrying connection...\n");
         sleep(5);
+        max_tries--;
+    }
+    if (max_tries == 0) {
+        return -1;
     }
 
     fprintf(stderr, "All T32 connection issues were sucessful");

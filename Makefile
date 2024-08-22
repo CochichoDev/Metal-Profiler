@@ -40,10 +40,10 @@ $(TARGET_API): $(API_OBJ_FILES)
 -include $(patsubst $(OBJ)/%.o, $(OBJ)/%.d, $(OBJ_FILES))
 -include $(patsubst $(OBJ)/%.o, $(OBJ)/%.d, $(API_OBJ_FILES))
 $(OBJ)/%.o: $(SRC)/%.c 
-	$(CC) -c -Wall -g -O3 -MMD $(CPPFLAGS) $< -o $@
+	$(CC) -c -Wall -g -O0 -g -MMD $(CPPFLAGS) $< -o $@
 
 $(OBJ)/%.o: $(SRC)/api/%.c 
-	$(CC) -c -Wall -fPIC -O3 -MMD $(CPPFLAGS) $< -o $@
+	$(CC) -c -Wall -fPIC -O0 -g -MMD $(CPPFLAGS) $< -o $@
 
 clean:
 	@rm -v $(BIN)/*

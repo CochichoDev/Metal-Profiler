@@ -12,6 +12,8 @@
 #include "utils.h"
 #include "state.h"
 
+#define IGNORE_NUM 10
+
 T_ERROR runBench(size_t iter, RESULT *results_input) {
     INIT_BENCH();
     for (size_t idx = 0; idx < iter; idx++) {
@@ -22,19 +24,19 @@ T_ERROR runBench(size_t iter, RESULT *results_input) {
         }
         switch (result->ARRAY.TYPE) {
             case G_INT:
-                INITIALIZE_RESULTS(T_UINT, results_input+idx, result->ARRAY.SIZE, result->NAME);
-                memcpy(results_input[idx].ARRAY.DATA, result->ARRAY.DATA, sizeof(T_UINT)*result->ARRAY.SIZE);
+                INITIALIZE_RESULTS(T_UINT, results_input+idx, result->ARRAY.SIZE - IGNORE_LIMIT, result->NAME);
+                memcpy(results_input[idx].ARRAY.DATA, result->ARRAY.DATA + IGNORE_LIMIT*sizeof(T_UINT), sizeof(T_UINT)*(result->ARRAY.SIZE - IGNORE_LIMIT));
                 break;
             case G_UINT:
-                INITIALIZE_RESULTS(T_UINT, results_input+idx, result->ARRAY.SIZE, result->NAME);
-                memcpy(results_input[idx].ARRAY.DATA, result->ARRAY.DATA, sizeof(T_UINT)*result->ARRAY.SIZE);
+                INITIALIZE_RESULTS(T_UINT, results_input+idx, result->ARRAY.SIZE - IGNORE_LIMIT, result->NAME);
+                memcpy(results_input[idx].ARRAY.DATA, result->ARRAY.DATA + IGNORE_LIMIT*sizeof(T_UINT), sizeof(T_UINT)*(result->ARRAY.SIZE - IGNORE_LIMIT));
     
 
 
                 break;
             case G_DOUBLE:
-                INITIALIZE_RESULTS(T_DOUBLE, results_input+idx, result->ARRAY.SIZE, result->NAME);
-                memcpy(results_input[idx].ARRAY.DATA, result->ARRAY.DATA, sizeof(T_DOUBLE)*result->ARRAY.SIZE);
+                INITIALIZE_RESULTS(T_DOUBLE, results_input+idx, result->ARRAY.SIZE - IGNORE_LIMIT, result->NAME);
+                memcpy(results_input[idx].ARRAY.DATA, result->ARRAY.DATA + IGNORE_LIMIT*sizeof(T_DOUBLE), sizeof(T_DOUBLE)*(result->ARRAY.SIZE - IGNORE_LIMIT));
             default:
                 break;
         }
@@ -120,6 +122,7 @@ T_VOID processResults(G_ARRAY *garray_result_input) {
                 }
 
                 computeInterferenceDegradation(garrays_std_input, garray_result_input->SIZE, garrays_std_deg);
+                //computeProprietyDegradation(garrays_std_input, garray_result_input->SIZE, garrays_std_deg);
                 free(garrays_std_input);
 
                 G_ARRAY garray_result_deg = {.DATA = calloc(garray_result_input->SIZE, sizeof(RESULT)), .SIZE = garray_result_input->SIZE, .TYPE = G_RESULT };
@@ -204,9 +207,6 @@ T_VOID computeProprietyDegradation(G_ARRAY *garrays_std_input, size_t num_garray
         }
         comp_ptr->PBUFFER->NUM--;
     }
-
-
-    
 
     computeDegradation(garrays_std_input, num_garrays, garrays_std_deg, cfg_mod);
     destroyConfig(cfg_mod);

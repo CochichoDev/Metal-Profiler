@@ -381,7 +381,7 @@ CONFIG *const cloneConfig(CONFIG *const cfg) {
 
         for (size_t prop_idx = 0; prop_idx < cfg->COMPS[idx]->PBUFFER->NUM; prop_idx++) {
             PROP *cur_prop = clone->COMPS[idx]->PBUFFER->PROPS + prop_idx;
-            memcpy(cur_prop, clone->COMPS[idx]->PBUFFER->PROPS + prop_idx, sizeof(PROP));
+            memcpy(cur_prop, cfg->COMPS[idx]->PBUFFER->PROPS + prop_idx, sizeof(PROP));
         }
     }
 

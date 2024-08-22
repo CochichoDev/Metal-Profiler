@@ -6,6 +6,7 @@
 #include <openssl/sha.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <fcntl.h>
 
 #include "api.h"
 #include "apistate.h"
@@ -22,7 +23,7 @@ static T_VOID mapConfigToGrid(OPT_MAP *mapGrid);
 static T_VOID destroyMapGrid(OPT_MAP *mapGrid);
 static PARAM_GRID generateParameterGrid(OPT_MAP *mapGrid);
 static T_VOID destroyParameterGrid(OPT_MAP *mapGrid, PARAM_GRID grid);
-static T_VOID printParameterGrid(OPT_MAP *mapGrid, PARAM_GRID grid);
+static T_VOID printParameterGrid(T_INT descriptor, OPT_MAP *mapGrid, PARAM_GRID grid);
 static PARAM_GRID cloneParams(OPT_MAP *mapGrid, PARAM_GRID param);
 static T_VOID buildConfigFromParameterGrid(OPT_MAP *mapGrid, PARAM_GRID grid);
 
@@ -188,8 +189,6 @@ T_VOID optimizationTUI() {
     close(STDERR_FILENO);
     int replaced_stderr = dup(OUTPUT_DESCRIPTOR);
 
-    RUN_PROCESS_IMAGE(NULL, "/home/cochicho/Documents/autometal-bench/a.out", NULL);
-
     draw();
     while(loopRun) {
         event_handler();
@@ -305,12 +304,12 @@ static T_VOID destroyParameterGrid(OPT_MAP *mapGrid, PARAM_GRID grid) {
     free(grid);
 }
 
-static T_VOID printParameterGrid(OPT_MAP *mapGrid, PARAM_GRID grid) {
+static T_VOID printParameterGrid(T_INT descriptor, OPT_MAP *mapGrid, PARAM_GRID grid) {
     for (size_t row_idx = 0; row_idx < mapGrid->NUM_COMP; row_idx++) {
         for (size_t param_idx = 0; param_idx < mapGrid->PROPS_P_ROW[row_idx]; param_idx++) {
-            fprintf(stdout, "%ld\t", grid[row_idx][param_idx].cur);
+            dprintf(descriptor, "%ld\t", grid[row_idx][param_idx].cur);
         }
-        fprintf(stdout, "\n");
+        dprintf(descriptor, "\n");
     }
 }
 
@@ -355,6 +354,7 @@ static T_DOUBLE objectiveMaximizeInter(OPT_MAP *mapGrid, PARAM_GRID param) {
     // Obtain results from running with full config
     G_ARRAY garray_result_full = {.DATA = calloc(1, sizeof(RESULT)), .TYPE = G_RESULT, .SIZE = 1};
     BUILD_PROJECT(INPUT_CONFIG);
+    printParameterGrid(mapGrid, param);
     runBench(garray_result_full.SIZE, garray_result_full.DATA);
 
     // Calculate vector of degradation
@@ -406,6 +406,7 @@ static T_DOUBLE objectiveMinimizeInterProp(OPT_MAP *mapGrid, PARAM_GRID param) {
     // Obtain results from running with full config
     G_ARRAY garray_result_full = {.DATA = calloc(1, sizeof(RESULT)), .TYPE = G_RESULT, .SIZE = 1};
     BUILD_PROJECT(INPUT_CONFIG);
+    printParameterGrid(STDOUT_FILENO, mapGrid, param);
     runBench(garray_result_full.SIZE, garray_result_full.DATA);
 
     // Calculate vector of degradation
@@ -433,7 +434,7 @@ static T_DOUBLE objectiveMinimizeInterProp(OPT_MAP *mapGrid, PARAM_GRID param) {
     G_ARRAY garray_std_abs_max_deg = {.SIZE = 1, .TYPE = G_DOUBLE, .DATA = malloc(sizeof(T_DOUBLE))};
     calcMaxFromArray(&garray_std_max_deg, 1, &garray_std_abs_max_deg);
     
-    T_DOUBLE degradation = ((T_DOUBLE *) garray_std_abs_max_deg.DATA)[0];
+    T_DOUBLE degradation = -((T_DOUBLE *) garray_std_abs_max_deg.DATA)[0];
 
     // Clean allocations and return objective
     for (size_t result_idx = 0; result_idx < garray_result_full.SIZE; result_idx++) {
@@ -477,8 +478,10 @@ static PARAM_GRID randomSearch(OPT_MAP *mapGrid, PARAM_GRID param, size_t iterat
             }
         }
 
+
         // Obtain objective
         T_DOUBLE new_objective = objectiveFunc(mapGrid, cur_params);
+        printf("ITERATION: %ld\n", iter);
         // Compare and replace
         if (new_objective > best) {
             destroyParameterGrid(mapGrid, best_params);
@@ -586,8 +589,10 @@ static PARAM_GRID randomSearchNR(OPT_MAP *mapGrid, PARAM_GRID param, size_t iter
         *(hash64_entry + 2) = *((uint64_t *)new_hash + 2);
         *(hash64_entry + 3) = *((uint64_t *)new_hash + 3);
 
+
         // Obtain objective
         T_DOUBLE new_objective = objectiveFunc(mapGrid, cur_params);
+        printf("ITERATION: %ld\n", iter);
         // Compare and replace
         if (new_objective > best) {
             destroyParameterGrid(mapGrid, best_params);
@@ -649,8 +654,10 @@ static PARAM_GRID simulatedAnnealing(OPT_MAP *mapGrid, PARAM_GRID param, size_t 
             }
         }
 
+
         // Obtain objective
         temp_deg = objectiveFunc(mapGrid, temp_param);
+        printf("ITERATION: %ld\n", iter);
         // Compare and replace
         T_DOUBLE dec1 = uniformRandom(1,100) * temperature / 100.0f;
         T_DOUBLE dec2 = 1.0f - ((T_DOUBLE)temp_deg/cur);        
@@ -710,7 +717,9 @@ T_VOID optimizeConfig(PARAM_GRID (*optimizationFunc)(OPT_MAP *, PARAM_GRID, size
     
     PARAM_GRID best_param = optimizationFunc(&mapGrid, parameter_grid, iterations, objectiveFunc, output);
 
-    printParameterGrid(&mapGrid, best_param);
+    T_INT result_file = open("final_config.txt", O_WRONLY|O_CREAT);
+    printParameterGrid(result_file, &mapGrid, best_param);
+    close(result_file);
 
     destroyParameterGrid(&mapGrid, parameter_grid);
     destroyParameterGrid(&mapGrid, best_param);

@@ -216,28 +216,37 @@ void calculateMetrics(void *results_ptr) {
  *                          It is expected for the deg_array to be allocated. 
  */
 T_ERROR calculateDegradation(G_ARRAY *garrays_std_iso, size_t size_iso, G_ARRAY *garrays_std_full, size_t size_result, G_ARRAY *garrays_double_deg) {
-    G_ARRAY iso_max;
-    switch (garrays_std_iso->TYPE) {
-        case G_INT:
-        case G_UINT:
-            iso_max.DATA = malloc(sizeof(T_UINT) * size_iso);
-            iso_max.SIZE = size_iso;
-            iso_max.TYPE = G_UINT;
-            break;
-        case G_DOUBLE:
-            iso_max.DATA = malloc(sizeof(T_DOUBLE) * size_iso);
-            iso_max.SIZE = size_iso;
-            iso_max.TYPE = G_DOUBLE;
-            break;
-        default:
-            break;
+    G_ARRAY *iso_max = NULL;
+    if (size_iso == 1) {
+        iso_max = garrays_std_iso;
+    } else {
+        iso_max = malloc(sizeof(G_ARRAY));
+        switch (garrays_std_iso->TYPE) {
+            case G_INT:
+            case G_UINT:
+                iso_max->DATA = malloc(sizeof(T_UINT) * size_iso);
+                iso_max->SIZE = size_iso;
+                iso_max->TYPE = G_UINT;
+                break;
+            case G_DOUBLE:
+                iso_max->DATA = malloc(sizeof(T_DOUBLE) * size_iso);
+                iso_max->SIZE = size_iso;
+                iso_max->TYPE = G_DOUBLE;
+                break;
+            default:
+                break;
+        }
+
+        calcMaxFromArray(garrays_std_iso, size_iso, iso_max);
     }
 
-    calcMaxFromArray(garrays_std_iso, size_iso, &iso_max);
     
     METRICS iso_metrics;
-    initMetricsFromArray(&iso_max, "iso_metrics", &iso_metrics);
-    free(iso_max.DATA);
+    initMetricsFromArray(iso_max, "iso_metrics", &iso_metrics);
+    if (iso_max != garrays_std_iso) {
+        free(iso_max->DATA);
+        free(iso_max);
+    }
 
     for (size_t result_idx = 0 ; result_idx < size_result ; result_idx++) {
         for (size_t data_idx = 0; data_idx < garrays_std_full[result_idx].SIZE; data_idx++) {
@@ -248,6 +257,7 @@ T_ERROR calculateDegradation(G_ARRAY *garrays_std_iso, size_t size_iso, G_ARRAY 
                         ((T_DOUBLE *)garrays_double_deg[result_idx].DATA)[data_idx] = 0;
                         continue;
                     }
+                    printf("Division of %u by %u\n", ((T_UINT *) garrays_std_full[result_idx].DATA)[data_idx], ((T_UINT *) iso_metrics.MEDIAN.DATA)[0]);
                     ((T_DOUBLE *)garrays_double_deg[result_idx].DATA)[data_idx] = \
                         (T_DOUBLE) ((T_UINT *) garrays_std_full[result_idx].DATA)[data_idx] / (T_DOUBLE) ((T_UINT *) iso_metrics.MEDIAN.DATA)[0];
                     break;
