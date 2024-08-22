@@ -188,14 +188,16 @@ T_VOID optimizationTUI() {
     close(STDERR_FILENO);
     int replaced_stderr = dup(OUTPUT_DESCRIPTOR);
 
+    RUN_PROCESS_IMAGE(NULL, "/home/cochicho/Documents/autometal-bench/a.out", NULL);
+
     draw();
     while(loopRun) {
         event_handler();
     }
 
+    exit_tui(term_attr);
     free(data_multi);
     free(data_exit);
-    exit_tui(term_attr);
 
     close(replaced_stdout);
     dup(old_stdout);
