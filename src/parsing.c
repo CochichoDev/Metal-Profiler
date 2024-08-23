@@ -111,6 +111,10 @@ CONFIG *parseConfig(FILE *fd) {
                     fprintf(stdout, "Info: Propriety %s is a mitigation\n", new_prop->NAME);
                     new_prop->FLAGS |= MITIGATION;
                     break;
+                case 'N':
+                    fprintf(stdout, "Info: Propriety %s is needed\n", new_prop->NAME);
+                    new_prop->FLAGS |= NEEDED;
+                    break;
                 default:
                     fprintf(stdout, "Info: Propriety %s has an invalid attribute\n", new_prop->NAME);
             }

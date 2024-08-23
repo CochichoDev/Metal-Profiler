@@ -257,7 +257,6 @@ T_ERROR calculateDegradation(G_ARRAY *garrays_std_iso, size_t size_iso, G_ARRAY 
                         ((T_DOUBLE *)garrays_double_deg[result_idx].DATA)[data_idx] = 0;
                         continue;
                     }
-                    printf("Division of %u by %u\n", ((T_UINT *) garrays_std_full[result_idx].DATA)[data_idx], ((T_UINT *) iso_metrics.MEDIAN.DATA)[0]);
                     ((T_DOUBLE *)garrays_double_deg[result_idx].DATA)[data_idx] = \
                         (T_DOUBLE) ((T_UINT *) garrays_std_full[result_idx].DATA)[data_idx] / (T_DOUBLE) ((T_UINT *) iso_metrics.MEDIAN.DATA)[0];
                     break;

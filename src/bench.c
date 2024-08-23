@@ -122,7 +122,6 @@ T_VOID processResults(G_ARRAY *garray_result_input) {
                 }
 
                 computeInterferenceDegradation(garrays_std_input, garray_result_input->SIZE, garrays_std_deg);
-                //computeProprietyDegradation(garrays_std_input, garray_result_input->SIZE, garrays_std_deg);
                 free(garrays_std_input);
 
                 G_ARRAY garray_result_deg = {.DATA = calloc(garray_result_input->SIZE, sizeof(RESULT)), .SIZE = garray_result_input->SIZE, .TYPE = G_RESULT };
@@ -199,7 +198,7 @@ T_VOID computeProprietyDegradation(G_ARRAY *garrays_std_input, size_t num_garray
         // The refered propriety must me a mitigation and not needed
         if (!IS_MITIGATION((comp_ptr->PBUFFER->PROPS + prop_idx)->FLAGS)) continue;
 
-        if (!IS_NEDDED((comp_ptr->PBUFFER->PROPS + prop_idx)->FLAGS)) continue;
+        if (IS_NEDDED((comp_ptr->PBUFFER->PROPS + prop_idx)->FLAGS)) continue;
 
         size_t prop_idx_aux = prop_idx;
         for (; prop_idx_aux < comp_ptr->PBUFFER->NUM-1;  prop_idx_aux++) {
@@ -207,7 +206,7 @@ T_VOID computeProprietyDegradation(G_ARRAY *garrays_std_input, size_t num_garray
         }
         comp_ptr->PBUFFER->NUM--;
     }
-
+    
     computeDegradation(garrays_std_input, num_garrays, garrays_std_deg, cfg_mod);
     destroyConfig(cfg_mod);
 }

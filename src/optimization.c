@@ -354,7 +354,7 @@ static T_DOUBLE objectiveMaximizeInter(OPT_MAP *mapGrid, PARAM_GRID param) {
     // Obtain results from running with full config
     G_ARRAY garray_result_full = {.DATA = calloc(1, sizeof(RESULT)), .TYPE = G_RESULT, .SIZE = 1};
     BUILD_PROJECT(INPUT_CONFIG);
-    printParameterGrid(mapGrid, param);
+    printParameterGrid(STDOUT_FILENO, mapGrid, param);
     runBench(garray_result_full.SIZE, garray_result_full.DATA);
 
     // Calculate vector of degradation
