@@ -14,31 +14,34 @@
 
 #define IGNORE_NUM 10
 
-T_ERROR runBench(size_t iter, RESULT *results_input) {
+T_ERROR runBench(size_t iter, T_UINT numResults, RESULT **results_input) {
     INIT_BENCH();
     for (size_t idx = 0; idx < iter; idx++) {
         //cliPrintProgress(idx, iter);
-        RESULT *result = RUN_BENCH();
+        RESULT **result = RUN_BENCH();
         if (!result) {
             fprintf(stderr, "Error: Couldn't get result data from the module\n");
         }
-        switch (result->ARRAY.TYPE) {
-            case G_INT:
-                INITIALIZE_RESULTS(T_UINT, results_input+idx, result->ARRAY.SIZE - IGNORE_LIMIT, result->NAME);
-                memcpy(results_input[idx].ARRAY.DATA, result->ARRAY.DATA + IGNORE_LIMIT*sizeof(T_UINT), sizeof(T_UINT)*(result->ARRAY.SIZE - IGNORE_LIMIT));
-                break;
-            case G_UINT:
-                INITIALIZE_RESULTS(T_UINT, results_input+idx, result->ARRAY.SIZE - IGNORE_LIMIT, result->NAME);
-                memcpy(results_input[idx].ARRAY.DATA, result->ARRAY.DATA + IGNORE_LIMIT*sizeof(T_UINT), sizeof(T_UINT)*(result->ARRAY.SIZE - IGNORE_LIMIT));
-    
 
-
-                break;
-            case G_DOUBLE:
-                INITIALIZE_RESULTS(T_DOUBLE, results_input+idx, result->ARRAY.SIZE - IGNORE_LIMIT, result->NAME);
-                memcpy(results_input[idx].ARRAY.DATA, result->ARRAY.DATA + IGNORE_LIMIT*sizeof(T_DOUBLE), sizeof(T_DOUBLE)*(result->ARRAY.SIZE - IGNORE_LIMIT));
-            default:
-                break;
+        for (size_t result_idx = 0; result_idx < numResults; result_idx++) {
+            switch (result[result_idx]->ARRAY.TYPE) {
+                case G_INT:
+                    INITIALIZE_RESULTS(T_UINT, results_input[result_idx]+idx, result[result_idx]->ARRAY.SIZE - IGNORE_LIMIT, result[result_idx]->NAME);
+                    memcpy(results_input[result_idx][idx].ARRAY.DATA, result[result_idx]->ARRAY.DATA + IGNORE_LIMIT*sizeof(T_UINT), \
+                           sizeof(T_UINT)*(result[result_idx]->ARRAY.SIZE - IGNORE_LIMIT));
+                    break;
+                case G_UINT:
+                    INITIALIZE_RESULTS(T_UINT, results_input[result_idx]+idx, result[result_idx]->ARRAY.SIZE - IGNORE_LIMIT, result[result_idx]->NAME);
+                    memcpy(results_input[result_idx][idx].ARRAY.DATA, result[result_idx]->ARRAY.DATA + IGNORE_LIMIT*sizeof(T_UINT), \
+                           sizeof(T_UINT)*(result[result_idx]->ARRAY.SIZE - IGNORE_LIMIT));
+                    break;
+                case G_DOUBLE:
+                    INITIALIZE_RESULTS(T_DOUBLE, results_input[result_idx]+idx, result[result_idx]->ARRAY.SIZE - IGNORE_LIMIT, result[result_idx]->NAME);
+                    memcpy(results_input[result_idx][idx].ARRAY.DATA, result[result_idx]->ARRAY.DATA + IGNORE_LIMIT*sizeof(T_DOUBLE), \
+                           sizeof(T_DOUBLE)*(result[result_idx]->ARRAY.SIZE - IGNORE_LIMIT));
+                default:
+                    break;
+            }
         }
     }
     EXIT_BENCH();

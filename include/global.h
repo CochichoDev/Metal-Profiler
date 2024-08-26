@@ -95,5 +95,5 @@ extern CONFIG       *INPUT_CONFIG;
 
 extern T_VOID       (*BUILD_PROJECT)(CONFIG *);
 extern T_VOID       (*INIT_BENCH)(T_VOID);
-extern RESULT       *(*RUN_BENCH)(T_VOID);
+extern RESULT       **(*RUN_BENCH)(T_VOID);
 extern T_VOID       (*EXIT_BENCH)(T_VOID);

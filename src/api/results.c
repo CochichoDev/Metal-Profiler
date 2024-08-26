@@ -1,3 +1,5 @@
+#include <cstdarg>
+#include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,12 +49,21 @@ void __T_DOUBLE_destroyResults(RESULT *results_ptr) {
     DESTROY_GENERIC(&(results_ptr->ARRAY));
 }
 
-void READ_TO_RESULT(T_INT in, RESULT *result, T_CHAR marker) {
+void READ_TO_RESULT(T_INT in, T_CHAR marker, T_UINT numResults, ...) {
     T_CHAR buf[256];
     
+    RESULT **resultPtrs = malloc(numResults*sizeof(RESULT *));
+
+    va_list resultArgs;
+    va_start(resultArgs, numResults);
+
+    for (T_UINT resultIDX = 0; resultIDX < numResults; resultIDX++) {
+        resultPtrs[resultIDX] = va_arg(resultArgs, RESULT *);
+    }
+
     volatile T_FLAG stop = 0;
     T_UINT read_bytes = 0;
-    for (uint32_t idx = 0 ; stop == 0 ; ) {
+    for (uint32_t idx = 0, total = 0 ; stop == 0 ; ) {
         read_bytes = read(in,buf,255); 
         buf[read_bytes]='\0';          
         puts(buf);
@@ -60,21 +71,25 @@ void READ_TO_RESULT(T_INT in, RESULT *result, T_CHAR marker) {
             stop=1;
         }
         if (isdigit(buf[0])) {
-            switch (result->ARRAY.TYPE) {
+            if (idx >= resultPtrs[total % numResults]->ARRAY.SIZE)
+                goto CONTINUE;
+            switch (resultPtrs[total % numResults]->ARRAY.TYPE) {
                 case G_INT:
-                    sscanf(buf, "%u", ((T_UINT *)result->ARRAY.DATA)+idx);
+                    sscanf(buf, "%u", ((T_UINT *)resultPtrs[total % numResults]->ARRAY.DATA)+idx);
                     //printf("%u\n", *(((T_UINT *)result->ARRAY.DATA)+idx));
                     break;
                 case G_UINT:
-                    sscanf(buf, "%u", ((T_UINT *)result->ARRAY.DATA)+idx);
+                    sscanf(buf, "%u", ((T_UINT *)resultPtrs[total % numResults]->ARRAY.DATA)+idx);
                     //printf("%u\n", *(((T_UINT *)result->ARRAY.DATA)+idx));
                     break;
                 case G_DOUBLE:
-                    sscanf(buf, "%lf", ((T_DOUBLE *)result->ARRAY.DATA)+idx);
+                    sscanf(buf, "%lf", ((T_DOUBLE *)resultPtrs[total % numResults]->ARRAY.DATA)+idx);
                 default:
                     break;
             } 
-            idx++;
+        CONTINUE:
+            total++;
+            idx = total/numResults;
         }
     }
 }

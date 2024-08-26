@@ -205,7 +205,7 @@ T_VOID selectArch(TERM *term, size_t choice) {
 
     if (!(INIT_BENCH = (T_VOID (*)(void)) dlsym(MODULE_HANDLE, "INIT_BENCH")))
         fprintf(stderr, "Error: Could not access INIT_BENCH function (%s)\n", dlerror());
-    if (!(RUN_BENCH = (RESULT *(*)(T_VOID)) dlsym(MODULE_HANDLE, "RUN_BENCH")))
+    if (!(RUN_BENCH = (RESULT **(*)(T_VOID)) dlsym(MODULE_HANDLE, "RUN_BENCH")))
         fprintf(stderr, "Error: Could not access RUN_BENCH  function (%s)\n", dlerror());
     if (!(EXIT_BENCH = (T_VOID (*)(void)) dlsym(MODULE_HANDLE, "EXIT_BENCH")))
         fprintf(stderr, "Error: Could not access EXIT_BENCH   function (%s)\n", dlerror());

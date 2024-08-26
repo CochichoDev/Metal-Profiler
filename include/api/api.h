@@ -30,6 +30,7 @@ typedef int8_t      T_FLAG;
 
 typedef int32_t     T_INT;
 typedef uint32_t    T_UINT;
+typedef uint16_t    T_USHORT;
 typedef char        T_CHAR;
 typedef uint8_t     T_UCHAR;
 typedef double      T_DOUBLE;
@@ -176,4 +177,4 @@ void __T_DOUBLE_initializeResults(RESULT *results_ptr, T_UINT num_cycles, const 
 void __T_UINT_destroyResults(RESULT *results_ptr);
 void __T_DOUBLE_destroyResults(RESULT *results_ptr);
 
-void READ_TO_RESULT(T_INT in, RESULT *result, T_CHAR marker);
+void READ_TO_RESULT(T_INT in, T_CHAR marker, T_UINT numResults, ...);

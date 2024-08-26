@@ -3,7 +3,6 @@
 
 #include "api.h"
 
-extern pid_t CURRENT_T32_INSTANCE;
-extern T_STR LAST_T32_PATH;
+extern T_UINT NUM_RESULTS;
 
 #endif
