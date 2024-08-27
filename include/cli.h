@@ -30,6 +30,7 @@ typedef struct {
 
 typedef enum {
     NONE,
+    ANALYZE,
     CLEAR,
     EXECUTE,
     EXIT,

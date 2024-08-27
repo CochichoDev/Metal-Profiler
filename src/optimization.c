@@ -355,7 +355,7 @@ static T_DOUBLE objectiveMaximizeInter(OPT_MAP *mapGrid, PARAM_GRID param) {
     G_ARRAY garray_result_full = {.DATA = calloc(1, sizeof(RESULT)), .TYPE = G_RESULT, .SIZE = 1};
     BUILD_PROJECT(INPUT_CONFIG);
     printParameterGrid(STDOUT_FILENO, mapGrid, param);
-    runBench(garray_result_full.SIZE, garray_result_full.DATA);
+    //runBench(garray_result_full.SIZE, garray_result_full.DATA);
 
     // Calculate vector of degradation
     G_ARRAY *garrays_std_full = calloc(garray_result_full.SIZE, sizeof(G_ARRAY));
@@ -387,7 +387,7 @@ static T_DOUBLE objectiveMaximizeInter(OPT_MAP *mapGrid, PARAM_GRID param) {
     // Clean allocations and return objective
     for (size_t result_idx = 0; result_idx < garray_result_full.SIZE; result_idx++) {
         RESULT *result = ((RESULT *) garray_result_full.DATA) + result_idx;
-        DESTROY_RESULTS(T_UINT, result);
+        DESTROY_RESULTS(result);
         free(garrays_std_deg[result_idx].DATA);
     }
     free(garray_result_full.DATA);
@@ -407,7 +407,7 @@ static T_DOUBLE objectiveMinimizeInterProp(OPT_MAP *mapGrid, PARAM_GRID param) {
     G_ARRAY garray_result_full = {.DATA = calloc(1, sizeof(RESULT)), .TYPE = G_RESULT, .SIZE = 1};
     BUILD_PROJECT(INPUT_CONFIG);
     printParameterGrid(STDOUT_FILENO, mapGrid, param);
-    runBench(garray_result_full.SIZE, garray_result_full.DATA);
+    //runBench(garray_result_full.SIZE, garray_result_full.DATA);
 
     // Calculate vector of degradation
     G_ARRAY *garrays_std_full = calloc(garray_result_full.SIZE, sizeof(G_ARRAY));
@@ -439,7 +439,7 @@ static T_DOUBLE objectiveMinimizeInterProp(OPT_MAP *mapGrid, PARAM_GRID param) {
     // Clean allocations and return objective
     for (size_t result_idx = 0; result_idx < garray_result_full.SIZE; result_idx++) {
         RESULT *result = ((RESULT *) garray_result_full.DATA) + result_idx;
-        DESTROY_RESULTS(T_UINT, result);
+        DESTROY_RESULTS(result);
         free(garrays_std_deg[result_idx].DATA);
     }
     free(garray_result_full.DATA);
@@ -498,7 +498,7 @@ static PARAM_GRID randomSearch(OPT_MAP *mapGrid, PARAM_GRID param, size_t iterat
     strcat(output_rs, "_rs");
     destroyParameterGrid(mapGrid, cur_params);
     saveDataRESULTS(output_rs, &garray_result_deg);
-    DESTROY_RESULTS(T_DOUBLE, deg_result);
+    DESTROY_RESULTS(deg_result);
     free(garray_result_deg.DATA);
 
     char output_rs_scatter[128] = "\0";
@@ -610,7 +610,7 @@ static PARAM_GRID randomSearchNR(OPT_MAP *mapGrid, PARAM_GRID param, size_t iter
     strncpy(output_rsnr, output, 63-5);
     strcat(output_rsnr, "_rsnr");
     saveDataRESULTS(output_rsnr, &garray_result_deg);
-    DESTROY_RESULTS(T_DOUBLE, deg_result);
+    DESTROY_RESULTS(deg_result);
     free(garray_result_deg.DATA);
     free(hashes);
 
@@ -688,7 +688,7 @@ static PARAM_GRID simulatedAnnealing(OPT_MAP *mapGrid, PARAM_GRID param, size_t 
     strncpy(output_sa, output, 63-3);
     strcat(output_sa, "_rs");
     saveDataRESULTS(output_sa, &garray_result_deg);
-    DESTROY_RESULTS(T_DOUBLE, deg_result);
+    DESTROY_RESULTS(deg_result);
     free(garray_result_deg.DATA);
 
     char output_sa_scatter[128] = "\0";

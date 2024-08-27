@@ -1,5 +1,6 @@
 #include <stdarg.h>
 #include <stdio.h>
+#include <assert.h>
 #include <string.h>
 
 #include "plot.h"
@@ -11,34 +12,24 @@
  *                  global OUTPUT_LIST to know which graphs to produce and
  *                  what data to plot
  */
-T_VOID plotResults() {
-    OUTPUT_LIST *iter = OUTPUT_LIST_SELECTED;
-    OUTPUT_LIST *iter_aux;
+T_VOID plotResults(size_t num_outputs, OUTPUT **output_array) {
+    assert(num_outputs > 0);
+    assert(output_array != NULL);
     
     FILE *f_data;
 
     T_STR selected_data = { 0 };
     T_STR output_name = { 0 };
-    while (iter != NULL) {
-        iter_aux = OUTPUT_LIST_SELECTED;
-
-        switch (iter->OUT->GRAPH_TYPE) {
+    for (size_t out_idx = 0; out_idx < num_outputs; out_idx++) {
+        switch (output_array[out_idx]->GRAPH_TYPE) {
             case SCATTER:
-                while (iter_aux != NULL) {
-                    if (iter_aux->OUT->DATA_TYPE == iter->OUT->DATA_TYPE) break;
-                    iter_aux = iter_aux->NEXT;
-                } 
-
-                strcpy(output_name, iter->OUT->NAME);
-                strcpy(selected_data, iter_aux->OUT->NAME);
-                switch (iter->OUT->DATA_TYPE) {
+                strcpy(selected_data, output_array[out_idx]->NAME);
+                switch (output_array[out_idx]->DATA_TYPE) {
                     case RAW:
                         strcat(selected_data, "_raw");
-                        strcat(output_name, "_raw");
                         break;
                     case DEGRADATION:
                         strcat(selected_data, "_deg");
-                        strcat(output_name, "_deg");
                 }
 
                 // HACK: It finds the first time where the raw file was created
@@ -49,30 +40,24 @@ T_VOID plotResults() {
                 }
                 fclose(f_data);
                 
-                strcat(output_name, "_scatter");
+                strcpy(output_name, selected_data);
+                strcat(selected_data, "_scatter");
                 plotScatter(selected_data, output_name);
 
 
                 break;    
 
             case BARWERROR:
-                while (iter_aux != NULL) {
-                    if (iter_aux->OUT->DATA_TYPE == iter->OUT->DATA_TYPE) break;
-                    iter_aux = iter_aux->NEXT;
-                } 
-
-                strcpy(output_name, iter->OUT->NAME);
-                strcpy(selected_data, iter_aux->OUT->NAME);
-                switch (iter->OUT->DATA_TYPE) {
+                strcpy(selected_data, output_array[out_idx]->NAME);
+                switch (output_array[out_idx]->DATA_TYPE) {
                     case RAW:
                         strcat(selected_data, "_raw");
-                        strcat(output_name, "_raw");
                         break;
                     case DEGRADATION:
                         strcat(selected_data, "_deg");
-                        strcat(output_name, "_deg");
                 }
 
+                strcpy(output_name, selected_data);
                 strcat(selected_data, "_metrics");
 
                 f_data = fopen(selected_data, "r");
@@ -85,8 +70,6 @@ T_VOID plotResults() {
                 strcat(output_name, "_barwerror");
                 plotBarWErrors(selected_data, output_name);
         }
-
-        iter = iter->NEXT;
     }
 }
 

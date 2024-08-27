@@ -6,45 +6,211 @@
 
 #include "bench.h"
 #include "api.h"
-#include "apistate.h"
+#include "TUI.h"
 #include "calc.h"
 #include "global.h"
 #include "utils.h"
 #include "state.h"
+#include "cli_utils.h"
+#include "results.h"
 
 #define IGNORE_NUM 10
 
+
+static T_VOID hoverMultiOutType(T_NODE *button, T_VOID **data) {
+    T_NODE *multiResults = data[0];
+    T_NODE *multiData = data[1];
+    T_NODE *multiType = data[1];
+
+    size_t resultOpt = multi_get_index(multiResults);
+    size_t dataOpt = multi_get_index(multiData);
+    size_t typeOpt = multi_get_index(multiType);
+
+    OUTPUT_LIST *out_ptr = OUTPUT_LIST_SELECTED;
+    for (size_t opt = resultOpt; opt > 0; out_ptr = out_ptr->NEXT, --opt);
+    addOutputOption(OUTPUT_GRAPH_OPTIONS[typeOpt], OUTPUT_DATA_OPTIONS[dataOpt], out_ptr->OUT->NAME, out_ptr->OUT->DATA_SIZE, out_ptr->OUT->TYPE);
+}
+
+static T_VOID returnOKButton(T_NODE *button, T_VOID **data) {
+    T_NODE *textbIterations = data[0];
+
+    runExecution(parseNum(textb_get_text(textbIterations)));
+}
+
+
+static T_VOID returnExitButton(T_NODE *button, T_VOID **data) {
+    T_FLAG *runFlag = data[0];
+    *runFlag = FALSE;
+}
+
+T_VOID analysisTUI() {
+    assert(INPUT_CONFIG != NULL);
+
+    T_FLAG loopRun = TRUE;
+    T_VOID *term_attr = init_tui();
+    T_NODE *root = &schema;
+
+    /* MULTINODE RESULTS */
+    T_NODE *multiResults = create_node_multi((T_POSGRID) {1, 1}, WINDOW_WIDTH()/3-2, 12);
+    add_node(root, multiResults);
+
+    /* MULTINODE OUTPUT DATA */
+    T_NODE *multiOutData = create_node_multi( (T_POSGRID) {1+WINDOW_WIDTH()/3, 1}, WINDOW_WIDTH()/3-2, 12);
+    add_node(root, multiOutData);
+
+    /* MULTINODE OUTPUT TYPE */
+    T_NODE *multiOutType = create_node_multi( (T_POSGRID) {1+2*WINDOW_WIDTH()/3, 1}, WINDOW_WIDTH()/3-2, 12);
+    add_node(root, multiOutType);
+
+    /* MULTINODE RESULTS ENTRIES */
+    OUTPUT_LIST *output_ptr = OUTPUT_LIST_SELECTED;
+
+    T_NODE **resultsEntries = NULL;
+    size_t number_entries = 0;
+    while (output_ptr != NULL) {
+        resultsEntries = realloc(resultsEntries, sizeof(T_NODE*) * (++number_entries));
+        resultsEntries[number_entries-1] = create_node_button((T_POSGRID) {1, 1}, 5, 1, output_ptr->OUT->NAME);
+
+        output_ptr = output_ptr->NEXT;
+        multi_add_item(multiResults, resultsEntries[number_entries-1]);
+    }
+
+    /* MULTINODE OUTPUT DATA ENTRIES */
+    T_NODE **dataEntries = malloc(sizeof(T_NODE*)*NUM_OUTPUT_DATA);
+    for (size_t idx = 0; idx < NUM_OUTPUT_DATA; idx++) {
+        dataEntries[idx] = create_node_button((T_POSGRID) {1, 1}, 5, 1, OUTPUT_DATA_OPTIONS[idx]);
+        multi_add_item(multiOutData, dataEntries[idx]);
+    }
+
+    /* MULTINODE OUTPUT TYPE ENTRIES */
+    T_NODE **typeEntries = malloc(sizeof(T_NODE*)*NUM_OUTPUT_GRAPHS);
+    T_VOID **data_multi_type = malloc(3*sizeof(T_NODE *));
+    data_multi_type[0] = multiResults;
+    data_multi_type[1] = multiOutData;
+    data_multi_type[2] = multiOutType;
+    for (size_t idx = 0; idx < NUM_OUTPUT_GRAPHS; idx++) {
+        typeEntries[idx] = create_node_button((T_POSGRID) {1, 1}, 5, 1, OUTPUT_GRAPH_OPTIONS[idx]);
+        multi_add_item(multiOutType, typeEntries[idx]);
+        hook_hover(typeEntries[idx], &hoverMultiOutType, data_multi_type);
+    }
+
+    T_NODE *textbName = create_node_textb( (T_POSGRID) {1, 15}, WINDOW_WIDTH()/4-10);    
+    add_node(multiResults, textbName);
+    T_NODE *textbIterations = create_node_textb( (T_POSGRID) {WINDOW_WIDTH()/4-6, 15}, WINDOW_WIDTH()/4-10);    
+    add_node(multiResults, textbIterations);
+
+    T_NODE *buttonOK = create_node_button( (T_POSGRID) {WINDOW_WIDTH()/2-13, 15}, WINDOW_WIDTH()/4-10, 1, "OK");
+    add_node(multiResults, buttonOK);
+
+    T_NODE *buttonExit = create_node_button( (T_POSGRID) {3*WINDOW_WIDTH()/4-20, 15}, WINDOW_WIDTH()/4-10, 1, "EXIT");
+    add_node(multiResults, buttonExit);
+
+    T_VOID **data_exit = malloc(sizeof(T_FLAG*));
+    data_exit[0] = &loopRun;
+    hook_return(buttonExit, returnExitButton, data_exit);
+
+
+    T_VOID **data_okay = malloc(4*sizeof(T_VOID*));
+    data_okay[0] = textbIterations;
+    hook_return(buttonOK, returnOKButton, data_okay);
+
+    T_NODE *term = create_node_term((T_POSGRID) {1, 18}, WINDOW_WIDTH()-2, WINDOW_HEIGHT()-20);
+    add_node(root, term);
+    int OUTPUT_DESCRIPTOR = term_get_descriptor(term);
+
+    int old_stdout = dup(STDOUT_FILENO);
+    int old_stderr = dup(STDERR_FILENO);
+    close(STDOUT_FILENO);
+    int replaced_stdout = dup(OUTPUT_DESCRIPTOR);
+    close(STDERR_FILENO);
+    int replaced_stderr = dup(OUTPUT_DESCRIPTOR);
+
+    draw();
+    while(loopRun) {
+        event_handler();
+    }
+
+    exit_tui(term_attr);
+    free(data_multi_type);
+    free(data_exit);
+    free(data_okay);
+    free(resultsEntries);
+    free(dataEntries);
+    free(typeEntries);
+
+    close(replaced_stdout);
+    dup(old_stdout);
+    close(replaced_stderr);
+    dup(old_stderr);
+    close(old_stdout);
+    close(old_stderr);
+}
+
+RESULT *create_result_from_output(OUTPUT_LIST *outputs) {
+    RESULT *result_array = NULL;
+
+    size_t size_of_array = 0;
+
+    while (outputs != NULL) {
+        size_of_array++;
+        result_array = realloc(result_array, sizeof(RESULT) * size_of_array);
+        
+        switch (outputs->OUT->TYPE) {
+            case G_INT:
+            case G_UINT:
+                INITIALIZE_RESULTS(T_UINT, result_array + size_of_array-1, outputs->OUT->DATA_SIZE, outputs->OUT->NAME);
+                break;
+            case G_DOUBLE:
+                INITIALIZE_RESULTS(T_DOUBLE, result_array + size_of_array-1, outputs->OUT->DATA_SIZE, outputs->OUT->NAME);
+                break;
+            default:
+                break;
+        }
+
+        outputs = outputs->NEXT;
+    }
+
+    return result_array;
+}
+
 T_ERROR runBench(size_t iter, T_UINT numResults, RESULT **results_input) {
+    RESULT *result = create_result_from_output(OUTPUT_LIST_SELECTED);
     INIT_BENCH();
     for (size_t idx = 0; idx < iter; idx++) {
         //cliPrintProgress(idx, iter);
-        RESULT **result = RUN_BENCH();
+        RUN_BENCH(result);
         if (!result) {
             fprintf(stderr, "Error: Couldn't get result data from the module\n");
         }
 
-        for (size_t result_idx = 0; result_idx < numResults; result_idx++) {
-            switch (result[result_idx]->ARRAY.TYPE) {
+        size_t result_idx = 0;
+        for (OUTPUT_LIST *out_ptr = OUTPUT_LIST_SELECTED; out_ptr != NULL; out_ptr = out_ptr->NEXT, ++result_idx) {
+            switch (out_ptr->OUT->TYPE) {
                 case G_INT:
-                    INITIALIZE_RESULTS(T_UINT, results_input[result_idx]+idx, result[result_idx]->ARRAY.SIZE - IGNORE_LIMIT, result[result_idx]->NAME);
-                    memcpy(results_input[result_idx][idx].ARRAY.DATA, result[result_idx]->ARRAY.DATA + IGNORE_LIMIT*sizeof(T_UINT), \
-                           sizeof(T_UINT)*(result[result_idx]->ARRAY.SIZE - IGNORE_LIMIT));
+                    INITIALIZE_RESULTS(T_UINT, results_input[result_idx]+idx, result[result_idx].ARRAY.SIZE - IGNORE_LIMIT, result[result_idx].NAME);
+                    memcpy(results_input[result_idx][idx].ARRAY.DATA, result[result_idx].ARRAY.DATA + IGNORE_LIMIT*sizeof(T_UINT), \
+                           sizeof(T_UINT)*(result[result_idx].ARRAY.SIZE - IGNORE_LIMIT));
                     break;
                 case G_UINT:
-                    INITIALIZE_RESULTS(T_UINT, results_input[result_idx]+idx, result[result_idx]->ARRAY.SIZE - IGNORE_LIMIT, result[result_idx]->NAME);
-                    memcpy(results_input[result_idx][idx].ARRAY.DATA, result[result_idx]->ARRAY.DATA + IGNORE_LIMIT*sizeof(T_UINT), \
-                           sizeof(T_UINT)*(result[result_idx]->ARRAY.SIZE - IGNORE_LIMIT));
+                    INITIALIZE_RESULTS(T_UINT, results_input[result_idx]+idx, result[result_idx].ARRAY.SIZE - IGNORE_LIMIT, result[result_idx].NAME);
+                    memcpy(results_input[result_idx][idx].ARRAY.DATA, result[result_idx].ARRAY.DATA + IGNORE_LIMIT*sizeof(T_UINT), \
+                           sizeof(T_UINT)*(result[result_idx].ARRAY.SIZE - IGNORE_LIMIT));
                     break;
                 case G_DOUBLE:
-                    INITIALIZE_RESULTS(T_DOUBLE, results_input[result_idx]+idx, result[result_idx]->ARRAY.SIZE - IGNORE_LIMIT, result[result_idx]->NAME);
-                    memcpy(results_input[result_idx][idx].ARRAY.DATA, result[result_idx]->ARRAY.DATA + IGNORE_LIMIT*sizeof(T_DOUBLE), \
-                           sizeof(T_DOUBLE)*(result[result_idx]->ARRAY.SIZE - IGNORE_LIMIT));
+                    INITIALIZE_RESULTS(T_DOUBLE, results_input[result_idx]+idx, result[result_idx].ARRAY.SIZE - IGNORE_LIMIT, result[result_idx].NAME);
+                    memcpy(results_input[result_idx][idx].ARRAY.DATA, result[result_idx].ARRAY.DATA + IGNORE_LIMIT*sizeof(T_DOUBLE), \
+                           sizeof(T_DOUBLE)*(result[result_idx].ARRAY.SIZE - IGNORE_LIMIT));
                 default:
                     break;
             }
         }
     }
     EXIT_BENCH();
+    size_t result_idx = 0;
+    for (OUTPUT_LIST *out_ptr = OUTPUT_LIST_SELECTED; out_ptr != NULL; out_ptr = out_ptr->NEXT, ++result_idx) {
+        DESTROY_RESULTS(result + result_idx);
+    }
+    free(result);
     return 0;
 }
 
@@ -56,7 +222,7 @@ T_ERROR runBench(size_t iter, T_UINT numResults, RESULT **results_input) {
  *                  The input garray_result_input must be well initialized, it is a generic array
  *                  of RESULT elements.
  */
-T_VOID processResults(G_ARRAY *garray_result_input) {
+T_VOID processResults(G_ARRAY *garray_result_input, size_t num_outputs, OUTPUT **output_array) {
     if (garray_result_input->SIZE <= 0) {
         fprintf(stderr, "Error: The number of results must be positive\n");
         return;
@@ -71,12 +237,11 @@ T_VOID processResults(G_ARRAY *garray_result_input) {
     T_STR data_file_name_buf = { 0 };
     T_STR metric_file_name_buf = { 0 };
 
-    OUTPUT_LIST *iter = OUTPUT_LIST_SELECTED;
-    while (iter != NULL) {
-        strcpy(data_file_name_buf, iter->OUT->NAME);
+    for (size_t out_idx = 0; out_idx < num_outputs; out_idx++) {
+        strcpy(data_file_name_buf, output_array[out_idx]->NAME);
 
         T_STR metric_name;
-        switch (iter->OUT->DATA_TYPE) {
+        switch (output_array[out_idx]->DATA_TYPE) {
             case RAW:
                 if (raw_saved) break;        // In case the raw data has been processed no need to do it again
 
@@ -170,8 +335,6 @@ T_VOID processResults(G_ARRAY *garray_result_input) {
 
                 break;
         }
-
-        iter = iter->NEXT;
     }
 }
 
@@ -219,7 +382,7 @@ T_VOID computeDegradation(G_ARRAY *garrays_std_input, size_t num_garrays, G_ARRA
     G_ARRAY garray_result_iso = {.DATA = malloc(sizeof(RESULT) * num_garrays), .SIZE = num_garrays, .TYPE = G_RESULT};
 
     BUILD_PROJECT(cfg);
-    runBench(garray_result_iso.SIZE, garray_result_iso.DATA);
+    runBench(garray_result_iso.SIZE, 1, garray_result_iso.DATA);
 
     // Since the calculateDegradation takes the result data in an array format
     G_ARRAY *garrays_std_iso = malloc(garray_result_iso.SIZE * sizeof(G_ARRAY));

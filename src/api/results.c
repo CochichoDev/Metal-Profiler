@@ -1,14 +1,15 @@
-#include <cstdarg>
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include "api.h"
 #include "api/api.h"
-#include "apistate.h"
+#include "results.h"
+#include "global.h"
 #include "generics.h"
 
 /*
@@ -33,33 +34,23 @@ void __T_DOUBLE_initializeResults(RESULT *results_ptr, T_UINT num_cycles, const 
     INIT_GENERIC(T_DOUBLE, &(results_ptr->ARRAY), num_cycles);
 }
 
-void __T_UINT_destroyResults(RESULT *results_ptr) {
-    if (!results_ptr) {
+T_VOID DESTROY_RESULTS(RESULT *result_ptr) {
+    if (!result_ptr) {
         fprintf(stderr, "Error: Null results pointer cannot be derefenced\n");
         exit(1);
     }
-
-    DESTROY_GENERIC(&(results_ptr->ARRAY));
-}
-void __T_DOUBLE_destroyResults(RESULT *results_ptr) {
-    if (!results_ptr) {
-        fprintf(stderr, "Error: Null results pointer cannot be derefenced\n");
-        exit(1);
-    }
-    DESTROY_GENERIC(&(results_ptr->ARRAY));
+    DESTROY_GENERIC(&(result_ptr->ARRAY));
 }
 
-void READ_TO_RESULT(T_INT in, T_CHAR marker, T_UINT numResults, ...) {
+void READ_TO_RESULT(T_INT in, T_CHAR marker, RESULT *results) {
+    assert(OUTPUT_LIST_SELECTED != NULL);
+    assert(results != NULL);
+
     T_CHAR buf[256];
+
+    size_t numResults = 0;
+    for (OUTPUT_LIST *out_ptr = OUTPUT_LIST_SELECTED; out_ptr != NULL; out_ptr = out_ptr->NEXT, ++numResults);
     
-    RESULT **resultPtrs = malloc(numResults*sizeof(RESULT *));
-
-    va_list resultArgs;
-    va_start(resultArgs, numResults);
-
-    for (T_UINT resultIDX = 0; resultIDX < numResults; resultIDX++) {
-        resultPtrs[resultIDX] = va_arg(resultArgs, RESULT *);
-    }
 
     volatile T_FLAG stop = 0;
     T_UINT read_bytes = 0;
@@ -71,19 +62,19 @@ void READ_TO_RESULT(T_INT in, T_CHAR marker, T_UINT numResults, ...) {
             stop=1;
         }
         if (isdigit(buf[0])) {
-            if (idx >= resultPtrs[total % numResults]->ARRAY.SIZE)
+            if (idx >= results[total % numResults].ARRAY.SIZE)
                 goto CONTINUE;
-            switch (resultPtrs[total % numResults]->ARRAY.TYPE) {
+            switch (results[total % numResults].ARRAY.TYPE) {
                 case G_INT:
-                    sscanf(buf, "%u", ((T_UINT *)resultPtrs[total % numResults]->ARRAY.DATA)+idx);
+                    sscanf(buf, "%u", ((T_UINT *)results[total % numResults].ARRAY.DATA)+idx);
                     //printf("%u\n", *(((T_UINT *)result->ARRAY.DATA)+idx));
                     break;
                 case G_UINT:
-                    sscanf(buf, "%u", ((T_UINT *)resultPtrs[total % numResults]->ARRAY.DATA)+idx);
+                    sscanf(buf, "%u", ((T_UINT *)results[total % numResults].ARRAY.DATA)+idx);
                     //printf("%u\n", *(((T_UINT *)result->ARRAY.DATA)+idx));
                     break;
                 case G_DOUBLE:
-                    sscanf(buf, "%lf", ((T_DOUBLE *)resultPtrs[total % numResults]->ARRAY.DATA)+idx);
+                    sscanf(buf, "%lf", ((T_DOUBLE *)results[total % numResults].ARRAY.DATA)+idx);
                 default:
                     break;
             } 
@@ -93,3 +84,4 @@ void READ_TO_RESULT(T_INT in, T_CHAR marker, T_UINT numResults, ...) {
         }
     }
 }
+

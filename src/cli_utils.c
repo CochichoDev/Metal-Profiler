@@ -205,7 +205,7 @@ T_VOID selectArch(TERM *term, size_t choice) {
 
     if (!(INIT_BENCH = (T_VOID (*)(void)) dlsym(MODULE_HANDLE, "INIT_BENCH")))
         fprintf(stderr, "Error: Could not access INIT_BENCH function (%s)\n", dlerror());
-    if (!(RUN_BENCH = (RESULT **(*)(T_VOID)) dlsym(MODULE_HANDLE, "RUN_BENCH")))
+    if (!(RUN_BENCH = (T_VOID (*)(RESULT *)) dlsym(MODULE_HANDLE, "RUN_BENCH")))
         fprintf(stderr, "Error: Could not access RUN_BENCH  function (%s)\n", dlerror());
     if (!(EXIT_BENCH = (T_VOID (*)(void)) dlsym(MODULE_HANDLE, "EXIT_BENCH")))
         fprintf(stderr, "Error: Could not access EXIT_BENCH   function (%s)\n", dlerror());
@@ -337,28 +337,40 @@ ERROR:
     AVAIL_CONFIGS.selected = -1;
 }
 
-T_VOID runExecution (TERM *term, size_t iter) {
+T_VOID runExecution (size_t iter) {
     if (!MODULE_CONFIG) {
-        write(term->out_descr, ERROR_CONFIG, sizeof(ERROR_CONFIG));
+        fprintf(stdout, ERROR_CONFIG);
         return;
     }
     if (!OUTPUT_LIST_SELECTED) {
         fprintf(stderr, "Error: No output selected\n");
         return;
     }
-    RESULT *result_data = (RESULT *) malloc(sizeof(RESULT) * iter);
+    // Count number of outputs
+    size_t numberResults = 0;
+    for (OUTPUT_LIST *out_ptr = OUTPUT_LIST_SELECTED; out_ptr != NULL; out_ptr = out_ptr->NEXT, ++numberResults); 
 
-    runBench(iter, result_data);
+    RESULT **result_data = (RESULT **) malloc(sizeof(RESULT *) * numberResults);
+    for (size_t result_idx = 0; result_idx < numberResults; result_idx++)
+        result_data[result_idx] = (RESULT *) malloc(sizeof(RESULT *) * iter);
+
+    runBench(iter, numberResults, result_data);
 
     // processResults only accepts a G_ARRAY of type RESULT
-    G_ARRAY result_array = {.TYPE = G_RESULT, .DATA = result_data, .SIZE = iter};
+    OUTPUT_LIST *out_ptr = OUTPUT_LIST_SELECTED;
+    for (size_t result_idx = 0; result_idx < numberResults; out_ptr = out_ptr->NEXT, result_idx++) {
+        G_ARRAY result_array = {.TYPE = G_RESULT, .DATA = result_data[result_idx]->ARRAY.DATA, .SIZE = iter};
 
-    processResults(&result_array);
-    plotResults();
+        // TODO: Generalize for the case where more than one OUTPUT format for the same RESULT Metric
+        processResults(&result_array, 1, (OUTPUT *[]){out_ptr->OUT});
+        plotResults(1, (OUTPUT *[]){out_ptr->OUT});
+
+
+        // The type ihere doesn't matter, free will only need the origin address
+        for (size_t idx = 0; idx < iter; idx++)
+            DESTROY_RESULTS(result_data[result_idx]+idx);
+    }
     
-    // The type ihere doesn't matter, free will only need the origin address
-    for (size_t idx = 0; idx < iter; idx++)
-        DESTROY_RESULTS(T_UINT, result_data+idx);
 
     free(result_data);
 }

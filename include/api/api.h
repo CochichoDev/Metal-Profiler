@@ -6,8 +6,6 @@
 
 #include <sys/types.h>
 
-#include "results.h"
-
 #define BASEDIR "arch/"
 
 #define FALSE   0
@@ -108,16 +106,18 @@ typedef struct {
     size_t      NUM;
 } CONFIG;
 
-typedef struct {
-    T_VOID      *DATA;
-    size_t      SIZE;
-    enum {
+typedef enum {
         G_INT,
         G_UINT,
         G_DOUBLE,
         G_RESULT, 
         G_METRICS
-    }           TYPE;
+} TYPE;
+
+typedef struct {
+    T_VOID      *DATA;
+    size_t      SIZE;
+    TYPE        TYPE;
 } G_ARRAY;
 
 /*
@@ -132,14 +132,15 @@ typedef struct {
 #define INITIALIZE_RESULTS(T, p_results, num_cycles, name) \
     __##T##_initializeResults(p_results, num_cycles, name);
 
-#define DESTROY_RESULTS(T, results) \
-    __##T##_destroyResults(results);
+#define REGISTER_OUTPUT(T, size, name) \
+    __##T##_registerOutput(size, name)
 
 /*
  * ###############################
  * FUNCTION DECLARATION
  * ###############################
  */
+T_VOID DESTROY_RESULTS(RESULT *result_ptr);
 /*
  * GET_COMP_BY_IDX : Finds the component that the input index corresponds to
  * PARAMETERS:
@@ -177,4 +178,9 @@ void __T_DOUBLE_initializeResults(RESULT *results_ptr, T_UINT num_cycles, const 
 void __T_UINT_destroyResults(RESULT *results_ptr);
 void __T_DOUBLE_destroyResults(RESULT *results_ptr);
 
-void READ_TO_RESULT(T_INT in, T_CHAR marker, T_UINT numResults, ...);
+T_VOID __T_UINT_registerOutput(size_t size, char *name);
+T_VOID __T_DOUBLE_registerOutput(size_t size, char *name);
+
+T_VOID UNREGISTER_OUTPUT(RESULT *results);
+
+T_VOID READ_TO_RESULT(T_INT in, T_CHAR marker, RESULT *results);

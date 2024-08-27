@@ -6,9 +6,8 @@
 #include <stdio.h>
 #include <fcntl.h>
 
-#include "api/api.h"
-#include "apistate.h"
-#include "global.h"
+#include "api.h"
+#include "state.h"
 
 /*
  * GET_COMP_BY_IDX : Finds the component that the input index corresponds to
@@ -116,4 +115,16 @@ void KILL_PROCESS(pid_t process) {
         perror("Error: Could not close child process");
         exit(1);
     }
+}
+
+T_VOID __T_UINT_registerOutput(size_t size, char *name) {
+    addOutputOption(NULL, NULL, name, size, G_UINT);
+}
+
+T_VOID __T_DOUBLE_registerOutput(size_t size, char *name) {
+    addOutputOption(NULL, NULL, name, size, G_DOUBLE);
+}
+
+T_VOID UNREGISTER_OUTPUT(RESULT *results) {
+    deleteOutputOption(results->NAME);
 }

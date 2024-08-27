@@ -1,13 +1,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include "api.h"
-#include "apistate.h"
 #include "global.h"
 #include "state.h"
 
 static T_UINT __getType(T_STR *type_options, size_t num_options, T_PSTR type) {
+    if (type == NULL) return 0;
     for (size_t type_idx = 0 ; type_idx < num_options ; type_idx++ ) {
         if (!strcmp(type_options[type_idx], type)) {
             return type_idx;
@@ -24,7 +25,7 @@ static const T_PSTR __getTypeName(T_STR *type_options, size_t num_options, T_UIN
     return type_options[type];
 }
 
-T_ERROR addOutputOption(T_PSTR graph, T_PSTR data, T_PSTR name) {
+T_ERROR addOutputOption(T_PSTR graph, T_PSTR data, T_PSTR name, size_t size, TYPE type) {
     T_UINT graph_type_idx = __getType(OUTPUT_GRAPH_OPTIONS, NUM_OUTPUT_GRAPHS, graph);
     T_UINT data_type_idx = __getType(OUTPUT_DATA_OPTIONS, NUM_OUTPUT_DATA, data);
     if (graph_type_idx == -1) {
@@ -35,6 +36,7 @@ T_ERROR addOutputOption(T_PSTR graph, T_PSTR data, T_PSTR name) {
         fprintf(stderr, "Error: The specified data type (%s) does not exist\n", data);
         return -1;
     }
+    assert(name != NULL);
     if (!strlen(name)) {
         fprintf(stderr, "Error: No name was specified for the output\n");
         return -1;
@@ -71,6 +73,8 @@ T_ERROR addOutputOption(T_PSTR graph, T_PSTR data, T_PSTR name) {
 NEW_ENTRY:
     strcpy(entry->NAME, name);
 UPDATE_ENTRY:
+    entry->TYPE = type;
+    entry->DATA_SIZE = size;
     entry->GRAPH_TYPE = graph_type_idx;
     entry->DATA_TYPE = data_type_idx;
     return 0;

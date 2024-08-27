@@ -12,7 +12,7 @@
 #include "cli_utils.h"
 #include "state.h"
 #include "optimization.h"
-#include "apistate.h"
+#include "bench.h"
 
 static ACTION parseAction(TERM *term);
 static LIST_ACTION parseListArg(TERM *term);
@@ -103,9 +103,12 @@ uint8_t cliGetInput(TERM *term) {
             cliClear(term);
         case NONE:
             break;
+        case ANALYZE:
+            analysisTUI();
+            break;
         case EXECUTE:
             getWord(term, buffer, 128);
-            runExecution(term, parseNum(buffer));
+            runExecution(parseNum(buffer));
             break;
         case EXIT:
             cliClose(term);
@@ -174,7 +177,7 @@ uint8_t cliGetInput(TERM *term) {
                     strToUpper(data);
                     // Get the name
                     getWord(term, name, 64);
-                    addOutputOption(graph, data, name);
+                    //addOutputOption(graph, data, name);
                     break;
                 case S_ERROR:
                     return 1;
@@ -223,6 +226,10 @@ static ACTION parseAction(TERM *term) {
         term->lastchar &= 0xDF;         // Capitalize letter
     
     switch (term->lastchar) {
+        case 'A':
+            // Match for A+NALYZE
+            if (matchKey(term, "NALYZE")) return ANALYZE;
+            goto lNACTION;
         case 'C':
             // Match for C+LEAR
             if (matchKey(term, "LEAR")) return CLEAR;

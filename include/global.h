@@ -61,6 +61,8 @@ typedef struct {
 #define NUM_OUTPUT_DATA 2
 typedef struct {
     T_STR NAME;
+    TYPE  TYPE;
+    size_t DATA_SIZE;
     enum {
         SCATTER,
         BARWERROR
@@ -95,5 +97,5 @@ extern CONFIG       *INPUT_CONFIG;
 
 extern T_VOID       (*BUILD_PROJECT)(CONFIG *);
 extern T_VOID       (*INIT_BENCH)(T_VOID);
-extern RESULT       **(*RUN_BENCH)(T_VOID);
+extern T_VOID       (*RUN_BENCH)(RESULT *);
 extern T_VOID       (*EXIT_BENCH)(T_VOID);
