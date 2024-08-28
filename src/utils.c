@@ -4,9 +4,6 @@
  * Author: Diogo Cochicho
  */
 
-#include "api.h"
-#include "apistate.h"
-#include "global.h"
 #include "utils.h"
 #include "calc.h"
 
@@ -16,7 +13,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <wchar.h>
-#include <time.h>
 
 
 

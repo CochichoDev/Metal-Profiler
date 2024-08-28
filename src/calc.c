@@ -10,9 +10,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <wchar.h>
+#include <time.h>
 
 #include "calc.h"
-#include "api.h"
 
 
 /************** RESULT RELATED FUNCTIONS ****************/
