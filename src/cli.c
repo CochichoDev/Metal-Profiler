@@ -1,19 +1,23 @@
-#include <asm-generic/errno-base.h>
+/*
+ * File: cli.c
+ * CLI FUNCTIONALITY
+ * Author: Diogo Cochicho
+ */
+
 #include <fcntl.h>
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <ctype.h>
-
 #include <errno.h>
 
 #include "utils.h"
 #include "cli.h"
-#include "cli_utils.h"
 #include "state.h"
 #include "optimization.h"
 #include "bench.h"
 
+/************** CLI STATIC FUNCTION DECLARATION ****************/
 static ACTION parseAction(TERM *term);
 static LIST_ACTION parseListArg(TERM *term);
 static OPTIMIZE_ACTION parseOptimizeArg(TERM *term);
@@ -23,6 +27,8 @@ static uint8_t matchKey(TERM *term, const char *key);
 static uint8_t ignoreLine(TERM *term);
 static void getWord(TERM *term, T_PSTR output, size_t max_size);
 
+
+/************** CLI WINDOW FUNCTIONS ****************/
 /*
  * cliClear: Cleans the output descriptor
  * Parameters: 
@@ -83,6 +89,21 @@ uint8_t cliStart(TERM *term) {
 }
 
 /*
+ * cliClose: Closes the TUI application
+ * Parameters: 
+ *      term : Reference to the terminal structure
+ * Return values:
+ *      0 : Successful exiting
+ *      1 : Error exiting terminal
+ */
+uint8_t cliClose(TERM *term) {
+    if (cliClear(term))
+        return 1;
+    return 0;
+}
+
+/************** CLI FUNCTIONALITY ****************/
+/*
  * cliGetInput: Gets the action input and dispatches the executuion accordingly
  * Parameters: 
  *      term : Reference to the terminal structure
@@ -108,7 +129,7 @@ uint8_t cliGetInput(TERM *term) {
             break;
         case EXECUTE:
             getWord(term, buffer, 128);
-            runExecution(parseNum(buffer));
+            runExecution(parseNum(buffer), ".");
             break;
         case EXIT:
             cliClose(term);
@@ -142,7 +163,7 @@ uint8_t cliGetInput(TERM *term) {
             break;
         case LOAD:
             getWord(term, buffer, 128);
-            loadConfig(term, parseNum(buffer));
+            loadConfig(parseNum(buffer));
             break;
         case OPTIMIZE:
             switch (parseOptimizeArg(term)) {
@@ -165,8 +186,8 @@ uint8_t cliGetInput(TERM *term) {
             switch (parseSetArg(term)) {
                 case S_ARCH:
                     getWord(term, buffer, 128);
-                    selectArch(term, parseNum(buffer));
-                    listConfigs(term);
+                    selectArch(parseNum(buffer));
+                    listConfigs();
                     break;
                 case S_OUTPUT:
                     // Get the type of graph
@@ -182,7 +203,7 @@ uint8_t cliGetInput(TERM *term) {
                 case S_ERROR:
                     return 1;
                 case S_NONE:
-                    listArchs(term);
+                    listArchs();
                     break;
             }
             break;
@@ -198,20 +219,23 @@ uint8_t cliGetInput(TERM *term) {
     return 0;
 }
 
-/*
- * cliClose: Closes the TUI application
- * Parameters: 
- *      term : Reference to the terminal structure
- * Return values:
- *      0 : Successful exiting
- *      1 : Error exiting terminal
- */
-uint8_t cliClose(TERM *term) {
-    if (cliClear(term))
-        return 1;
-    return 0;
+
+void cliPrintProgress(size_t cur, size_t max) {
+    write(STDOUT_FILENO, tLINEUP, strlen(tLINEUP)+1);
+    write(STDOUT_FILENO, tCLEARLINE, strlen(tCLEARLINE)+1);
+    write(STDOUT_FILENO, tHOMELINE, strlen(tHOMELINE)+1);
+
+    size_t progress = cur * 10 / max;
+    write(STDOUT_FILENO, "[", 1);
+    for (size_t idx = 0; idx < progress; idx++) 
+        write(STDOUT_FILENO, "#", 1);
+
+    for (size_t idx = progress; idx < 10; idx++) 
+        write(STDOUT_FILENO, " ", 2);
+    write(STDOUT_FILENO, "]\n", 3);
 }
 
+/************** CLI PARSING FUNCTIONS ****************/
 /*
  * parseAction: Parses the input into actions
  * Parameters: 
@@ -467,6 +491,8 @@ static HELP_ACTION parseHelpArg(TERM *term) {
         return H_NONE;
 }
 
+
+/************** CLI HELPER FUNCTIONS ****************/
 /*
  * matchKey: Matches the specified key with the input received from the descriptor
  * Parameters: 
@@ -541,17 +567,3 @@ static void getWord(TERM *term, T_PSTR output, size_t max_size) {
         *char_ptr = '\0';
 }
 
-void cliPrintProgress(size_t cur, size_t max) {
-    write(STDOUT_FILENO, tLINEUP, strlen(tLINEUP)+1);
-    write(STDOUT_FILENO, tCLEARLINE, strlen(tCLEARLINE)+1);
-    write(STDOUT_FILENO, tHOMELINE, strlen(tHOMELINE)+1);
-
-    size_t progress = cur * 10 / max;
-    write(STDOUT_FILENO, "[", 1);
-    for (size_t idx = 0; idx < progress; idx++) 
-        write(STDOUT_FILENO, "#", 1);
-
-    for (size_t idx = progress; idx < 10; idx++) 
-        write(STDOUT_FILENO, " ", 2);
-    write(STDOUT_FILENO, "]\n", 3);
-}

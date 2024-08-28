@@ -1,3 +1,9 @@
+/*
+ * File: t32_i.c
+ * Trace32 Interface Functions
+ * Author: Diogo Cochicho
+ */
+
 #include <unistd.h>
 #include <stdio.h>
 #include <signal.h>
@@ -48,11 +54,21 @@ pid_t INIT_T32(T_PSTR path_to_exec) {
 }
 
 
+T_INT CLOSE_T32_CONN() {
+    if (T32_Exit() != T32_OK) {
+        perror("Error: Could not close T32 connection\n");
+        return 1;
+    }
+    return 0;
+}
+
 T_INT CLOSE_T32(pid_t t32_pid) {
+    CLOSE_T32_CONN();
     if (T32_Exit() != T32_OK) {
         perror("Error: Could not close T32 connection\n");
         return -1;
     }
+    sleep(1);
     KILL_PROCESS(t32_pid);
     return 0;
 }
@@ -88,13 +104,6 @@ T_INT INIT_T32_CONN(const char *node, const char *port) {
     return 0;
 }
 
-T_INT CLOSE_T32_CONN() {
-    if (T32_Exit() != T32_OK) {
-        perror("Error: Could not close T32 connection\n");
-        return 1;
-    }
-    return 0;
-}
 
 T_INT EX_T32_SCRIPT(const char *scriptname) {
     if (T32_Cmd_f("DO %s", scriptname) != T32_OK) {

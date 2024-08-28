@@ -1,3 +1,9 @@
+/*
+ * File: utils.c
+ * General functionality used/usefull for different scenarios
+ * Author: Diogo Cochicho
+ */
+
 #include "api.h"
 #include "apistate.h"
 #include "global.h"
@@ -12,80 +18,10 @@
 #include <wchar.h>
 #include <time.h>
 
-T_PSTR getNameFromPath(T_PSTR path) {
-    // Get the name of the executable
-    T_PSTR slash_marker = path;
-    T_PSTR after_slash = path;
-    while (*slash_marker != '\0') {
-        if (*slash_marker == '/')
-            after_slash = slash_marker+1;
-        slash_marker++;
-    }
-
-    return after_slash;
-}
-
-void loadAvailableArchs() {
-    FILE *archs;
-
-    if (!(archs = fopen(ARCHS_PATH ARCH_CONFIG, "r")))
-        perror("Error: Couldn't open architecture configuration file");
 
 
-    char buf[128];
-    int i = 0;
-    while (fgets(buf, sizeof(buf), archs)) {
-        if (!isalnum(buf[0])) continue;
-        if (buf[strlen(buf)-1] == '\n')
-            buf[strlen(buf)-1] = '\0';          // Get rid of the line feed
-       
-        memcpy(AVAIL_ARCHS.arch[i].name, buf, strlen(buf)+1);
-        memcpy(AVAIL_ARCHS.arch[i].path, ARCHS_PATH, strlen(ARCHS_PATH)+1);
-        strcat(AVAIL_ARCHS.arch[i].path, buf);
-        strcat(AVAIL_ARCHS.arch[i].path, "/module/bin/dmodule.so");
-        i++;
-    }
-    AVAIL_ARCHS.num = i;
-
-    fclose(archs);
-}
-
-void loadAvailableConfigs() {
-    FILE *configs;
-
-    
-    char config_list_path[256];
-
-    memcpy(config_list_path, ARCHS_PATH, strlen(ARCHS_PATH)+1);
-    strcat(config_list_path, SELECTED_ARCH.name);
-    strcat(config_list_path, "/configs.list");
-
-
-    if (!(configs = fopen(config_list_path, "r")))
-        perror("Error: Couldn't open configuration list file");
-
-    char buf[128];
-    int i = 0;
-    while (fgets(buf, sizeof(buf), configs)) {
-        if (!isnotblank(buf[0])) continue;
-        if (buf[strlen(buf)-1] == '\n')
-            buf[strlen(buf)-1] = '\0';          // Get rid of the line feed
-       
-        char *name = getNameFromPath(buf);
-        memcpy(AVAIL_CONFIGS.config[i].name, name, strlen(name)+1);
-        memcpy(AVAIL_CONFIGS.config[i].path, ARCHS_PATH, strlen(ARCHS_PATH)+1);
-        strcat(AVAIL_CONFIGS.config[i].path, SELECTED_ARCH.name);
-        strcat(AVAIL_CONFIGS.config[i].path, "/");
-        strcat(AVAIL_CONFIGS.config[i].path, buf);
-        i++;
-    }
-    AVAIL_CONFIGS.num = i;
-    AVAIL_CONFIGS.selected = -1;
-
-    fclose(configs);
-}
-
-size_t a_itos(int num, char *str) {
+/************** PARSING FUNCTIONS ****************/
+size_t itos(int num, char *str) {
     if (num == 0) {
         *str++ = '0';
         *str = 0;
@@ -141,6 +77,7 @@ double parseFloat(char *str) {
     return num;
 }
 
+/************** STRING HANDLING FUNCTIONS ****************/
 T_VOID strToUpper(T_PSTR str) {
     while (*str != '\0') {
         if (isnotblank(*str)) {
@@ -150,6 +87,20 @@ T_VOID strToUpper(T_PSTR str) {
     }
 }
 
+T_PSTR getNameFromPath(T_PSTR path) {
+    // Get the name of the executable
+    T_PSTR slash_marker = path;
+    T_PSTR after_slash = path;
+    while (*slash_marker != '\0') {
+        if (*slash_marker == '/')
+            after_slash = slash_marker+1;
+        slash_marker++;
+    }
+
+    return after_slash;
+}
+
+/************** FILE HANDLING FUNCTIONS ****************/
 T_UINT numColumnInFile(FILE *file) {
     if (!file)
         return 0;
@@ -347,6 +298,7 @@ T_ERROR saveDataRESULTBATCH(const T_PSTR output, G_ARRAY *result_array, size_t s
     return 0;
 }
 
+/************** CONFIG HANDLING FUNCTIONS ****************/
 size_t strProprietyIdxByPtr(T_PSTR *OPTS, T_PSTR prop) {
     size_t idx = 0;
     for ( ; OPTS[idx] != NULL; idx++) {
@@ -388,39 +340,4 @@ CONFIG *const cloneConfig(CONFIG *const cfg) {
     return clone;
 }
 
-T_INT uniformRandom(T_INT min, T_INT max) {
-    T_INT range = max - min + 1;
-    T_UCHAR range_nbit = 0;
-
-    srand(clock());
-    while ((1 << range_nbit) < range) {
-        range_nbit++;
-    }
-    // range_nbit has as many bits as needed to represent range
-    // since higher order bits in rand() are better distributed
-    // I'll take the minimum high-order bits to represent my
-    // distribution sampling
-    T_UCHAR num_randmax_bits = __builtin_popcount(RAND_MAX);
-    T_UCHAR shift = num_randmax_bits - range_nbit;
-
-    T_INT random_num;
-
-
-    do {
-        random_num = rand() >> shift;
-    } while (random_num >= range);
-
-    return (random_num + min);
-}
-
-T_INT binomialRandom(T_UINT n, T_DOUBLE p) {
-    T_INT successes = 0;
-
-    while (n > 0) {
-        if (uniformRandom(0, 255) < 255*p) successes++;
-        n--;
-    }
-
-    return successes;
-}
 

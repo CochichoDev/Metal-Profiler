@@ -1,14 +1,13 @@
-/*
- * Developed by Diogo Cochicho
- */
-
-#pragma once
+#ifndef GLOBAL_H
+#define GLOBAL_H
 
 #include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>
 
-#include "api/api.h"
+#include "results.h"
+#include "types.h"
+#include "state.h"
 
 #define ARCHS_PATH "arch/"
 #define ARCH_CONFIG "archs.txt"
@@ -33,54 +32,6 @@
     exit(1);                                                \
     }
 
-/*
- * Type declarations
- */
-typedef struct {
-    char name[128];
-    char path[256];
-} ARCH;
-
-typedef struct {
-    ARCH arch[64];
-    size_t num;
-} ARCH_LIST;
-
-typedef struct {
-    char name[128];
-    char path[256];
-} FCONFIG;
-
-typedef struct {
-    FCONFIG config[128];
-    size_t num;
-    size_t selected;
-} FCONFIG_LIST;
-
-#define NUM_OUTPUT_GRAPHS 2
-#define NUM_OUTPUT_DATA 2
-typedef struct {
-    T_STR NAME;
-    TYPE  TYPE;
-    size_t DATA_SIZE;
-    enum {
-        SCATTER,
-        BARWERROR
-    } GRAPH_TYPE;
-    enum {
-        RAW,
-        DEGRADATION
-    } DATA_TYPE;
-} OUTPUT;
-
-typedef struct s_OUTPUT_LIST {
-    OUTPUT *OUT;
-    struct s_OUTPUT_LIST *NEXT;
-} OUTPUT_LIST;
-
-/*
- * Global variable declaration
- */
 extern T_STR        OUTPUT_GRAPH_OPTIONS[NUM_OUTPUT_GRAPHS];
 extern T_STR        OUTPUT_DATA_OPTIONS[NUM_OUTPUT_DATA];
 
@@ -99,3 +50,4 @@ extern T_VOID       (*BUILD_PROJECT)(CONFIG *);
 extern T_VOID       (*INIT_BENCH)(T_VOID);
 extern T_VOID       (*RUN_BENCH)(RESULT *);
 extern T_VOID       (*EXIT_BENCH)(T_VOID);
+#endif

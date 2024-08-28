@@ -1,5 +1,7 @@
 /*
- * Developed by Diogo Cochicho
+ * File: global.c
+ * Definition and allocation of global state
+ * Author: Diogo Cochicho
  */
 
 #include <dlfcn.h>

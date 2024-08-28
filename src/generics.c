@@ -1,3 +1,9 @@
+/*
+ * File: generics.c
+ * Generic functionality
+ * Author: Diogo Cochicho
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -5,6 +11,8 @@
 #include "api.h"
 #include "apistate.h"
 
+
+/************** GENERIC INITIALIZATION ****************/
 T_VOID __T_INT__InitializeGeneric(G_ARRAY* gen_data, size_t size) {
     if (!gen_data) {
         fprintf(stderr, "Error: Tried to initialize NULL pointer\n");
@@ -41,6 +49,8 @@ T_VOID __T_DOUBLE__InitializeGeneric(G_ARRAY* gen_data, size_t size) {
     gen_data->SIZE = size;
 }
 
+
+/************** GENERIC DESTRUCTION ****************/
 T_VOID DESTROY_GENERIC(G_ARRAY* gen_data) {
     if (!gen_data) {
         fprintf(stderr, "Error: Tried to destroy a NULL generic\n");

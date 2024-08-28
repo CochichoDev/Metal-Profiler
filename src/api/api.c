@@ -1,3 +1,9 @@
+/*
+ * File: api.c
+ * Functionality provided by the API to the modules
+ * Author: Diogo Cochicho
+ */
+
 #include <string.h>
 #include <stdarg.h>
 #include <signal.h>
@@ -9,6 +15,7 @@
 #include "api.h"
 #include "state.h"
 
+/************** CONFIG MANIPULATION ****************/
 /*
  * GET_COMP_BY_IDX : Finds the component that the input index corresponds to
  * PARAMETERS:
@@ -64,6 +71,7 @@ size_t GET_PROP_BY_NAME(const COMP *const in1, T_PSTR in2, T_VOID *out) {
 }
 
 
+/************** PROCESS MANAGEMENT ****************/
 pid_t RUN_PROCESS_IMAGE(T_INT *new_descr, const T_PSTR image_path, ...) {
     va_list va;
     const char *args[16];
@@ -117,6 +125,7 @@ void KILL_PROCESS(pid_t process) {
     }
 }
 
+/************** OUTPUT CONTROL ****************/
 T_VOID __T_UINT_registerOutput(size_t size, char *name) {
     addOutputOption(NULL, NULL, name, size, G_UINT);
 }

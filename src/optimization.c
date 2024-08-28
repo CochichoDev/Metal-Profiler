@@ -64,7 +64,6 @@ static T_VOID hoverMultiOptChoice(T_NODE *button, T_VOID **data) {
             multi_add_item(multiOptAlgo, buttonRandomLimited);
             break;
     }
-    
 }
 
 static T_VOID returnExitButton(T_NODE *button, T_VOID **data) {
@@ -355,7 +354,7 @@ static T_DOUBLE objectiveMaximizeInter(OPT_MAP *mapGrid, PARAM_GRID param) {
     G_ARRAY garray_result_full = {.DATA = calloc(1, sizeof(RESULT)), .TYPE = G_RESULT, .SIZE = 1};
     BUILD_PROJECT(INPUT_CONFIG);
     printParameterGrid(STDOUT_FILENO, mapGrid, param);
-    //runBench(garray_result_full.SIZE, garray_result_full.DATA);
+    runBench(garray_result_full.SIZE, 1, (RESULT *[]) {garray_result_full.DATA});
 
     // Calculate vector of degradation
     G_ARRAY *garrays_std_full = calloc(garray_result_full.SIZE, sizeof(G_ARRAY));
@@ -407,7 +406,7 @@ static T_DOUBLE objectiveMinimizeInterProp(OPT_MAP *mapGrid, PARAM_GRID param) {
     G_ARRAY garray_result_full = {.DATA = calloc(1, sizeof(RESULT)), .TYPE = G_RESULT, .SIZE = 1};
     BUILD_PROJECT(INPUT_CONFIG);
     printParameterGrid(STDOUT_FILENO, mapGrid, param);
-    //runBench(garray_result_full.SIZE, garray_result_full.DATA);
+    runBench(garray_result_full.SIZE, 1, (RESULT *[]) {garray_result_full.DATA});
 
     // Calculate vector of degradation
     G_ARRAY *garrays_std_full = calloc(garray_result_full.SIZE, sizeof(G_ARRAY));

@@ -1,8 +1,6 @@
-/*
- * Developed by Diogo Cochicho
- */
+#ifndef TTY_H
+#define TTY_H
 
-#pragma once
 #include <termio.h>
 
 #include "api.h"
@@ -13,13 +11,13 @@ included by <termios.h> */
 /* change this definition for the correct port */
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 
-/*
- * Type declarations
- */
+/************** TYPES DEFINITION ****************/
 typedef struct s_ttyFD {
     int fd;
     struct termios oldtio;
 } FD_TTY;
 
 FD_TTY INIT_TTY(const char *path);
-void CLOSE_TTY(FD_TTY fd);
+T_VOID CLOSE_TTY(FD_TTY fd);
+
+#endif

@@ -1,18 +1,26 @@
+/*
+ * File: plot.c
+ * Plotting related
+ * Author: Diogo Cochicho
+ */
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
 
-#include "plot.h"
 #include "api.h"
 #include "global.h"
+#include "plot.h"
 
+
+/************** GENERAL RESULT PLOTTING ****************/
 /*
  * plotResults : It belongs to the execution pipeline it profits from the 
  *                  global OUTPUT_LIST to know which graphs to produce and
  *                  what data to plot
  */
-T_VOID plotResults(size_t num_outputs, OUTPUT **output_array) {
+T_VOID plotResults(const char *name, size_t num_outputs, OUTPUT **output_array) {
     assert(num_outputs > 0);
     assert(output_array != NULL);
     
@@ -41,7 +49,7 @@ T_VOID plotResults(size_t num_outputs, OUTPUT **output_array) {
                 fclose(f_data);
                 
                 strcpy(output_name, selected_data);
-                strcat(selected_data, "_scatter");
+                strcat(output_name, "_scatter");
                 plotScatter(selected_data, output_name);
 
 
@@ -73,6 +81,7 @@ T_VOID plotResults(size_t num_outputs, OUTPUT **output_array) {
     }
 }
 
+/************** TYPES OF PLOTS ****************/
 T_VOID plotScatter(const T_PSTR input, const T_PSTR output) {
     FILE *gnuplot = popen("gnuplot", "w");
 

@@ -1,5 +1,7 @@
 /*
- * Developed by Diogo Cochicho
+ * File: tty.c
+ * TTY related functionality provided by the API
+ * Author: Diogo Cochicho
  */
 
 #include <termios.h>
@@ -87,7 +89,6 @@ FD_TTY INIT_TTY(const char *path) {
 
     return (FD_TTY) {fd, oldtio};
 }
-
 
 void CLOSE_TTY(FD_TTY tty) {
     /* restore the old port settings */

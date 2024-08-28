@@ -1,8 +1,16 @@
+/*
+ * File: bench.c
+ * BENCH EXECUTION AND PROCESSING
+ * Author: Diogo Cochicho
+ */
+
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <errno.h>
+#include <sys/stat.h>
 
 #include "bench.h"
 #include "api.h"
@@ -11,12 +19,16 @@
 #include "global.h"
 #include "utils.h"
 #include "state.h"
-#include "cli_utils.h"
 #include "results.h"
+#include "plot.h"
 
 #define IGNORE_NUM 10
 
+static T_VOID processResults(const char *name, G_ARRAY *garray_result_input, size_t num_outputs, OUTPUT **output_array);
+static T_VOID computeDegradation(G_ARRAY *garrays_std_input, size_t num_garrays, G_ARRAY *garrays_std_deg, CONFIG *cfg);
+static RESULT *create_result_from_output(OUTPUT_LIST *outputs);
 
+/************** BENCH TUI FUNCTIONS ****************/
 static T_VOID hoverMultiOutType(T_NODE *button, T_VOID **data) {
     T_NODE *multiResults = data[0];
     T_NODE *multiData = data[1];
@@ -33,8 +45,9 @@ static T_VOID hoverMultiOutType(T_NODE *button, T_VOID **data) {
 
 static T_VOID returnOKButton(T_NODE *button, T_VOID **data) {
     T_NODE *textbIterations = data[0];
+    T_NODE *textbName = data[1];
 
-    runExecution(parseNum(textb_get_text(textbIterations)));
+    runExecution(parseNum(textb_get_text(textbIterations)), textb_get_text(textbName));
 }
 
 
@@ -110,8 +123,9 @@ T_VOID analysisTUI() {
     hook_return(buttonExit, returnExitButton, data_exit);
 
 
-    T_VOID **data_okay = malloc(4*sizeof(T_VOID*));
-    data_okay[0] = textbIterations;
+    T_VOID **data_okay = malloc(2*sizeof(T_VOID*));
+    data_okay[0] = textbName;
+    data_okay[1] = textbIterations;
     hook_return(buttonOK, returnOKButton, data_okay);
 
     T_NODE *term = create_node_term((T_POSGRID) {1, 18}, WINDOW_WIDTH()-2, WINDOW_HEIGHT()-20);
@@ -146,31 +160,45 @@ T_VOID analysisTUI() {
     close(old_stderr);
 }
 
-RESULT *create_result_from_output(OUTPUT_LIST *outputs) {
-    RESULT *result_array = NULL;
 
-    size_t size_of_array = 0;
-
-    while (outputs != NULL) {
-        size_of_array++;
-        result_array = realloc(result_array, sizeof(RESULT) * size_of_array);
-        
-        switch (outputs->OUT->TYPE) {
-            case G_INT:
-            case G_UINT:
-                INITIALIZE_RESULTS(T_UINT, result_array + size_of_array-1, outputs->OUT->DATA_SIZE, outputs->OUT->NAME);
-                break;
-            case G_DOUBLE:
-                INITIALIZE_RESULTS(T_DOUBLE, result_array + size_of_array-1, outputs->OUT->DATA_SIZE, outputs->OUT->NAME);
-                break;
-            default:
-                break;
-        }
-
-        outputs = outputs->NEXT;
+/************** BENCH RUNNING FUNCTIONS ****************/
+T_VOID runExecution (size_t iter, const char *name) {
+    if (!MODULE_CONFIG) {
+        fprintf(stdout, "Error: No config has been selected\n");
+        return;
     }
+    if (!OUTPUT_LIST_SELECTED) {
+        fprintf(stderr, "Error: No output selected\n");
+        return;
+    }
+    // Count number of outputs
+    size_t numberResults = 0;
+    for (OUTPUT_LIST *out_ptr = OUTPUT_LIST_SELECTED; out_ptr != NULL; out_ptr = out_ptr->NEXT, ++numberResults); 
 
-    return result_array;
+    RESULT **result_data = (RESULT **) malloc(sizeof(RESULT *) * numberResults);
+    for (size_t result_idx = 0; result_idx < numberResults; result_idx++)
+        result_data[result_idx] = (RESULT *) malloc(sizeof(RESULT) * iter);
+
+    runBench(iter, numberResults, result_data);
+
+    // processResults only accepts a G_ARRAY of type RESULT
+    OUTPUT_LIST *out_ptr = OUTPUT_LIST_SELECTED;
+    for (size_t result_idx = 0; result_idx < numberResults; out_ptr = out_ptr->NEXT, result_idx++) {
+        G_ARRAY result_array = {.TYPE = G_RESULT, .DATA = result_data[result_idx], .SIZE = iter};
+
+        // TODO: Generalize for the case where more than one OUTPUT format for the same RESULT Metric
+        processResults(name, &result_array, 1, (OUTPUT *[]){out_ptr->OUT});
+        plotResults(name, 1, (OUTPUT *[]){out_ptr->OUT});
+
+
+        // The type ihere doesn't matter, free will only need the origin address
+        for (size_t idx = 0; idx < iter; idx++)
+            DESTROY_RESULTS(result_data[result_idx]+idx);
+    }
+    
+    for (size_t result_idx = 0; result_idx < numberResults; result_idx++)
+        free(result_data[result_idx]);
+    free(result_data);
 }
 
 T_ERROR runBench(size_t iter, T_UINT numResults, RESULT **results_input) {
@@ -184,7 +212,10 @@ T_ERROR runBench(size_t iter, T_UINT numResults, RESULT **results_input) {
         }
 
         size_t result_idx = 0;
-        for (OUTPUT_LIST *out_ptr = OUTPUT_LIST_SELECTED; out_ptr != NULL; out_ptr = out_ptr->NEXT, ++result_idx) {
+        for (OUTPUT_LIST *out_ptr = OUTPUT_LIST_SELECTED; \
+             out_ptr != NULL && result_idx < numResults; \
+             out_ptr = out_ptr->NEXT, ++result_idx) 
+        {
             switch (out_ptr->OUT->TYPE) {
                 case G_INT:
                     INITIALIZE_RESULTS(T_UINT, results_input[result_idx]+idx, result[result_idx].ARRAY.SIZE - IGNORE_LIMIT, result[result_idx].NAME);
@@ -214,6 +245,8 @@ T_ERROR runBench(size_t iter, T_UINT numResults, RESULT **results_input) {
     return 0;
 }
 
+
+/************** BENCH PROCESSING FUNCTIONS ****************/
 /*
  * processResults : It performs the necessary data treatment that are specified
  *                  in the global OUTPUT_LIST and saves the data in files whose names
@@ -222,9 +255,14 @@ T_ERROR runBench(size_t iter, T_UINT numResults, RESULT **results_input) {
  *                  The input garray_result_input must be well initialized, it is a generic array
  *                  of RESULT elements.
  */
-T_VOID processResults(G_ARRAY *garray_result_input, size_t num_outputs, OUTPUT **output_array) {
+static T_VOID processResults(const char *name, G_ARRAY *garray_result_input, size_t num_outputs, OUTPUT **output_array) {
     if (garray_result_input->SIZE <= 0) {
         fprintf(stderr, "Error: The number of results must be positive\n");
+        return;
+    }
+
+    if (mkdir(name, 0700) && errno != EEXIST) {
+        fprintf(stderr, "Error: Could not create the %s directory\n", name);
         return;
     }
 
@@ -236,6 +274,9 @@ T_VOID processResults(G_ARRAY *garray_result_input, size_t num_outputs, OUTPUT *
 
     T_STR data_file_name_buf = { 0 };
     T_STR metric_file_name_buf = { 0 };
+    // Prepare the file path to include the requested directory
+    strcpy(data_file_name_buf, name);
+    strcat(data_file_name_buf, "/");
 
     for (size_t out_idx = 0; out_idx < num_outputs; out_idx++) {
         strcpy(data_file_name_buf, output_array[out_idx]->NAME);
@@ -377,12 +418,12 @@ T_VOID computeProprietyDegradation(G_ARRAY *garrays_std_input, size_t num_garray
     destroyConfig(cfg_mod);
 }
 
-T_VOID computeDegradation(G_ARRAY *garrays_std_input, size_t num_garrays, G_ARRAY *garrays_std_deg, CONFIG *cfg) {
+static T_VOID computeDegradation(G_ARRAY *garrays_std_input, size_t num_garrays, G_ARRAY *garrays_std_deg, CONFIG *cfg) {
     // Create and initialize garray_result_iso (a G_ARRAY of RESULT to store the isolation data)
     G_ARRAY garray_result_iso = {.DATA = malloc(sizeof(RESULT) * num_garrays), .SIZE = num_garrays, .TYPE = G_RESULT};
 
     BUILD_PROJECT(cfg);
-    runBench(garray_result_iso.SIZE, 1, garray_result_iso.DATA);
+    runBench(garray_result_iso.SIZE, 1, (RESULT *[]){garray_result_iso.DATA});
 
     // Since the calculateDegradation takes the result data in an array format
     G_ARRAY *garrays_std_iso = malloc(garray_result_iso.SIZE * sizeof(G_ARRAY));
@@ -405,3 +446,32 @@ T_VOID computeDegradation(G_ARRAY *garrays_std_input, size_t num_garrays, G_ARRA
     free(garrays_std_iso);
     free(garray_result_iso.DATA);
 }
+
+/************** BENCH HELPER FUNCTIONS ****************/
+static RESULT *create_result_from_output(OUTPUT_LIST *outputs) {
+    RESULT *result_array = NULL;
+
+    size_t size_of_array = 0;
+
+    while (outputs != NULL) {
+        size_of_array++;
+        result_array = realloc(result_array, sizeof(RESULT) * size_of_array);
+        
+        switch (outputs->OUT->TYPE) {
+            case G_INT:
+            case G_UINT:
+                INITIALIZE_RESULTS(T_UINT, result_array + size_of_array-1, outputs->OUT->DATA_SIZE, outputs->OUT->NAME);
+                break;
+            case G_DOUBLE:
+                INITIALIZE_RESULTS(T_DOUBLE, result_array + size_of_array-1, outputs->OUT->DATA_SIZE, outputs->OUT->NAME);
+                break;
+            default:
+                break;
+        }
+
+        outputs = outputs->NEXT;
+    }
+
+    return result_array;
+}
+

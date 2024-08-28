@@ -1,3 +1,9 @@
+/*
+ * File: result.c
+ * RESULT type management
+ * Author: Diogo Cochicho
+ */
+
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
@@ -7,11 +13,11 @@
 #include <assert.h>
 
 #include "api.h"
-#include "api/api.h"
 #include "results.h"
 #include "global.h"
 #include "generics.h"
 
+/************** RESULT INITIALIZATION ****************/
 /*
  *  Simply initializes the struct to all zeros and
  *  the pointer to a memory block big enough to hold
@@ -34,6 +40,7 @@ void __T_DOUBLE_initializeResults(RESULT *results_ptr, T_UINT num_cycles, const 
     INIT_GENERIC(T_DOUBLE, &(results_ptr->ARRAY), num_cycles);
 }
 
+/************** RESULT DESTRUCTION ****************/
 T_VOID DESTROY_RESULTS(RESULT *result_ptr) {
     if (!result_ptr) {
         fprintf(stderr, "Error: Null results pointer cannot be derefenced\n");
@@ -42,6 +49,7 @@ T_VOID DESTROY_RESULTS(RESULT *result_ptr) {
     DESTROY_GENERIC(&(result_ptr->ARRAY));
 }
 
+/************** RESULT MANIPULATION ****************/
 void READ_TO_RESULT(T_INT in, T_CHAR marker, RESULT *results) {
     assert(OUTPUT_LIST_SELECTED != NULL);
     assert(results != NULL);

@@ -1,5 +1,7 @@
 /*
- * Developed by Diogo Cochicho
+ * File: main.c
+ * MAIN file
+ * Author: Diogo Cochicho
  */
 
 #include <sys/types.h>
@@ -14,7 +16,7 @@
 #include "api.h"
 #include "utils.h"
 #include "cli.h"
-#include "apistate.h"
+#include "state.h"
 
 #define DEVICE "/dev/ttyUSB0"
 

@@ -1,3 +1,9 @@
+/*
+ * File: calc.c
+ * Calculations and algorithms
+ * Author: Diogo Cochicho
+ */
+
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -7,8 +13,9 @@
 
 #include "calc.h"
 #include "api.h"
-#include "apistate.h"
 
+
+/************** RESULT RELATED FUNCTIONS ****************/
 T_VOID __T_UINT__calcMaxFromResults(RESULT *result_array, size_t num, T_INT *max_array) {
     for (size_t idx = 0; idx < num; idx++) {
         T_INT max = *((T_INT *)result_array[idx].ARRAY.DATA);
@@ -35,6 +42,7 @@ T_VOID __T_DOUBLE__calcMaxFromResults(RESULT *result_array, size_t num, T_DOUBLE
     }
 }
 
+/************** STANDARD GENERICS RELATED FUNCTIONS ****************/
 /*
  * calcMaxFromArray : Expects an input_array of a G_ARRAY of a std type.
  *                    THe output argument, max_array, should have been already allocated
@@ -84,6 +92,80 @@ T_VOID calcMaxFromArray(G_ARRAY *input_array, size_t num_elem, G_ARRAY *max_arra
     }
 }
 
+/*
+ * calculateDegradation ; It takes an array of G_ARRAY for the data of isolated victim and the same for the
+ *                          the full config (it must be of either G_INT, G_UINT or G_DOUBLE), it then returns 
+ *                          the calculated degradation data in the deg_array.
+ *                          
+ *                          The output consists of a G_ARRAY array, in which, each element of the array is a
+ *                          copy of an element of result_array where the value is now the degradation.
+ *                          
+ *                          It is expected for the deg_array to be allocated. 
+ */
+T_ERROR calculateDegradation(G_ARRAY *garrays_std_iso, size_t size_iso, G_ARRAY *garrays_std_full, size_t size_result, G_ARRAY *garrays_double_deg) {
+    G_ARRAY *iso_max = NULL;
+    if (size_iso == 1) {
+        iso_max = garrays_std_iso;
+    } else {
+        iso_max = malloc(sizeof(G_ARRAY));
+        switch (garrays_std_iso->TYPE) {
+            case G_INT:
+            case G_UINT:
+                iso_max->DATA = malloc(sizeof(T_UINT) * size_iso);
+                iso_max->SIZE = size_iso;
+                iso_max->TYPE = G_UINT;
+                break;
+            case G_DOUBLE:
+                iso_max->DATA = malloc(sizeof(T_DOUBLE) * size_iso);
+                iso_max->SIZE = size_iso;
+                iso_max->TYPE = G_DOUBLE;
+                break;
+            default:
+                break;
+        }
+
+        calcMaxFromArray(garrays_std_iso, size_iso, iso_max);
+    }
+
+    
+    METRICS iso_metrics;
+    initMetricsFromArray(iso_max, "iso_metrics", &iso_metrics);
+    if (iso_max != garrays_std_iso) {
+        free(iso_max->DATA);
+        free(iso_max);
+    }
+
+    for (size_t result_idx = 0 ; result_idx < size_result ; result_idx++) {
+        for (size_t data_idx = 0; data_idx < garrays_std_full[result_idx].SIZE; data_idx++) {
+            switch (garrays_std_full[result_idx].TYPE) {
+                case G_INT:
+                case G_UINT:
+                    if (((T_UINT *) iso_metrics.MEDIAN.DATA)[0] == 0) {
+                        ((T_DOUBLE *)garrays_double_deg[result_idx].DATA)[data_idx] = 0;
+                        continue;
+                    }
+                    ((T_DOUBLE *)garrays_double_deg[result_idx].DATA)[data_idx] = \
+                        (T_DOUBLE) ((T_UINT *) garrays_std_full[result_idx].DATA)[data_idx] / (T_DOUBLE) ((T_UINT *) iso_metrics.MEDIAN.DATA)[0];
+                    break;
+                case G_DOUBLE:
+                    if (((T_DOUBLE *) iso_metrics.MEDIAN.DATA)[0] == 0) {
+                        ((T_DOUBLE *)garrays_double_deg[result_idx].DATA)[data_idx] = 0;
+                        continue;
+                    }
+                    ((T_DOUBLE *)garrays_double_deg[result_idx].DATA)[data_idx] = \
+                        ((T_DOUBLE *) garrays_std_full[result_idx].DATA)[data_idx] / ((T_DOUBLE *) iso_metrics.MEDIAN.DATA)[0];
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+    destroyMetrics(&iso_metrics);
+    return 0;
+}
+
+
+/************** METRICS RELATED FUNCTIONS ****************/
 /*
  * initMetricsFromArray : Allocates memory for every field of the output_metrics
  *                          and initializes them with the correct metrics calculated
@@ -185,95 +267,40 @@ T_VOID destroyMetrics(METRICS *metrics) {
     metrics->MEDIAN.SIZE = 0;
 }
 
-/*
-void calculateMetrics(void *results_ptr) {
-    RESULTS(uint64_t) *results = results_ptr;
-    // Sort result's cycles in increasing value
-    for (size_t i = 0 ; i < results->num_cycles -1 ; i++) {
-        for (size_t j = i+1 ; j < results->num_cycles ; j++) {
-            if (results->cycles[j] < results->cycles[i]) {
-                results->cycles[j] ^= results->cycles[i];
-                results->cycles[i] ^= results->cycles[j];
-                results->cycles[j] ^= results->cycles[i];
-            }
-        }
+
+/************** MATH FUNCTIONS ****************/
+T_INT uniformRandom(T_INT min, T_INT max) {
+    T_INT range = max - min + 1;
+    T_UCHAR range_nbit = 0;
+
+    srand(clock());
+    while ((1 << range_nbit) < range) {
+        range_nbit++;
     }
+    // range_nbit has as many bits as needed to represent range
+    // since higher order bits in rand() are better distributed
+    // I'll take the minimum high-order bits to represent my
+    // distribution sampling
+    T_UCHAR num_randmax_bits = __builtin_popcount(RAND_MAX);
+    T_UCHAR shift = num_randmax_bits - range_nbit;
 
-    results->median = results->cycles[results->num_cycles/2];
-    results->max = results->cycles[results->num_cycles-1];
-    results->min = results->cycles[0];
-}
-*/
+    T_INT random_num;
 
-/*
- * calculateDegradation ; It takes an array of G_ARRAY for the data of isolated victim and the same for the
- *                          the full config (it must be of either G_INT, G_UINT or G_DOUBLE), it then returns 
- *                          the calculated degradation data in the deg_array.
- *                          
- *                          The output consists of a G_ARRAY array, in which, each element of the array is a
- *                          copy of an element of result_array where the value is now the degradation.
- *                          
- *                          It is expected for the deg_array to be allocated. 
- */
-T_ERROR calculateDegradation(G_ARRAY *garrays_std_iso, size_t size_iso, G_ARRAY *garrays_std_full, size_t size_result, G_ARRAY *garrays_double_deg) {
-    G_ARRAY *iso_max = NULL;
-    if (size_iso == 1) {
-        iso_max = garrays_std_iso;
-    } else {
-        iso_max = malloc(sizeof(G_ARRAY));
-        switch (garrays_std_iso->TYPE) {
-            case G_INT:
-            case G_UINT:
-                iso_max->DATA = malloc(sizeof(T_UINT) * size_iso);
-                iso_max->SIZE = size_iso;
-                iso_max->TYPE = G_UINT;
-                break;
-            case G_DOUBLE:
-                iso_max->DATA = malloc(sizeof(T_DOUBLE) * size_iso);
-                iso_max->SIZE = size_iso;
-                iso_max->TYPE = G_DOUBLE;
-                break;
-            default:
-                break;
-        }
 
-        calcMaxFromArray(garrays_std_iso, size_iso, iso_max);
-    }
+    do {
+        random_num = rand() >> shift;
+    } while (random_num >= range);
 
-    
-    METRICS iso_metrics;
-    initMetricsFromArray(iso_max, "iso_metrics", &iso_metrics);
-    if (iso_max != garrays_std_iso) {
-        free(iso_max->DATA);
-        free(iso_max);
-    }
-
-    for (size_t result_idx = 0 ; result_idx < size_result ; result_idx++) {
-        for (size_t data_idx = 0; data_idx < garrays_std_full[result_idx].SIZE; data_idx++) {
-            switch (garrays_std_full[result_idx].TYPE) {
-                case G_INT:
-                case G_UINT:
-                    if (((T_UINT *) iso_metrics.MEDIAN.DATA)[0] == 0) {
-                        ((T_DOUBLE *)garrays_double_deg[result_idx].DATA)[data_idx] = 0;
-                        continue;
-                    }
-                    ((T_DOUBLE *)garrays_double_deg[result_idx].DATA)[data_idx] = \
-                        (T_DOUBLE) ((T_UINT *) garrays_std_full[result_idx].DATA)[data_idx] / (T_DOUBLE) ((T_UINT *) iso_metrics.MEDIAN.DATA)[0];
-                    break;
-                case G_DOUBLE:
-                    if (((T_DOUBLE *) iso_metrics.MEDIAN.DATA)[0] == 0) {
-                        ((T_DOUBLE *)garrays_double_deg[result_idx].DATA)[data_idx] = 0;
-                        continue;
-                    }
-                    ((T_DOUBLE *)garrays_double_deg[result_idx].DATA)[data_idx] = \
-                        ((T_DOUBLE *) garrays_std_full[result_idx].DATA)[data_idx] / ((T_DOUBLE *) iso_metrics.MEDIAN.DATA)[0];
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-    destroyMetrics(&iso_metrics);
-    return 0;
+    return (random_num + min);
 }
 
+T_INT binomialRandom(T_UINT n, T_DOUBLE p) {
+    T_INT successes = 0;
+
+    while (n > 0) {
+        if (uniformRandom(0, 255) < 255*p) successes++;
+        n--;
+    }
+
+    return successes;
+}
