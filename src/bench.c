@@ -44,12 +44,11 @@ static T_VOID hoverMultiOutType(T_NODE *button, T_VOID **data) {
 }
 
 static T_VOID returnOKButton(T_NODE *button, T_VOID **data) {
-    T_NODE *textbIterations = data[0];
-    T_NODE *textbName = data[1];
+    T_NODE *textbIterations = data[1];
+    T_NODE *textbName = data[0];
 
     runExecution(parseNum(textb_get_text(textbIterations)), textb_get_text(textbName));
 }
-
 
 static T_VOID returnExitButton(T_NODE *button, T_VOID **data) {
     T_FLAG *runFlag = data[0];
@@ -274,12 +273,12 @@ static T_VOID processResults(const char *name, G_ARRAY *garray_result_input, siz
 
     T_STR data_file_name_buf = { 0 };
     T_STR metric_file_name_buf = { 0 };
-    // Prepare the file path to include the requested directory
-    strcpy(data_file_name_buf, name);
-    strcat(data_file_name_buf, "/");
 
     for (size_t out_idx = 0; out_idx < num_outputs; out_idx++) {
-        strcpy(data_file_name_buf, output_array[out_idx]->NAME);
+        // Prepare the file path to include the requested directory
+        strcpy(data_file_name_buf, name);
+        strcat(data_file_name_buf, "/");
+        strcat(data_file_name_buf, output_array[out_idx]->NAME);
 
         T_STR metric_name;
         switch (output_array[out_idx]->DATA_TYPE) {

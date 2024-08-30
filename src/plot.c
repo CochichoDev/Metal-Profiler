@@ -29,9 +29,11 @@ T_VOID plotResults(const char *name, size_t num_outputs, OUTPUT **output_array) 
     T_STR selected_data = { 0 };
     T_STR output_name = { 0 };
     for (size_t out_idx = 0; out_idx < num_outputs; out_idx++) {
+        strncpy(selected_data, name, sizeof(T_STR));
+        strcat(selected_data, "/");
         switch (output_array[out_idx]->GRAPH_TYPE) {
             case SCATTER:
-                strcpy(selected_data, output_array[out_idx]->NAME);
+                strcat(selected_data, output_array[out_idx]->NAME);
                 switch (output_array[out_idx]->DATA_TYPE) {
                     case RAW:
                         strcat(selected_data, "_raw");
@@ -56,7 +58,7 @@ T_VOID plotResults(const char *name, size_t num_outputs, OUTPUT **output_array) 
                 break;    
 
             case BARWERROR:
-                strcpy(selected_data, output_array[out_idx]->NAME);
+                strcat(selected_data, output_array[out_idx]->NAME);
                 switch (output_array[out_idx]->DATA_TYPE) {
                     case RAW:
                         strcat(selected_data, "_raw");

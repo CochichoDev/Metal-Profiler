@@ -104,9 +104,11 @@ T_VOID calcMaxFromArray(G_ARRAY *input_array, size_t num_elem, G_ARRAY *max_arra
  */
 T_ERROR calculateDegradation(G_ARRAY *garrays_std_iso, size_t size_iso, G_ARRAY *garrays_std_full, size_t size_result, G_ARRAY *garrays_double_deg) {
     G_ARRAY *iso_max = NULL;
+    /*
     if (size_iso == 1) {
         iso_max = garrays_std_iso;
     } else {
+    */
         iso_max = malloc(sizeof(G_ARRAY));
         switch (garrays_std_iso->TYPE) {
             case G_INT:
@@ -125,7 +127,7 @@ T_ERROR calculateDegradation(G_ARRAY *garrays_std_iso, size_t size_iso, G_ARRAY 
         }
 
         calcMaxFromArray(garrays_std_iso, size_iso, iso_max);
-    }
+    //}
 
     
     METRICS iso_metrics;

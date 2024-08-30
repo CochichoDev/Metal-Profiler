@@ -65,7 +65,7 @@ void READ_TO_RESULT(T_INT in, T_CHAR marker, RESULT *results) {
     for (uint32_t idx = 0, total = 0 ; stop == 0 ; ) {
         read_bytes = read(in,buf,255); 
         buf[read_bytes]='\0';          
-        puts(buf);
+        printf("%s", buf);
         if (buf[0] == marker) {
             stop=1;
         }
