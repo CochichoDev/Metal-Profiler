@@ -1,0 +1,129 @@
+#include "PMU.h"
+#include <stdint.h>
+
+void initPMU() {
+    enable_pmc();
+    cfg_pmevcntr(0u, L2D_CACHE_REFILL);
+    cfg_pmevcntr(1u, L2D_CACHE_WB);
+    enable_pmevcntr(0u);
+    enable_pmevcntr(1u);
+    reset_pmc_events();
+}
+
+void reset_pmc_event(uint8_t n) {
+    reset_pmc_events();
+    /*
+    __asm__ __volatile__(
+                        "MSR    PMZR_EL0,   %0"
+                        : : "r" (0x1 << n) : "memory" );
+    */
+}
+
+void enable_pmc() {
+    register uint64_t pmcr_value;
+
+
+    __asm__ __volatile__(
+                        "MRS    %0,     PMCR_EL0"
+                        : "=r" (pmcr_value) : : "memory" );
+
+    pmcr_value |= 0x1 << PMC_ENABLE_BIT;
+
+    __asm__ __volatile__(
+                        "MSR    PMCR_EL0,   %0"
+                        : : "r" (pmcr_value) : "memory" );
+}
+
+void disable_pmc() {
+    register uint64_t pmcr_value;
+
+    __asm__ __volatile__(
+                        "MRS    %0,     PMCR_EL0"
+                        : "=r" (pmcr_value) : : "memory" );
+
+    pmcr_value &= ~(0x1 << PMC_ENABLE_BIT);
+
+    __asm__ __volatile__(
+                        "MSR    PMCR_EL0,   %0"
+                        : : "r" (pmcr_value) : "memory" );
+}
+
+void enable_pmevcntr(uint8_t n) {
+    uint64_t pmcntenset_value;
+
+    __asm__ __volatile__(
+                        "MRS    %0,     PMCNTENSET_EL0"
+                        : "=r" (pmcntenset_value) : : "memory");
+    pmcntenset_value |= (0x1U << n);
+    __asm__ __volatile__(
+                        "MSR    PMCNTENSET_EL0,     %0"
+                        : : "r" (pmcntenset_value) : "memory");
+}
+
+void disable_pmevcntr(uint8_t n) {
+    uint64_t pmcntenclr_value;
+
+    __asm__ __volatile__(
+                        "MRS    %0,     PMCNTENCLR_EL0"
+                        : "=r" (pmcntenclr_value) : : "memory");
+    pmcntenclr_value |= (0x1U << n);
+    __asm__ __volatile__(
+                        "MSR    PMCNTENCLR_EL0,     %0"
+                        : : "r" (pmcntenclr_value) : "memory");
+}
+
+void cfg_pmevcntr(uint8_t n, uint16_t eventType) {
+    uint64_t pmselr_value;
+    uint64_t pmxevtyper_value;
+
+    
+    __asm__ __volatile__(
+                        "MRS    %0,     PMSELR_EL0"
+                        : "=r" (pmselr_value) : : "memory");
+    pmselr_value &= ~(PMSELR_MASK);
+    pmselr_value |= (n & PMSELR_MASK);
+
+    __asm__ __volatile__(
+                        "MSR    PMSELR_EL0,     %0"
+                        : : "r" (pmselr_value) : "memory");
+    __asm__ __volatile__(
+                        "MRS    %0,     PMXEVTYPER_EL0"
+                        : "=r" (pmxevtyper_value) : : "memory");
+
+    pmxevtyper_value &= ~PMEVTYPER_MASK;
+    pmxevtyper_value |= (eventType & PMEVTYPER_MASK);
+
+    __asm__ __volatile__(
+                        "MSR    PMXEVTYPER_EL0, %0"
+                        : : "r" (pmxevtyper_value) : "memory");
+}
+
+void no_allocate_threshold_L1(uint32_t mode) {
+	register uint64_t value = 0;
+
+	__asm__ __volatile__("MRS %0, S3_1_C15_C2_0" : "=r"(value));
+	__asm__ __volatile__("MSR S3_1_C15_C2_0, %0" : : "r" ((value & CPUACTLR_MASK) | (mode << 25)));
+
+}
+
+/* no_allocate_threshold_*
+ *
+ * Description: Changes the configuration on the no allocate functionality of BIU regarding L2 Cache
+ *
+ * Parameter:
+ * 				- u8 mode: Selects the mode of configuration of this functionality:
+ * 						1. 0b00: Default value, no allocate every 4th consecutive cache line
+ * 						2. 0b01: no allocate the 64th consecutive cache line write miss
+ * 						3. 0b10: no allocate the 128th consecutive cache line write miss
+ * 						4. 0b11: disables the no allocate feature
+ *
+ * Returns:		Nothing
+ *
+ */
+void no_allocate_threshold_L2(uint32_t mode) {
+	register uint64_t value = 0;
+
+	__asm__ __volatile__("MRS %0, S3_1_C15_C2_0" : "=r"(value));
+	__asm__ __volatile__("MSR S3_1_C15_C2_0, %0" : : "r" ((value & CPUACTLR_MASK2) | (mode << 27)));
+
+}

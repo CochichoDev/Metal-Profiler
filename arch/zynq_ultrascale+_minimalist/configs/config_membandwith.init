@@ -1,0 +1,14 @@
+#0
+APP:            READ
+SIZE:           250000
+STRIDE:         64
+LIMIT:          5000
+CACHECOLORING:  1
+MEMBANDWIDTH:   1
+
+
+
+#4
+BUDGET:         2000        [O]
+PERIOD:         100         [O]
+REPLENISHMENT:  1000        [O]

@@ -1,0 +1,72 @@
+#include <stdio.h>
+#include <stdint.h>
+
+#include "PMU.h"
+#include "GIC.h"
+#include "timer.h"
+
+/*
+ *  DUMMY DEFINITIONS FOR WARNING AVOIDANCE
+ */
+#if !defined(ACCESS_METHOD)
+#define ACCESS_METHOD(TARGET)
+#endif
+#if !defined(HEADER)
+#define HEADER ; ; 
+#endif
+#if !defined(TARGET_SIZE)
+#define TARGET_SIZE 4*128*64
+#endif
+#if !defined(STRIDE)
+#define STRIDE 64
+#endif
+
+#if !defined(INIT_BUDGET)
+#define INIT_BUDGET 1e4
+#endif
+#if !defined(PERIOD)
+#define PERIOD 10
+#endif
+#if !defined(REPLENISHMENT)
+#define REPLENISHMENT 3e4
+#endif
+
+#define ENEMY
+
+#include "definitions.h"
+
+extern uint8_t __buf_start_3;
+extern uint8_t __buf_start_0;
+extern char __text_start, __text_end;
+
+__attribute__((section(".bench"))) int main(int argc, char *argv[]) {
+    register volatile uint8_t *target = &__buf_start_3;
+
+    no_allocate_threshold_L1(0b11);
+    no_allocate_threshold_L2(0b11);
+#ifdef CACHECOLORING
+    //Xil_SetTlbAttributesRange(&__text_start, &__text_end, NORM_NONCACHE);
+#endif
+
+#ifdef MEMBANDWIDTH
+    initPMU();
+    init_irq();
+
+    time_handler(PERIOD);
+    enable_irq();
+
+    reset_pmc_events();
+#endif
+
+    for (HEADER) {
+         for (register int i = 0 ; i < TARGET_SIZE ; i += STRIDE) {
+            ACCESS_METHOD(target+i);
+        }
+    }
+
+#ifdef MEMBANDWIDTH
+    disable_cntp();
+    stop_irq();
+#endif
+}
+

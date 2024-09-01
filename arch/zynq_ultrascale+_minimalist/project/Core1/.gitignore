@@ -1,0 +1,5 @@
+compile_commands.json
+Debug/Core0*
+Debug/src/*.o
+_ide
+.clangd
