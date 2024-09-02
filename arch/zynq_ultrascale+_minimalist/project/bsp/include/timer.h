@@ -21,11 +21,16 @@
 #define REG_CNTCR           ((volatile uint32_t *)(uintptr_t)CNTCR)
 #define REG_CNTSR           ((volatile uint32_t *)(uintptr_t)CNTSR)
 #define REG_CNTCV           ((volatile uint64_t *)(uintptr_t)CNTCV)
-#define REG_CNTID           ((volatile uint64_t *)(uintptr_t)CNTID)
+#define REG_CNTID           ((volatile uint32_t *)(uintptr_t)CNTID)
 #define REG_CNTFID0         ((volatile uint64_t *)(uintptr_t)CNTFID0)
+
+#define CRL_APB_TIMESTAMP_REF_CTRL_OFFSET   (0xFF5E0128U)
 
 #define CNTCR_MASK          (0xFFFFFFF4U)
 #define CNTCR_SCALING_MASK  (0xFFFFFFF8U)
+
+
+#define IOPLLFRQ            (1500000000)
 
 
 /*********** VIRTUAL TIMER ************/
@@ -137,12 +142,22 @@ static __attribute__((always_inline)) void time_handler(uint64_t us) {
     disable_cntp();
 
     // Next time it will interrupt
-    write_cntp_tval_el0((int32_t) (((double)us/1000000.0f) * (double)read_cntfreq_el0()));
+    // Divided the frequency by 2 cause of the divisor
+    write_cntp_tval_el0((int32_t) (((double)us/1000000.0f) * (double)(IOPLLFRQ)/2));
 
     enable_cntp();
 }
 
 /*********** SYSTEM COUNTER ************/
+static inline void write_timestampref_div(uint8_t value) {
+    uint32_t previous = *((volatile uint32_t *)CRL_APB_TIMESTAMP_REF_CTRL_OFFSET);
+
+    previous &= ~0x3F00U;
+    previous |= (value << 8);
+
+    *((volatile uint32_t *)CRL_APB_TIMESTAMP_REF_CTRL_OFFSET) = previous;
+}
+
 static inline uint8_t read_cntid() {
     return (*REG_CNTID & 0xFU);
 }

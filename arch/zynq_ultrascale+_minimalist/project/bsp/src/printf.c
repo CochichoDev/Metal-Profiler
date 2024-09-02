@@ -8,6 +8,8 @@
 
 #include "custom_printf.h"
 
+#define __aarch64__
+
 static void padding( const int32_t l_flag,const struct params_s *par);
 static void outs(const char * lp, struct params_s *par);
 static int32_t getnum( char ** linep);
@@ -183,6 +185,7 @@ static int32_t getnum(char ** linep)
 int puts(const char *__restrict ctrl1)
 {
 	printf("%s", ctrl1);
+    outbyte('\n');
     return 0;
 }
 
@@ -246,8 +249,6 @@ int vprintf(const char *ctrl1, va_list argp)
  try_next:
 		if(ctrl != NULL) {
 			ctrl += 1;
-		}
-		if(ctrl != NULL) {
 			ch = *ctrl;
 		} else {
 			break;

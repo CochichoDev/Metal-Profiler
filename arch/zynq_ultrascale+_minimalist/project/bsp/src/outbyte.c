@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 #include "io.h"
 #include "outbyte.h"
 #include "xparameters.h"
@@ -13,9 +15,9 @@ void outbyte(char c);
 
 
 void outbyte(char c) {
-    
     while (UART_IsTransmissionFull(STDOUT_BASEADDRESS))
         ;
 
-	 Mem_Out8(((STDOUT_BASEADDRESS) + ((uint32_t)UARTPS_FIFO_OFFSET)), c);
+    //for(int i = 0; i<100000; i++) ;
+	 Mem_Out32(((STDOUT_BASEADDRESS) + ((uint32_t)UARTPS_FIFO_OFFSET)), (uint32_t) c);
 }

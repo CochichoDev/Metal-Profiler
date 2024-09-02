@@ -104,6 +104,9 @@ SECTIONS
    __mmu_tbl3_end = .;
 } > psu_ddr_0_MEM_0
 
+.note.gnu.build-id : {
+   KEEP (*(.note.gnu.build-id))
+} > psu_ddr_0_MEM_0
 
 .buf (NOLOAD) : {
 	. = ALIGN(4096);

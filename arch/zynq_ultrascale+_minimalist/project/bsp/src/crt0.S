@@ -19,6 +19,7 @@
 _startup:
 
 	/* clear sbss */
+    eor x0, x0, x0
 	ldr 	x1,.Lsbss_start		/* calculate beginning of the SBSS */
 	ldr	x2,.Lsbss_end		/* calculate end of the SBSS */
 

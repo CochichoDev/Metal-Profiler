@@ -272,10 +272,10 @@ extern "C" {
 #define XUARTPS_SR_FLOWDEL	0x00001000U /**< RX FIFO fill over flow delay */
 #define XUARTPS_SR_TACTIVE	0x00000800U /**< TX active */
 #define XUARTPS_SR_RACTIVE	0x00000400U /**< RX active */
-#define XUARTPS_SR_TXFULL	0x00000010U /**< TX FIFO full */
+#define UARTPS_SR_TXFULL	0x00000010U /**< TX FIFO full */
 #define XUARTPS_SR_TXEMPTY	0x00000008U /**< TX FIFO empty */
 #define XUARTPS_SR_RXFULL	0x00000004U /**< RX FIFO full */
-#define UARTPS_SR_RXEMPTY	0x00000002U /**< RX FIFO empty */
+#define XUARTPS_SR_RXEMPTY	0x00000002U /**< RX FIFO empty */
 #define XUARTPS_SR_RXOVR	0x00000001U /**< RX FIFO fill over trigger */
 /* @} */
 

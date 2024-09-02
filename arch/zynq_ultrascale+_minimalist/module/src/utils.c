@@ -106,17 +106,20 @@ void callMakefiles(CONFIG *config) {
         exit(-1);
     }
 
+    const COMP *mem_monitoring = NULL;
+    GET_COMP_BY_IDX(config, 4, &mem_monitoring);
+
     char CFLAGS_STANDALONE[512] = "CFLAGS=";
     addCacheColoring(victim_comp, CFLAGS_STANDALONE);
+    if (mem_monitoring != NULL) {
+        addMemBandwidthArgs((COMP *) mem_monitoring, CFLAGS_STANDALONE);
+    }
     puts(CFLAGS_STANDALONE);
     make_standalone = RUN_PROCESS_IMAGE(NULL, "/bin/make", "make", "-C", PROJDIR"/bsp/", "clean", NULL);
     waitpid(make_standalone, NULL, 0);
     make_standalone = RUN_PROCESS_IMAGE(NULL, "/bin/make", "make", "-C", PROJDIR"/bsp/", CFLAGS_STANDALONE, NULL);
     waitpid(make_standalone, NULL, 0);
 
-    const COMP *mem_monitoring = NULL;
-    if (config->NUM == 5)
-        GET_COMP_BY_IDX(config, 4, &mem_monitoring);
 
     for (uint8_t i = 0 ; i < NUM_CORES ; i++) {
         const COMP *core_ptr;

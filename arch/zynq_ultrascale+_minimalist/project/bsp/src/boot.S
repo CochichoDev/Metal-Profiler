@@ -1,3 +1,7 @@
+#include "xparameters.h"
+#include "bspconfig.h"
+
+
 .globl MMUTableL0
 .globl MMUTableL1
 .globl MMUTableL2
