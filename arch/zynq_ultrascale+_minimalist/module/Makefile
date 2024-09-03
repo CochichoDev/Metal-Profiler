@@ -6,7 +6,7 @@ SRC:=src
 BIN:=bin
 OBJ:=bin
 LIB:=lib
-INCLUDE:=include ../../../include/api
+INCLUDE:=include 
 
 CFLAGS:=
 CPPFLAGS:=$(foreach incdir,$(INCLUDE),-I$(incdir)) 

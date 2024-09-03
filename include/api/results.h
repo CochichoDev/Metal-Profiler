@@ -24,7 +24,5 @@ void __T_DOUBLE_initializeResults(RESULT *results_ptr, T_UINT num_cycles, const 
 /************** RESULT DESTRUCTION ****************/
 T_VOID DESTROY_RESULTS(RESULT *result_ptr);
 
-/************** RESULT MANIPULATION ****************/
-void READ_TO_RESULT(T_INT in, T_CHAR marker, RESULT *results);
 
 #endif

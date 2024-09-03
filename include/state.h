@@ -7,6 +7,7 @@
 typedef struct {
     char name[128];
     char path[256];
+    size_t NUM_CORES;
 } ARCH;
 
 typedef struct {

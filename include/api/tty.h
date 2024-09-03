@@ -17,7 +17,10 @@ typedef struct s_ttyFD {
     struct termios oldtio;
 } FD_TTY;
 
-FD_TTY INIT_TTY(const char *path);
-T_VOID CLOSE_TTY(FD_TTY fd);
+T_ERROR INIT_TTY(const char *path);
+T_VOID CLOSE_TTY();
+
+/************** RESULT MANIPULATION ****************/
+void TTY_TO_RESULT(T_CHAR marker, RESULT *results);
 
 #endif

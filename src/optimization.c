@@ -218,7 +218,7 @@ static T_VOID mapConfigToGrid(OPT_MAP *mapGrid) {
     
     for (size_t comp_idx = 0; comp_idx < INPUT_CONFIG->NUM; comp_idx++) {
         COMP *cur_comp = NULL;
-        GET_COMP_BY_IDX(INPUT_CONFIG, INPUT_CONFIG->COMPS[comp_idx]->ID, (const COMP **) &cur_comp);
+        GET_COMP_BY_ID(INPUT_CONFIG, INPUT_CONFIG->COMPS[comp_idx]->ID, (const COMP **) &cur_comp);
 
         T_FLAG optimizable_comp = FALSE;
 
@@ -288,6 +288,9 @@ static PARAM_GRID generateParameterGrid(OPT_MAP *mapGrid) {
                 case pSTR:
                     grid[row_idx][param_idx].max = strProprietyIdxByPtr(cur_prop->OPTS, NULL) - 1;
                     grid[row_idx][param_idx].cur = strProprietyIdxByValue(cur_prop->OPTS, cur_prop->sINIT);
+                    break;
+                default:
+                    break;
             }
 
         }
@@ -339,6 +342,9 @@ static T_VOID buildConfigFromParameterGrid(OPT_MAP *mapGrid, PARAM_GRID grid) {
                 case pSTR:
                     memcpy(cur_prop->sINIT, cur_prop->OPTS[grid[row_idx][param_idx].cur],   \
                            strlen(cur_prop->OPTS[grid[row_idx][param_idx].cur]) + 1);
+                    break;
+                default:
+                    break;
             }
 
         }

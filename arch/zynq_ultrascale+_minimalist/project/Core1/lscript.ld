@@ -22,12 +22,12 @@ _BUF_SIZE = 0x200000;
 
 MEMORY
 {
-    bench_MEM_0     : ORIGIN = 0x1004000, LENGTH = 0x4000
-    stack_MEM_0     : ORIGIN = 0x1014000, LENGTH = 0x4000
-    heap_MEM_0      : ORIGIN = 0x1024000, LENGTH = 0x4000
-    data_bss_MEM_0  : ORIGIN = 0x1034000, LENGTH = 0x4000
+    bench_MEM_0     : ORIGIN = 0x1000000, LENGTH = 0x4000
+    stack_MEM_0     : ORIGIN = 0x1010000, LENGTH = 0x4000
+    heap_MEM_0      : ORIGIN = 0x1020000, LENGTH = 0x4000
+    data_bss_MEM_0  : ORIGIN = 0x1030000, LENGTH = 0x4000
     buf_zone_MEM    : ORIGIN = 0x1040000, LENGTH = 0x800000
-    psu_ddr_0_MEM_0 : ORIGIN = 0x20000000, LENGTH = 0x10000000
+    psu_ddr_0_MEM_0 : ORIGIN = 0x1840000, LENGTH = 0x1E7C0000
     psu_ddr_1_MEM_0 : ORIGIN = 0x800000000, LENGTH = 0x80000000
     psu_ocm_ram_0_MEM_0 : ORIGIN = 0xFFFC0000, LENGTH = 0x40000
     psu_qspi_linear_0_MEM_0 : ORIGIN = 0xC0000000, LENGTH = 0x20000000
@@ -177,3 +177,4 @@ SECTIONS
 
 _end = .;
 }
+

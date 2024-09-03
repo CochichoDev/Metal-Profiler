@@ -29,7 +29,7 @@
                 (((X) >> 0) & 1U)
 
 /*
- * GET_COMP_BY_IDX : Finds the component that the input index corresponds to
+ * GET_COMP_BY_ID : Finds the component that the input index corresponds to
  * PARAMETERS:
  *      in1 : The associated config
  *      in2 : The ID of the component to be searched for
@@ -37,7 +37,7 @@
  *      out : Returns the pointer to the corresponding component if the pointer is not NULL
  *      default : Returns the index from the base pointer of the COMPS pointer of the CONFIG or -1 if it doesn't exist
  */
-size_t GET_COMP_BY_IDX(CONFIG *in1, T_INT in2, const COMP **out);
+size_t GET_COMP_BY_ID(CONFIG *in1, T_INT in2, const COMP **out);
 
 /*
  * GET_PROP_BY_NAME : Finds the propriety that the input name corresponds to

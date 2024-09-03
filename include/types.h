@@ -26,6 +26,7 @@ typedef int8_t      T_ERROR;
  * Propriety type
  */
 typedef enum {
+    pBOOL,
     pINT,
     pDOUBLE,
     pCHAR,

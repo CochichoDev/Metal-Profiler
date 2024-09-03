@@ -10,10 +10,17 @@
 #include <stdio.h>
 #include <strings.h>
 #include <unistd.h>
+#include <assert.h>
+#include <ctype.h>
 
 #include "tty.h"
+#include "types.h"
+#include "state.h"
+#include "global.h"
 
-FD_TTY INIT_TTY(const char *path) {
+static FD_TTY TTY;
+
+T_ERROR INIT_TTY(const char *path) {
     int fd;
     struct termios oldtio, newtio;
     /* 
@@ -23,7 +30,7 @@ FD_TTY INIT_TTY(const char *path) {
     fd = open(path, O_RDWR | O_NOCTTY ); 
     if (fd < 0) {
          perror(path); 
-         exit(-1); 
+         return -1;
      }
 
     tcgetattr(fd,&oldtio); /* save current serial port settings */
@@ -87,11 +94,60 @@ FD_TTY INIT_TTY(const char *path) {
     tcflush(fd, TCIFLUSH);
     tcsetattr(fd,TCSANOW,&newtio);
 
-    return (FD_TTY) {fd, oldtio};
+    TTY.fd = fd;
+    TTY.oldtio = oldtio;
+
+    return 0;
 }
 
-void CLOSE_TTY(FD_TTY tty) {
+void CLOSE_TTY() {
     /* restore the old port settings */
-    tcsetattr(tty.fd,TCSANOW,&(tty.oldtio));
-    close(tty.fd);
+    tcsetattr(TTY.fd,TCSANOW,&(TTY.oldtio));
+    close(TTY.fd);
+
+    bzero(&TTY, sizeof(FD_TTY));
+}
+
+/************** RESULT MANIPULATION ****************/
+void TTY_TO_RESULT(T_CHAR marker, RESULT *results) {
+    assert(OUTPUT_LIST_SELECTED != NULL);
+    assert(results != NULL);
+
+    T_CHAR buf[256];
+
+    size_t numResults = 0;
+    for (OUTPUT_LIST *out_ptr = OUTPUT_LIST_SELECTED; out_ptr != NULL; out_ptr = out_ptr->NEXT, ++numResults);
+    
+
+    volatile T_FLAG stop = 0;
+    T_UINT read_bytes = 0;
+    for (uint32_t idx = 0, total = 0 ; stop == 0 ; ) {
+        read_bytes = read(TTY.fd,buf,255); 
+        buf[read_bytes]='\0';          
+        printf("%s", buf);
+        if (buf[0] == marker) {
+            stop=1;
+        }
+        if (isdigit(buf[0])) {
+            if (idx >= results[total % numResults].ARRAY.SIZE)
+                goto CONTINUE;
+            switch (results[total % numResults].ARRAY.TYPE) {
+                case G_INT:
+                    sscanf(buf, "%u", ((T_UINT *)results[total % numResults].ARRAY.DATA)+idx);
+                    //printf("%u\n", *(((T_UINT *)result->ARRAY.DATA)+idx));
+                    break;
+                case G_UINT:
+                    sscanf(buf, "%u", ((T_UINT *)results[total % numResults].ARRAY.DATA)+idx);
+                    //printf("%u\n", *(((T_UINT *)result->ARRAY.DATA)+idx));
+                    break;
+                case G_DOUBLE:
+                    sscanf(buf, "%lf", ((T_DOUBLE *)results[total % numResults].ARRAY.DATA)+idx);
+                default:
+                    break;
+            } 
+        CONTINUE:
+            total++;
+            idx = total/numResults;
+        }
+    }
 }

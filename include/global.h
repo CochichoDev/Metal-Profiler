@@ -5,15 +5,15 @@
 #include <stddef.h>
 #include <stdio.h>
 
+#include "tty.h"
 #include "results.h"
 #include "types.h"
 #include "state.h"
 
+#define TTY_PORT    "/dev/ttyUSB0"
+
 #define ARCHS_PATH "arch/"
 #define ARCH_CONFIG "archs.txt"
-
-#define MAKEFILE0 "Core0/Debug"
-#define MAKEFILE1 "Core1/Debug"
 
 #define T32SCRIPT "launch_bench.cmm"
 
@@ -23,14 +23,16 @@
 #define MAX_ARCHS 256
 
 #define REP_EXP 20
-#define NUM_CORES 4
 #define IGNORE_LIMIT 10
+
+#define SYSTEM_COMP_ID 0
 
 #define USAGE_ERROR() \
     {                                                       \
     perror("Usage: ./autometalbench -i INPUT -o OUTPUT");   \
     exit(1);                                                \
     }
+
 
 extern T_STR        OUTPUT_GRAPH_OPTIONS[NUM_OUTPUT_GRAPHS];
 extern T_STR        OUTPUT_DATA_OPTIONS[NUM_OUTPUT_DATA];
@@ -51,3 +53,4 @@ extern T_VOID       (*INIT_BENCH)(T_VOID);
 extern T_VOID       (*RUN_BENCH)(RESULT *);
 extern T_VOID       (*EXIT_BENCH)(T_VOID);
 #endif
+

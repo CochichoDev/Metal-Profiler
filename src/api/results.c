@@ -49,47 +49,4 @@ T_VOID DESTROY_RESULTS(RESULT *result_ptr) {
     DESTROY_GENERIC(&(result_ptr->ARRAY));
 }
 
-/************** RESULT MANIPULATION ****************/
-void READ_TO_RESULT(T_INT in, T_CHAR marker, RESULT *results) {
-    assert(OUTPUT_LIST_SELECTED != NULL);
-    assert(results != NULL);
-
-    T_CHAR buf[256];
-
-    size_t numResults = 0;
-    for (OUTPUT_LIST *out_ptr = OUTPUT_LIST_SELECTED; out_ptr != NULL; out_ptr = out_ptr->NEXT, ++numResults);
-    
-
-    volatile T_FLAG stop = 0;
-    T_UINT read_bytes = 0;
-    for (uint32_t idx = 0, total = 0 ; stop == 0 ; ) {
-        read_bytes = read(in,buf,255); 
-        buf[read_bytes]='\0';          
-        printf("%s", buf);
-        if (buf[0] == marker) {
-            stop=1;
-        }
-        if (isdigit(buf[0])) {
-            if (idx >= results[total % numResults].ARRAY.SIZE)
-                goto CONTINUE;
-            switch (results[total % numResults].ARRAY.TYPE) {
-                case G_INT:
-                    sscanf(buf, "%u", ((T_UINT *)results[total % numResults].ARRAY.DATA)+idx);
-                    //printf("%u\n", *(((T_UINT *)result->ARRAY.DATA)+idx));
-                    break;
-                case G_UINT:
-                    sscanf(buf, "%u", ((T_UINT *)results[total % numResults].ARRAY.DATA)+idx);
-                    //printf("%u\n", *(((T_UINT *)result->ARRAY.DATA)+idx));
-                    break;
-                case G_DOUBLE:
-                    sscanf(buf, "%lf", ((T_DOUBLE *)results[total % numResults].ARRAY.DATA)+idx);
-                default:
-                    break;
-            } 
-        CONTINUE:
-            total++;
-            idx = total/numResults;
-        }
-    }
-}
 

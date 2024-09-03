@@ -5,14 +5,19 @@
  */
 
 #include "utils.h"
+#include "api.h"
 #include "calc.h"
+#include "global.h"
+#include "types.h"
 
+#include <alloca.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include <wchar.h>
+#include <sys/wait.h>
 
 
 
@@ -336,4 +341,102 @@ CONFIG *const cloneConfig(CONFIG *const cfg) {
     return clone;
 }
 
+/************** MAKEFILE HANDLING FUNCTIONS ****************/
+static T_VOID catPropDefine(T_PSTR str, PROP *prop) {
+    char buf[128];
+    strcpy(buf, "-D");
+    char arg[64];
+    switch (prop->PTYPE) {
+        case pINT:
+        case pCHAR:
+            sprintf(arg, "%d", prop->iINIT);
+            break;
+        case pDOUBLE:
+            sprintf(arg, "%lf", prop->fINIT);
+            break;
+        case pSTR:
+            sprintf(arg, "%s", prop->sINIT);
+            strcat(buf, arg);
+            goto JOIN;
+        case pBOOL:
+            if (!prop->iINIT) return;
+            strcat(buf, prop->NAME);
+            goto JOIN;
+    }
 
+    strcat(buf, prop->NAME);
+    strcat(buf, "=");
+    strcat(buf, arg);
+
+JOIN:
+    strcat(str, buf);
+    strcat(str, " ");
+
+}
+
+T_ERROR CALL_MAKEFILES(CONFIG *config) {
+    pid_t make_bsp, make_fsbl;
+    pid_t *make_cores = alloca(sizeof(pid_t)*SELECTED_ARCH.NUM_CORES);
+    bzero(make_cores, sizeof(pid_t)*SELECTED_ARCH.NUM_CORES);
+
+    const COMP *victim_comp;
+    if (GET_COMP_BY_ID(config, config->VICTIM_ID, &victim_comp) == -1) {
+        fprintf(stderr, "Error: Zynq Ultrascale+ received a config without the victim component\n");
+        return -1;
+    }
+    char BSP_QUERY[512] = "CFLAGS=";
+    char FLAGS_BSP[512] = {0};
+    const COMP *sys_comp;
+    if (GET_COMP_BY_ID(config, SYSTEM_COMP_ID, &sys_comp) != -1) {
+        for (size_t prop_idx = 0; prop_idx < sys_comp->PBUFFER->NUM; prop_idx++) {
+            catPropDefine(FLAGS_BSP, sys_comp->PBUFFER->PROPS + prop_idx);
+        }
+    }
+    strcat(BSP_QUERY, FLAGS_BSP);
+
+    char path[512];
+    strcpy(path, SELECTED_ARCH.path);
+    strcat(path, "/project");
+
+    char bsp_path[512];
+    strcpy(bsp_path, path);
+    strcat(bsp_path, "/bsp");
+    puts(bsp_path);
+    puts(BSP_QUERY);
+    make_bsp = RUN_PROCESS_IMAGE(NULL, "/bin/make", "make", "-C", bsp_path, "clean", "all", BSP_QUERY, NULL);
+    waitpid(make_bsp, NULL, 0);
+
+    char fsbl_path[512];
+    strcpy(fsbl_path, path);
+    strcat(fsbl_path, "/fsbl");
+    make_fsbl = RUN_PROCESS_IMAGE(NULL, "/bin/make", "make", "-C", fsbl_path, "clean", "all", NULL);
+
+
+    for (uint8_t i = 1 ; i <= SELECTED_ARCH.NUM_CORES ; i++) {
+        const COMP *core_ptr;
+
+        if (GET_COMP_BY_ID(config, i, &core_ptr) != -1) {
+            char FLAGS[1024] = "AFLAGS=";
+            strcat(FLAGS, FLAGS_BSP);
+
+            for (size_t prop_idx = 0 ; prop_idx < core_ptr->PBUFFER->NUM ; prop_idx++) {
+                catPropDefine(FLAGS, core_ptr->PBUFFER->PROPS + prop_idx);
+            }
+            puts(FLAGS);
+
+            char core_path[512];
+            char core_name[10];
+            strcpy(core_path, path);
+            sprintf(core_name, "/Core%d", i);
+            strcat(core_path, core_name);
+            make_cores[i] = RUN_PROCESS_IMAGE(NULL, "/bin/make", "make", "-C", core_path, "clean", "all", FLAGS, NULL);
+        }
+    }
+
+    waitpid(make_fsbl, NULL, 0);
+    for (size_t i = 0; i < SELECTED_ARCH.NUM_CORES; i++)
+        if (make_cores[i])
+            waitpid(make_cores[i], NULL, 0);
+
+    return 0;
+}

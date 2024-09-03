@@ -17,7 +17,7 @@
 
 /************** CONFIG MANIPULATION ****************/
 /*
- * GET_COMP_BY_IDX : Finds the component that the input index corresponds to
+ * GET_COMP_BY_ID : Finds the component that the input index corresponds to
  * PARAMETERS:
  *      in1 : The associated config
  *      in2 : The ID of the component to be searched for
@@ -25,7 +25,7 @@
  *      out : Returns the pointer to the corresponding component if the pointer is not NULL
  *      default : Returns the index from the base pointer of the COMPS pointer of the CONFIG or -1 if it doesn't exist
  */
-size_t GET_COMP_BY_IDX(CONFIG *in1, T_INT in2, const COMP **out) {
+size_t GET_COMP_BY_ID(CONFIG *in1, T_INT in2, const COMP **out) {
     for (size_t idx = 0 ; idx < in1->NUM ; idx++) {
         if (in1->COMPS[idx]->ID == in2) {
             if (out != NULL)
@@ -110,7 +110,7 @@ pid_t RUN_PROCESS_IMAGE(T_INT *new_descr, const T_PSTR image_path, ...) {
        
         if(execv(image_path, (char**) args) == -1) {
             perror("Error: Could not open the specified process image");
-            return -1;
+            exit(-1);
         }
     }
 

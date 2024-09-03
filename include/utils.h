@@ -47,4 +47,6 @@ size_t strProprietyIdxByPtr(T_PSTR *OPTS, T_PSTR prop);
 size_t strProprietyIdxByValue(T_PSTR *OPTS, T_PSTR prop);
 CONFIG *const cloneConfig(CONFIG *const cfg);
 
+/************** MAKEFILE HANDLING FUNCTIONS ****************/
+T_ERROR CALL_MAKEFILES(CONFIG *config);
 #endif

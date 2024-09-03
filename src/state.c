@@ -13,7 +13,9 @@
 #include "api.h"
 #include "global.h"
 #include "state.h"
+#include "types.h"
 #include "utils.h"
+#include "default_mod.h"
 
 static T_UINT __getType(T_STR *type_options, size_t num_options, T_PSTR type);
 static const T_PSTR __getTypeName(T_STR *type_options, size_t num_options, T_UINT type);
@@ -203,7 +205,6 @@ void loadAvailableArchs() {
         memcpy(AVAIL_ARCHS.arch[i].name, buf, strlen(buf)+1);
         memcpy(AVAIL_ARCHS.arch[i].path, ARCHS_PATH, strlen(ARCHS_PATH)+1);
         strcat(AVAIL_ARCHS.arch[i].path, buf);
-        strcat(AVAIL_ARCHS.arch[i].path, "/module/bin/dmodule.so");
         i++;
     }
     AVAIL_ARCHS.num = i;
@@ -256,22 +257,34 @@ T_VOID selectArch(size_t choice) {
 
     SELECTED_ARCH = AVAIL_ARCHS.arch[choice];
     fprintf(stdout, "%s was successfully selected\n", SELECTED_ARCH.name);
+    SELECTED_ARCH.NUM_CORES = 4;
 
-    if (!(MODULE_HANDLE = dlopen(SELECTED_ARCH.path, RTLD_LAZY)))
+    char module_path[512];
+    strcpy(module_path, SELECTED_ARCH.path);
+    strcat(module_path, "/module/bin/dmodule.so");
+
+    if (!(MODULE_HANDLE = dlopen(module_path, RTLD_LAZY)))
         fprintf(stderr, "Error: Could not open handle of module (%s)\n", dlerror());
 
     if (!(MODULE_CONFIG = (CONFIG *) dlsym(MODULE_HANDLE, "ARCH_CONFIG")))
         fprintf(stderr, "Error: Could not access CONFIG variable (%s)\n", dlerror());
 
-    if (!(BUILD_PROJECT = (T_VOID (*)(CONFIG *)) dlsym(MODULE_HANDLE, "BUILD_PROJECT")))
+    if (!(BUILD_PROJECT = (T_VOID (*)(CONFIG *)) dlsym(MODULE_HANDLE, "BUILD_PROJECT"))) {
         fprintf(stderr, "Error: Could not access BUILD_PROJECT function (%s)\n", dlerror());
-
-    if (!(INIT_BENCH = (T_VOID (*)(void)) dlsym(MODULE_HANDLE, "INIT_BENCH")))
+        BUILD_PROJECT = default_BUILD_PROJECT;
+    }
+    if (!(INIT_BENCH = (T_VOID (*)(void)) dlsym(MODULE_HANDLE, "INIT_BENCH"))) {
         fprintf(stderr, "Error: Could not access INIT_BENCH function (%s)\n", dlerror());
-    if (!(RUN_BENCH = (T_VOID (*)(RESULT *)) dlsym(MODULE_HANDLE, "RUN_BENCH")))
+        INIT_BENCH = default_INIT_BENCH;
+    }
+    if (!(RUN_BENCH = (T_VOID (*)(RESULT *)) dlsym(MODULE_HANDLE, "RUN_BENCH"))) {
         fprintf(stderr, "Error: Could not access RUN_BENCH  function (%s)\n", dlerror());
-    if (!(EXIT_BENCH = (T_VOID (*)(void)) dlsym(MODULE_HANDLE, "EXIT_BENCH")))
+        RUN_BENCH = default_RUN_BENCH;
+    }
+    if (!(EXIT_BENCH = (T_VOID (*)(void)) dlsym(MODULE_HANDLE, "EXIT_BENCH"))) {
         fprintf(stderr, "Error: Could not access EXIT_BENCH   function (%s)\n", dlerror());
+        EXIT_BENCH = default_EXIT_BENCH;
+    }
 
     loadAvailableConfigs();
 }
@@ -337,11 +350,11 @@ T_VOID loadConfig(T_UINT config_option) {
 
             PROP *prop = comp->PBUFFER->PROPS + prop_idx;
 
-            if (m_prop->PTYPE != prop->PTYPE) {
+            if (prop->PTYPE != m_prop->PTYPE) {
                 fprintf(stderr, "Error: Propriety %s does not have expected type %d, should have type %d\n", prop->NAME, prop->PTYPE, m_prop->PTYPE);
                 goto ERROR;
             }
-
+            
             if (( IS_OPTIMIZABLE(prop->FLAGS) && !IS_OPTIMIZABLE(m_prop->FLAGS) ) ||
                 ( IS_MITIGATION(prop->FLAGS) && !IS_MITIGATION(m_prop->FLAGS) )) {
                 fprintf(stderr, "Error: Propriety %s cannot possess the specified flag\n", prop->NAME);
@@ -578,16 +591,24 @@ static CONFIG *parseConfig(FILE *fd) {
         GET_FIRST_OCUR(end_buffer_ptr, ' ');    // Make end ptr point towards either end of input or next space
 
         if (isdigit(*init_buffer_ptr)) {
-            if (*(end_buffer_ptr -1) == 'f') {
-                new_prop->fINIT = parseFloat(init_buffer_ptr);
-                new_prop->PTYPE = pDOUBLE;
-                fprintf(stdout, "type %s\t", "DOUBLE");
-                fprintf(stdout, "value %f\n", new_prop->fINIT);
-            } else {
-                new_prop->iINIT = parseNum(init_buffer_ptr);
-                new_prop->PTYPE = pINT;
-                fprintf(stdout, "type %s\t", "INT");
-                fprintf(stdout, "value %d\n", new_prop->iINIT);
+            switch (*(end_buffer_ptr -1)) {
+                case 'f':
+                    new_prop->fINIT = parseFloat(init_buffer_ptr);
+                    new_prop->PTYPE = pDOUBLE;
+                    fprintf(stdout, "type %s\t", "DOUBLE");
+                    fprintf(stdout, "value %f\n", new_prop->fINIT);
+                    break;
+                case 'b':
+                    new_prop->iINIT = parseNum(init_buffer_ptr);
+                    new_prop->PTYPE = pBOOL;
+                    fprintf(stdout, "type %s\t", "BOOLEAN");
+                    fprintf(stdout, "value %d\n", new_prop->iINIT);
+                    break;
+                default:
+                    new_prop->iINIT = parseNum(init_buffer_ptr);
+                    new_prop->PTYPE = pINT;
+                    fprintf(stdout, "type %s\t", "INT");
+                    fprintf(stdout, "value %d\n", new_prop->iINIT);
             }
         }
         else if (isalpha(*init_buffer_ptr)) {
@@ -630,7 +651,7 @@ static CONFIG *parseConfig(FILE *fd) {
         }
     }
 
-    if (GET_COMP_BY_IDX(config, MODULE_CONFIG->VICTIM_ID, NULL) == -1) {
+    if (GET_COMP_BY_ID(config, MODULE_CONFIG->VICTIM_ID, NULL) == -1) {
         fprintf(stderr, "Error: The victim component (ID %ld) was not configured", MODULE_CONFIG->VICTIM_ID);
         return NULL;
     }

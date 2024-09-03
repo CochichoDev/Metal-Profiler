@@ -381,9 +381,10 @@ static T_VOID processResults(const char *name, G_ARRAY *garray_result_input, siz
 T_VOID computeInterferenceDegradation(G_ARRAY *garrays_std_input, size_t num_garrays, G_ARRAY *garrays_std_deg) {
     // Change configuration to only compile the isolated victim
     CONFIG *cfg_iso = calloc(1, sizeof(CONFIG));
-    cfg_iso->NUM = 1;
+    cfg_iso->NUM = 2;
     cfg_iso->VICTIM_ID = INPUT_CONFIG->VICTIM_ID;
-    GET_COMP_BY_IDX(INPUT_CONFIG, cfg_iso->VICTIM_ID, (const COMP **)cfg_iso->COMPS);
+    GET_COMP_BY_ID(INPUT_CONFIG, SYSTEM_COMP_ID, (const COMP **)cfg_iso->COMPS);
+    GET_COMP_BY_ID(INPUT_CONFIG, cfg_iso->VICTIM_ID, (const COMP **)(cfg_iso->COMPS)+1);
 
     computeDegradation(garrays_std_input, num_garrays, garrays_std_deg, cfg_iso);
     free(cfg_iso);
@@ -394,9 +395,10 @@ T_VOID computeProprietyDegradation(G_ARRAY *garrays_std_input, size_t num_garray
     CONFIG *cfg_mod = cloneConfig(INPUT_CONFIG);
 
     const COMP *comp_ptr = NULL;
-    cfg_mod->NUM = 1;
+    cfg_mod->NUM = 2;
     cfg_mod->VICTIM_ID = INPUT_CONFIG->VICTIM_ID;
-    GET_COMP_BY_IDX(cfg_mod, cfg_mod->VICTIM_ID, &comp_ptr);
+    GET_COMP_BY_ID(cfg_mod, SYSTEM_COMP_ID, &comp_ptr);
+    GET_COMP_BY_ID(cfg_mod, cfg_mod->VICTIM_ID, ((const COMP **)cfg_mod->COMPS)+1);
     cfg_mod->COMPS[0] = (COMP*) comp_ptr;
     
     // Remove all Mitigation proprieties that are not marked as needed
@@ -404,7 +406,10 @@ T_VOID computeProprietyDegradation(G_ARRAY *garrays_std_input, size_t num_garray
         // The refered propriety must me a mitigation and not needed
         if (!IS_MITIGATION((comp_ptr->PBUFFER->PROPS + prop_idx)->FLAGS)) continue;
 
-        if (IS_NEDDED((comp_ptr->PBUFFER->PROPS + prop_idx)->FLAGS)) continue;
+        if (comp_ptr->PBUFFER->PROPS[prop_idx].PTYPE == pBOOL) {
+            comp_ptr->PBUFFER->PROPS[prop_idx].iINIT = 0;
+            continue;
+        }
 
         size_t prop_idx_aux = prop_idx;
         for (; prop_idx_aux < comp_ptr->PBUFFER->NUM-1;  prop_idx_aux++) {
