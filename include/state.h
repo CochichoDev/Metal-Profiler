@@ -2,12 +2,13 @@
 #define STATE_H
 
 #include "api.h"
+#include "arch.h"
 
 /************** STATE TYPES DEFINITION ****************/
 typedef struct {
-    char name[128];
-    char path[256];
-    size_t NUM_CORES;
+    char        name[128];
+    char        path[256];
+    ARCH_DESC   desc;
 } ARCH;
 
 typedef struct {

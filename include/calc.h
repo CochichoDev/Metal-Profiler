@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "results.h"
+#include "arch.h"
 
 #include <stddef.h>
 
@@ -37,4 +38,9 @@ T_VOID destroyMetrics(METRICS *metrics);
 /************** MATH FUNCTIONS ****************/
 T_INT uniformRandom(T_INT min, T_INT max);
 T_INT binomialRandom(T_UINT n, T_DOUBLE p);
+
+
+
+
+T_UINT contiguousPages(ARCH_DESC *arch);
 #endif

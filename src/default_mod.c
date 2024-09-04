@@ -54,13 +54,13 @@ void default_INIT_BENCH() {
 void default_RUN_BENCH(RESULT *results) {
     char script_query[256] = T32SCRIPT;
 
-    T_FLAG *core_state = alloca(sizeof(T_FLAG) * SELECTED_ARCH.NUM_CORES);
+    T_FLAG *core_state = alloca(sizeof(T_FLAG) * SELECTED_ARCH.desc.NUM_CORES);
 
-    for (size_t idx = 1 ; idx <= SELECTED_ARCH.NUM_CORES ; idx++) {
+    for (size_t idx = 1 ; idx <= SELECTED_ARCH.desc.NUM_CORES ; idx++) {
         core_state[idx] = (GET_COMP_BY_ID(CUR_CFG, idx, NULL) != -1) ? 1 : 0;
     }
     
-    EX_T32_SCRIPT(script_query, SELECTED_ARCH.NUM_CORES, core_state);
+    EX_T32_SCRIPT(script_query, SELECTED_ARCH.desc.NUM_CORES, core_state);
     
     TTY_TO_RESULT('F', results);
 }

@@ -13,6 +13,8 @@
 #include <time.h>
 
 #include "calc.h"
+#include "types.h"
+#include "arch.h"
 
 
 /************** RESULT RELATED FUNCTIONS ****************/
@@ -268,6 +270,44 @@ T_VOID destroyMetrics(METRICS *metrics) {
     metrics->MEDIAN.DATA = NULL;
     metrics->MEDIAN.SIZE = 0;
 }
+
+
+/************** CACHE CALC FUNCTIONS ****************/
+/*
+ * contiguousPages : Calculates the number of contiguos pages that should be
+ *                  allocated for each core.
+ */
+T_UINT contiguousPages(ARCH_DESC *arch) {
+    size_t first_b = -1;
+    T_UINT bits_size = 0;
+
+    for (size_t cache_idx = 0; cache_idx < arch->CACHE_LVL; ++cache_idx) {
+        CACHE_DESC *cache = arch->CACHES + cache_idx;
+        
+
+        size_t app_size = __builtin_ctz(cache->SHARED_NUM);
+        if (app_size == 0) continue;
+        size_t line_off = __builtin_ctz(cache->LINE_SIZE);
+        size_t size_off = __builtin_ctz(cache->SIZE);
+        size_t way_off = __builtin_ctz(cache->WAYS);
+        size_t set_off = size_off - line_off - way_off;
+
+
+        size_t coloring_b = line_off + set_off - app_size;
+        /* In case this is the first shared cache */
+        if (first_b == -1 || coloring_b < first_b) {
+            first_b = coloring_b;
+            if (first_b < __builtin_ctz(arch->PAGE_SIZE)) {
+                fprintf(stdout, "Perfect coloring is not possible due to Cache L%ld\n", cache_idx+1);
+                first_b = __builtin_ctz(arch->PAGE_SIZE);
+            }
+        }
+        if (bits_size < app_size) bits_size = app_size;
+
+    }
+    return 1 << (first_b - __builtin_ctz(arch->PAGE_SIZE));
+}
+
 
 
 /************** MATH FUNCTIONS ****************/

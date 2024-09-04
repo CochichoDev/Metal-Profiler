@@ -11,15 +11,20 @@
 #include <ctype.h>
 
 #include "api.h"
+#include "arch.h"
 #include "global.h"
 #include "state.h"
 #include "types.h"
 #include "utils.h"
 #include "default_mod.h"
+#include "calc.h"
+
+//#define DEBUG
 
 static T_UINT __getType(T_STR *type_options, size_t num_options, T_PSTR type);
 static const T_PSTR __getTypeName(T_STR *type_options, size_t num_options, T_UINT type);
 static CONFIG *parseConfig(FILE *fd);
+static ARCH_DESC *parseArch(FILE *fd, ARCH_DESC *desc);
 
 /************** PRINTING STATE FUNCTIONS ****************/
 T_ERROR listArchs() {
@@ -256,8 +261,16 @@ T_VOID selectArch(size_t choice) {
     }
 
     SELECTED_ARCH = AVAIL_ARCHS.arch[choice];
+    char desc_path[512];
+    strcpy(desc_path, SELECTED_ARCH.path);
+    strcat(desc_path, "/arch.desc");
+    FILE *arch_desc = fopen(desc_path, "r");
+    parseArch(arch_desc, &SELECTED_ARCH.desc);
+    fclose(arch_desc);
+
+    fprintf(stdout, "Number of contiguous pages: %d\n", contiguousPages(&SELECTED_ARCH.desc));
+
     fprintf(stdout, "%s was successfully selected\n", SELECTED_ARCH.name);
-    SELECTED_ARCH.NUM_CORES = 4;
 
     char module_path[512];
     strcpy(module_path, SELECTED_ARCH.path);
@@ -537,7 +550,7 @@ static const T_PSTR __getTypeName(T_STR *type_options, size_t num_options, T_UIN
 }
 
 static CONFIG *parseConfig(FILE *fd) {
-    CONFIG *config = calloc(sizeof(CONFIG), 1);
+    CONFIG *config = calloc(1, sizeof(CONFIG));
 
     char buffer[256];
     size_t line_num = 0;
@@ -657,4 +670,134 @@ static CONFIG *parseConfig(FILE *fd) {
     }
 
     return config;
+}
+
+static ARCH_DESC *parseArch(FILE *fd, ARCH_DESC *desc) {
+    if (desc->CACHES != NULL)
+        free(desc->CACHES);
+    bzero(desc, sizeof(ARCH_DESC));
+
+    /* Parsing aider */
+    typedef struct {
+        T_FLAG      CORE_PROP;
+        T_FLAG      CACHE_PROP;
+        T_USHORT    CACHE_NUM;
+        T_VOID     *TARGET;
+    } param_s;
+
+    param_s flags = {.CORE_PROP = FALSE, .CACHE_PROP = FALSE, .CACHE_NUM = 0};
+    
+
+    char buffer[512];
+    size_t num_line = 1;
+    while (fgets(buffer, sizeof(buffer), fd)) {
+        char *init_ptr = buffer;
+        char *end_ptr = buffer;
+
+        GET_FIRST_CHAR(init_ptr);
+
+        switch (*init_ptr) {
+            case '#':
+                goto NEW_INFO;
+            case '\n':
+                goto TRY_NEXT;
+            default:
+                if (flags.CORE_PROP) goto CORE_PROP;
+                if (flags.CACHE_PROP) goto CACHE_PROP;
+                goto TRY_NEXT;
+        }
+
+    CORE_PROP:
+        end_ptr = init_ptr;
+        GET_FIRST_NONCHAR(end_ptr);
+
+        if ((end_ptr - init_ptr) == 1 && !memcmp(init_ptr, "N", 1)) {
+            flags.TARGET = &(desc->NUM_CORES);
+            goto VALUE;
+        } else if ((end_ptr - init_ptr) == 4 && !memcmp(init_ptr, "PAGE", 4)) {
+            flags.TARGET = &(desc->PAGE_SIZE);
+            goto VALUE;
+        }
+        goto TRY_NEXT;
+
+    CACHE_PROP:
+        end_ptr = init_ptr;
+        GET_FIRST_NONCHAR(end_ptr);
+
+        if ((end_ptr - init_ptr) == 4 && !memcmp(init_ptr, "SIZE", 4)) {
+            flags.TARGET = &(desc->CACHES[flags.CACHE_NUM-1].SIZE);
+            goto VALUE;
+        } else if ((end_ptr - init_ptr) == 4 && !memcmp(init_ptr, "WAYS", 4)) {
+        #ifdef DEBUG
+            printf("WAYS: \t");
+        #endif
+            flags.TARGET = &(desc->CACHES[flags.CACHE_NUM-1].WAYS);
+            goto VALUE;
+        } else if ((end_ptr - init_ptr) == 4 && !memcmp(init_ptr, "LINE", 4)) {
+        #ifdef DEBUG
+            printf("LINE: \t");
+        #endif
+            flags.TARGET = &(desc->CACHES[flags.CACHE_NUM-1].LINE_SIZE);
+            goto VALUE;
+        } else if ((end_ptr - init_ptr) == 6 && !memcmp(init_ptr, "SHARED", 6)) {
+        #ifdef DEBUG
+            printf("SHARED: \t");
+        #endif
+            flags.TARGET = &(desc->CACHES[flags.CACHE_NUM-1].SHARED_NUM);
+            goto VALUE;
+        }
+        goto TRY_NEXT;
+    VALUE:
+        GET_FIRST_OCUR(init_ptr, ':');
+        init_ptr++;
+        GET_FIRST_CHAR(init_ptr);
+        end_ptr = init_ptr;
+        GET_FIRST_NONCHAR(end_ptr);
+        char buffer[16];
+        memcpy(buffer, init_ptr, end_ptr-init_ptr);
+        buffer[end_ptr-init_ptr] = '\0';
+        *((T_UINT *)flags.TARGET) = parseNum(buffer);
+    #ifdef DEBUG
+        printf("Value: %d\n", *((T_UINT *)flags.TARGET));
+    #endif
+        goto TRY_NEXT;
+
+    NEW_INFO:
+        end_ptr = ++init_ptr;
+        GET_FIRST_OCUR(end_ptr, ' ');
+
+        /* Decide which field is going to be filled */
+        if ((end_ptr - init_ptr) == 5 && !memcmp(init_ptr, "CORES", 5)) {
+        #ifdef DEBUG
+            printf("CORES\n");
+        #endif
+            flags.CORE_PROP = 1;
+            flags.CACHE_PROP = 0;
+        } else if ((end_ptr - init_ptr) == 8 && !memcmp(init_ptr, "CACHE_L", 7)) {
+            flags.CORE_PROP = 0;
+            if (isdigit(*(end_ptr-1))) {
+                flags.CACHE_PROP = 1;
+                flags.CACHE_NUM = *(end_ptr-1) - '0';
+            #ifdef DEBUG
+                printf("CACHE_L%d\n", flags.CACHE_NUM);
+            #endif
+
+                if (desc->CACHE_LVL < flags.CACHE_NUM) {
+                    desc->CACHE_LVL = flags.CACHE_NUM;
+                    desc->CACHES = realloc(desc->CACHES, sizeof(CACHE_DESC) * flags.CACHE_NUM);
+                }
+
+            } else {
+                flags.CACHE_PROP = 0;
+            }
+        } else {
+            flags.CORE_PROP = 0;
+            flags.CACHE_PROP = 0;
+        }
+
+    TRY_NEXT:
+        num_line++;
+    }
+
+    return desc;
 }

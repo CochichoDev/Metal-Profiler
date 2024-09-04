@@ -19,6 +19,13 @@
     for ( ; *ptr != '\n' ; ptr++)    \
         if (isalnum(*ptr) || *ptr == '#') break
 
+#define GET_FIRST_NONCHAR(ptr)        \
+    for ( ; *ptr != '\n' ; ptr++)    \
+        if (!isalnum(*ptr) && *ptr != '#') break
+
+#define GET_FIRST_GRAPH(ptr)        \
+    for ( ; *ptr != '\n' ; ptr++)    \
+        if (isgraph(*ptr)) break
 /*
  * GET_FIRST_OCUR(ptr,c ) : Get the first 'c' character ocurrence it finds, pointed by ptr
  * in case it doesn't find it the pointer will point to the end of the line (input)
@@ -27,6 +34,9 @@
     for ( ; *ptr != c ; ptr++)    \
         if (*ptr == '\n') break
 
+#define GET_FIRST_OCUR2(ptr, c1, c2)        \
+    for ( ; (*ptr != c1) && (*ptr != c2) ; ptr++)    \
+        if (*ptr == '\n') break
 /************** PARSING FUNCTIONS ****************/
 size_t itos(int num, char *str);
 int64_t parseNum(const char *str);

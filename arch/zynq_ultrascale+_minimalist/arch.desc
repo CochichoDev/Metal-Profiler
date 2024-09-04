@@ -1,14 +1,15 @@
 #CORES
 N:          4
+PAGE:       4096
 
-#CACHE L1
-LINE_SIZE:  64
-SIZE:       32768
+#CACHE_L1
+LINE:       64
+SIZE:       65536
 WAYS:       4
-SHARED:     0
+SHARED:     2
 
-#CACHE L2
-LINE_SIZE:  64
+#CACHE_L2
+LINE:       64
 SIZE:       1048576
 WAYS:       16
-SHARED:     1
+SHARED:     4

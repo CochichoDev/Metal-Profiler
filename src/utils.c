@@ -376,8 +376,8 @@ JOIN:
 
 T_ERROR CALL_MAKEFILES(CONFIG *config) {
     pid_t make_bsp, make_fsbl;
-    pid_t *make_cores = alloca(sizeof(pid_t)*SELECTED_ARCH.NUM_CORES);
-    bzero(make_cores, sizeof(pid_t)*SELECTED_ARCH.NUM_CORES);
+    pid_t *make_cores = alloca(sizeof(pid_t)*SELECTED_ARCH.desc.NUM_CORES);
+    bzero(make_cores, sizeof(pid_t)*SELECTED_ARCH.desc.NUM_CORES);
 
     const COMP *victim_comp;
     if (GET_COMP_BY_ID(config, config->VICTIM_ID, &victim_comp) == -1) {
@@ -412,7 +412,7 @@ T_ERROR CALL_MAKEFILES(CONFIG *config) {
     make_fsbl = RUN_PROCESS_IMAGE(NULL, "/bin/make", "make", "-C", fsbl_path, "clean", "all", NULL);
 
 
-    for (uint8_t i = 1 ; i <= SELECTED_ARCH.NUM_CORES ; i++) {
+    for (uint8_t i = 1 ; i <= SELECTED_ARCH.desc.NUM_CORES ; i++) {
         const COMP *core_ptr;
 
         if (GET_COMP_BY_ID(config, i, &core_ptr) != -1) {
@@ -434,7 +434,7 @@ T_ERROR CALL_MAKEFILES(CONFIG *config) {
     }
 
     waitpid(make_fsbl, NULL, 0);
-    for (size_t i = 0; i < SELECTED_ARCH.NUM_CORES; i++)
+    for (size_t i = 0; i < SELECTED_ARCH.desc.NUM_CORES; i++)
         if (make_cores[i])
             waitpid(make_cores[i], NULL, 0);
 

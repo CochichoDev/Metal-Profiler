@@ -36,6 +36,7 @@ SYStem.Option WaitReset 500ms
 SYStem.JtagClock CTCK 10MHz
 
 DO "&ppd/zynq_ultrascale_kickboot.cmm" A53_X64
+
 IF "&core1"=="TRUE"||"&core2"=="TRUE"||"&core3"=="TRUE"
 (
 DO "&ppd/zynq_ultrascale_kickboot.cmm" _A53_234_X64
@@ -65,6 +66,14 @@ IF Register(PC)!=ADDRESS.OFFSET(XFsbl_Loop)
   PRINT %ERROR "Boot flow error"
   ENDDO
 )
+Intercom.name A53_0
+InterCom A53_0 SYStem.CONFIG Core 1. 1.
+InterCom A53_0 CACHE.INVALIDATE IC
+InterCom A53_0 CACHE.INVALIDATE DC
+InterCom A53_0 CACHE.INVALIDATE L2
+InterCom A53_0 Break
+InterCom A53_0 Data.LOAD.Elf "&ppd/Core0/bin/Core0.elf"
+STOP
 
 
 ; --------------------------------------------------------------------------------
