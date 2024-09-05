@@ -45,7 +45,7 @@ size_t itos(int num, char *str) {
     return size;
 }
 
-int64_t cliParseNum(const char *str) {
+int64_t parseNum(const char *str) {
     if (str == NULL || *str == '\0') return 0;
     while (!isdigit(*str)) {
         if (*str == '\n' || *str == '\0') return 0;

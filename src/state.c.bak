@@ -569,7 +569,7 @@ static CONFIG *parseConfig(FILE *fd) {
         if (*init_buffer_ptr == '#') {
             // Create a new component
             component = calloc(sizeof(COMP), 1);
-            component->ID = cliParseNum(init_buffer_ptr + 1);
+            component->ID = parseNum(init_buffer_ptr + 1);
             // Create Propriety Buffer and link it to the newly created component
             prop_buffer = calloc(sizeof(pBUFFER), 1);
             component->PBUFFER = prop_buffer;
@@ -613,13 +613,13 @@ static CONFIG *parseConfig(FILE *fd) {
                     fprintf(stdout, "value %f\n", new_prop->fINIT);
                     break;
                 case 'b':
-                    new_prop->iINIT = cliParseNum(init_buffer_ptr);
+                    new_prop->iINIT = parseNum(init_buffer_ptr);
                     new_prop->PTYPE = pBOOL;
                     fprintf(stdout, "type %s\t", "BOOLEAN");
                     fprintf(stdout, "value %d\n", new_prop->iINIT);
                     break;
                 default:
-                    new_prop->iINIT = cliParseNum(init_buffer_ptr);
+                    new_prop->iINIT = parseNum(init_buffer_ptr);
                     new_prop->PTYPE = pINT;
                     fprintf(stdout, "type %s\t", "INT");
                     fprintf(stdout, "value %d\n", new_prop->iINIT);
@@ -673,139 +673,7 @@ static CONFIG *parseConfig(FILE *fd) {
     return config;
 }
 
-static T_INT parseInt(const char *init, const char *end, const size_t num_line) {
-    T_INT num = 0;
-
-    T_FLAG f_num = FALSE, f_neg = FALSE;
-
-    while (init != end) {
-        if (init != NULL && *init == '-') {
-            if (f_neg == FALSE && f_num == FALSE) {
-                f_neg = TRUE;
-            } else {
-                fprintf(stderr, "Could not parse number in line %ld\n", num_line);
-                return num;
-            }
-        } else if (init != NULL && isdigit(*init)) {
-            f_num = TRUE;
-
-            num *= 10;
-            num += *init - '0';
-        } else if (f_num == TRUE) {
-            fprintf(stderr, "Could not parse number in line %ld\n", num_line);
-            return num;
-        }
-        init++;
-    }
-    return num;
-}
-
-static T_ULONG parseULong(const char *init, const char *end, const size_t num_line) {
-    assert(init != NULL && end != NULL);
-    T_ULONG num = 0;
-
-    T_FLAG f_num = FALSE;
-
-    while (init != end) {
-        if (isdigit(*init)) {
-            f_num = TRUE;
-
-            num *= 10;
-            num += *init - '0';
-        } else if (f_num == TRUE) {
-            fprintf(stderr, "Could not parse number in line %ld\n", num_line);
-            return num;
-        }
-        init++;
-    }
-    return num;
-}
-
-static T_ULONG parseXULong(const char *init, const char *end, const size_t num_line) {
-    assert(init != NULL && end != NULL);
-
-    T_ULONG num = 0;
-
-    T_FLAG f_num = FALSE;
-    size_t num_chars = 0;
-    T_USHORT offset = '0';
-
-    GET_FIRST_OCUR(init, 'x');
-    init++;
-
-    while (init != end) {
-        if (isdigit(*end)) {
-            f_num = TRUE;
-            offset = '0';
-        } else if (*end >= 'A' && *end <= 'F') {
-            f_num = TRUE;
-            offset = 'A' - 10;
-        } else {
-            if (f_num == TRUE) {
-                fprintf(stderr, "Could not parse complete range in line %ld\n", num_line);
-                return num;
-            }
-            goto TRY_AGAIN;
-        }
-
-        num *= 16;
-        num += (*init - offset);
-        num_chars++;
-        if (num_chars == 8) break;
-    TRY_AGAIN:
-        init++;
-    }
-    return num;
-}
-
-static T_VOID parseXULLong(T_ULLONG num, const char *init, const char *end, const size_t num_line) {
-    assert(num != NULL && init != NULL && end != NULL);
-    bzero(num, sizeof(T_ULLONG)*sizeof(T_ULONG));
-
-    T_FLAG f_num = FALSE;
-    T_FLAG lp = TRUE;
-    size_t num_chars = 0;
-    T_ULONG multiplier = 1;
-    T_USHORT offset = '0';
-
-    GET_FIRST_OCUR(init, 'x');
-    init++;
-
-    while (end >= init) {
-        if (isdigit(*end)) {
-            f_num = TRUE;
-            offset = '0';
-        } else if (*end >= 'A' && *end <= 'F') {
-            f_num = TRUE;
-            offset = 'A' - 10;
-        } else {
-            if (f_num == TRUE) {
-                fprintf(stderr, "Could not parse complete range in line %ld\n", num_line);
-                return;
-            }
-            goto TRY_AGAIN;
-        }
-
-        if (lp == TRUE) {
-            LP(num) += (*end - offset) * multiplier;
-            multiplier *= 16;
-            num_chars++;
-            if (num_chars == 8) {
-                lp = FALSE;
-                multiplier = 1;
-                num_chars = 0;
-            }
-        } else {
-            HP(num) += (*end - '0') * multiplier;
-            multiplier *= 16;
-            num_chars++;
-            if (num_chars == 8) break;
-        }
-    TRY_AGAIN:
-        end--;
-    }
-}
-
+static T_UINT
 
 static ARCH_DESC *parseArch(FILE *fd, ARCH_DESC *desc) {
     if (desc->CACHES != NULL)
@@ -891,7 +759,7 @@ static ARCH_DESC *parseArch(FILE *fd, ARCH_DESC *desc) {
         char buffer[16];
         memcpy(buffer, init_ptr, end_ptr-init_ptr);
         buffer[end_ptr-init_ptr] = '\0';
-        *((T_UINT *)flags.TARGET) = cliParseNum(buffer);
+        *((T_UINT *)flags.TARGET) = parseNum(buffer);
     #ifdef DEBUG
         printf("Value: %d\n", *((T_UINT *)flags.TARGET));
     #endif
@@ -1022,7 +890,7 @@ static MEM_MAP *parseMemMap(FILE *fd, MEM_MAP *map) {
         char buffer[16];
         memcpy(buffer, init_ptr, end_ptr-init_ptr);
         buffer[end_ptr-init_ptr] = '\0';
-        *((T_UINT *)flags.TARGET) = cliParseNum(buffer);
+        *((T_UINT *)flags.TARGET) = parseNum(buffer);
     #ifdef DEBUG
         printf("Value: %d\n", *((T_UINT *)flags.TARGET));
     #endif

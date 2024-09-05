@@ -86,7 +86,7 @@ static T_VOID returnOKButton(T_NODE *button, T_VOID **data) {
     T_USHORT choice = multi_get_index(optChoice);
     T_USHORT algo = multi_get_index(optAlgo);
     const char *output = textb_get_text(outTextb);
-    T_INT iterations = cliParseNum(textb_get_text(iterTextb));
+    T_INT iterations = parseNum(textb_get_text(iterTextb));
 
     if (!*output || !*textb_get_text(iterTextb)) {
         fprintf(stderr, "Error: Both iterations and output need to be specified in the textboxes\n");

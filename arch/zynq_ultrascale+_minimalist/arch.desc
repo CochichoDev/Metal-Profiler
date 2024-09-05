@@ -4,12 +4,12 @@ PAGE:       4096
 
 #CACHE_L1
 LINE:       64
-SIZE:       65536
+SIZE:       32768
 WAYS:       4
-SHARED:     2
+SHARED:     0
 
 #CACHE_L2
 LINE:       64
 SIZE:       1048576
 WAYS:       16
-SHARED:     4
+SHARED:     32

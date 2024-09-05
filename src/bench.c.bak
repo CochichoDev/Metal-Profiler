@@ -47,7 +47,7 @@ static T_VOID returnOKButton(T_NODE *button, T_VOID **data) {
     T_NODE *textbIterations = data[1];
     T_NODE *textbName = data[0];
 
-    runExecution(cliParseNum(textb_get_text(textbIterations)), textb_get_text(textbName));
+    runExecution(parseNum(textb_get_text(textbIterations)), textb_get_text(textbName));
 }
 
 static T_VOID returnExitButton(T_NODE *button, T_VOID **data) {

@@ -129,7 +129,7 @@ uint8_t cliGetInput(TERM *term) {
             break;
         case EXECUTE:
             getWord(term, buffer, 128);
-            runExecution(cliParseNum(buffer), ".");
+            runExecution(parseNum(buffer), ".");
             break;
         case EXIT:
             cliClose(term);
@@ -163,17 +163,17 @@ uint8_t cliGetInput(TERM *term) {
             break;
         case LOAD:
             getWord(term, buffer, 128);
-            loadConfig(cliParseNum(buffer));
+            loadConfig(parseNum(buffer));
             break;
         case OPTIMIZE:
             switch (parseOptimizeArg(term)) {
                 case O_RS:
                     getWord(term, buffer, 128);
-                    //optimizeConfig(randomSearchNR, cliParseNum(buffer));
+                    //optimizeConfig(randomSearchNR, parseNum(buffer));
                     break;
                 case O_SA:
                     getWord(term, buffer, 128);
-                    //optimizeConfig(simulatedAnnealing, cliParseNum(buffer));
+                    //optimizeConfig(simulatedAnnealing, parseNum(buffer));
                     break;
                 case O_ERROR:
                     return 1;
@@ -186,7 +186,7 @@ uint8_t cliGetInput(TERM *term) {
             switch (parseSetArg(term)) {
                 case S_ARCH:
                     getWord(term, buffer, 128);
-                    selectArch(cliParseNum(buffer));
+                    selectArch(parseNum(buffer));
                     listConfigs();
                     break;
                 case S_OUTPUT:

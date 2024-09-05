@@ -39,7 +39,7 @@
         if (*ptr == '\n') break
 /************** PARSING FUNCTIONS ****************/
 size_t itos(int num, char *str);
-int64_t cliParseNum(const char *str);
+int64_t parseNum(const char *str);
 double parseFloat(char *str);
 
 /************** STRING HANDLING FUNCTIONS ****************/
