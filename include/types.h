@@ -22,6 +22,9 @@ typedef int8_t      T_ERROR;
 
 typedef uint64_t    T_ULLONG[2];
 
+#define FALSE 0
+#define TRUE 1
+
 #define HP(N)       N[1]
 #define LP(N)       N[0]
 

@@ -25,6 +25,7 @@ static T_UINT __getType(T_STR *type_options, size_t num_options, T_PSTR type);
 static const T_PSTR __getTypeName(T_STR *type_options, size_t num_options, T_UINT type);
 static CONFIG *parseConfig(FILE *fd);
 static ARCH_DESC *parseArch(FILE *fd, ARCH_DESC *desc);
+static MEM_MAP *parseMemMap(FILE *fd, MEM_MAP *map);
 
 /************** PRINTING STATE FUNCTIONS ****************/
 T_ERROR listArchs() {
@@ -267,10 +268,16 @@ T_VOID selectArch(size_t choice) {
     FILE *arch_desc = fopen(desc_path, "r");
     parseArch(arch_desc, &SELECTED_ARCH.desc);
     fclose(arch_desc);
-
     fprintf(stdout, "Number of contiguous pages: %d\n", contiguousPages(&SELECTED_ARCH.desc));
-
     fprintf(stdout, "%s was successfully selected\n", SELECTED_ARCH.name);
+
+    char mem_path[512];
+    strcpy(mem_path, SELECTED_ARCH.path);
+    strcat(mem_path, "/mem.map");
+    FILE *mem_map = fopen(mem_path, "r");
+    parseMemMap(mem_map, &SELECTED_ARCH.map);
+    fclose(mem_map);
+
 
     char module_path[512];
     strcpy(module_path, SELECTED_ARCH.path);
@@ -674,26 +681,38 @@ static CONFIG *parseConfig(FILE *fd) {
 }
 
 static T_INT parseInt(const char *init, const char *end, const size_t num_line) {
+    assert(init != NULL && end != NULL);
     T_INT num = 0;
 
     T_FLAG f_num = FALSE, f_neg = FALSE;
 
     while (init != end) {
-        if (init != NULL && *init == '-') {
+        if (*init == '-') {
             if (f_neg == FALSE && f_num == FALSE) {
                 f_neg = TRUE;
             } else {
                 fprintf(stderr, "Could not parse number in line %ld\n", num_line);
                 return num;
             }
-        } else if (init != NULL && isdigit(*init)) {
+        } else if (isdigit(*init)) {
             f_num = TRUE;
 
             num *= 10;
             num += *init - '0';
         } else if (f_num == TRUE) {
-            fprintf(stderr, "Could not parse number in line %ld\n", num_line);
-            return num;
+            switch (*init) {
+                case 'B':
+                    return num;
+                case 'K':
+                    return (num << 10);
+                case 'M':
+                    return (num << 20);
+                case 'G':
+                    return (num << 30);
+                default:
+                    fprintf(stderr, "Could not parse number in line %ld\n", num_line);
+                    return num;
+            }
         }
         init++;
     }
@@ -713,8 +732,19 @@ static T_ULONG parseULong(const char *init, const char *end, const size_t num_li
             num *= 10;
             num += *init - '0';
         } else if (f_num == TRUE) {
-            fprintf(stderr, "Could not parse number in line %ld\n", num_line);
-            return num;
+            switch (*init) {
+                case 'B':
+                    return num;
+                case 'K':
+                    return (num << 10);
+                case 'M':
+                    return (num << 20);
+                case 'G':
+                    return (num << 30);
+                default:
+                    fprintf(stderr, "Could not parse number in line %ld\n", num_line);
+                    return num;
+            }
         }
         init++;
     }
@@ -734,10 +764,12 @@ static T_ULONG parseXULong(const char *init, const char *end, const size_t num_l
     init++;
 
     while (init != end) {
-        if (isdigit(*end)) {
+        if (isdigit(*init)) {
+            if (!f_num && *init == '0')
+                goto TRY_AGAIN;
             f_num = TRUE;
             offset = '0';
-        } else if (*end >= 'A' && *end <= 'F') {
+        } else if (*init >= 'A' && *init <= 'F') {
             f_num = TRUE;
             offset = 'A' - 10;
         } else {
@@ -947,10 +979,10 @@ static MEM_MAP *parseMemMap(FILE *fd, MEM_MAP *map) {
         T_FLAG      GLOBAL;
         T_FLAG      LEVEL;
         T_FLAG      MAP_ENTRY;
-        T_VOID     *TARGET;
+        T_UINT      LVLS;
     } param_s;
 
-    param_s flags = {.GLOBAL = TRUE, .LEVEL = FALSE, .MAP_ENTRY = FALSE, .TARGET = NULL};
+    param_s flags = {.GLOBAL = TRUE, .LEVEL = FALSE, .MAP_ENTRY = FALSE, .LVLS = 0};
     
 
     char buffer[512];
@@ -970,62 +1002,127 @@ static MEM_MAP *parseMemMap(FILE *fd, MEM_MAP *map) {
                 if (flags.GLOBAL) goto GLOBAL;
                 if (flags.LEVEL) goto LEVEL_ENTRY;
                 if (flags.MAP_ENTRY) goto MAP_ENTRY;
-                goto TRY_NEXT;
+                   goto TRY_NEXT;
         }
 
     GLOBAL:
         end_ptr = init_ptr;
         GET_FIRST_NONCHAR(end_ptr);
 
-        if ((end_ptr - init_ptr) == 8 && !memcmp(init_ptr, "DESCSIZE", 1)) {
-            flags.TARGET = &(map->desc_size);
-            goto VALUE;
-        } else if ((end_ptr - init_ptr) == 4 && !memcmp(init_ptr, "PAGE", 4)) {
-            flags.TARGET = &(desc->PAGE_SIZE);
-            goto VALUE;
+        if ((end_ptr - init_ptr) == 8 && !memcmp(init_ptr, "DESCSIZE", 8)) {
+            GET_FIRST_OCUR(end_ptr, ':');
+            init_ptr = ++end_ptr;
+            GET_FIRST_CHAR(init_ptr);
+            end_ptr = init_ptr + 1;
+            GET_FIRST_OCUR(end_ptr, ' ');
+            map->desc_size = parseInt(init_ptr, end_ptr, num_line);
+        #ifdef DEBUG
+            printf("Descriptor Size: %d\n", map->desc_size);
+        #endif
         }
         goto TRY_NEXT;
 
-    CACHE_PROP:
-        end_ptr = init_ptr;
-        GET_FIRST_NONCHAR(end_ptr);
-
-        if ((end_ptr - init_ptr) == 4 && !memcmp(init_ptr, "SIZE", 4)) {
-            flags.TARGET = &(desc->CACHES[flags.CACHE_NUM-1].SIZE);
-            goto VALUE;
-        } else if ((end_ptr - init_ptr) == 4 && !memcmp(init_ptr, "WAYS", 4)) {
-        #ifdef DEBUG
-            printf("WAYS: \t");
-        #endif
-            flags.TARGET = &(desc->CACHES[flags.CACHE_NUM-1].WAYS);
-            goto VALUE;
-        } else if ((end_ptr - init_ptr) == 4 && !memcmp(init_ptr, "LINE", 4)) {
-        #ifdef DEBUG
-            printf("LINE: \t");
-        #endif
-            flags.TARGET = &(desc->CACHES[flags.CACHE_NUM-1].LINE_SIZE);
-            goto VALUE;
-        } else if ((end_ptr - init_ptr) == 6 && !memcmp(init_ptr, "SHARED", 6)) {
-        #ifdef DEBUG
-            printf("SHARED: \t");
-        #endif
-            flags.TARGET = &(desc->CACHES[flags.CACHE_NUM-1].SHARED_NUM);
-            goto VALUE;
-        }
-        goto TRY_NEXT;
-    VALUE:
-        GET_FIRST_OCUR(init_ptr, ':');
-        init_ptr++;
+    LEVEL_ENTRY:
         GET_FIRST_CHAR(init_ptr);
         end_ptr = init_ptr;
         GET_FIRST_NONCHAR(end_ptr);
-        char buffer[16];
-        memcpy(buffer, init_ptr, end_ptr-init_ptr);
-        buffer[end_ptr-init_ptr] = '\0';
-        *((T_UINT *)flags.TARGET) = cliParseNum(buffer);
+
+        /* Parse the Level of MMU described */
+        if (*init_ptr == 'L') {
+            ++init_ptr;
+            if (isdigit(*init_ptr)) {
+                T_UINT lvl = parseInt(init_ptr, end_ptr, num_line);
+                if ((lvl+1) > flags.LVLS) {
+                    flags.LVLS = lvl+1;
+                    map->lvls = realloc(map->lvls, sizeof(T_ULONG) * (flags.LVLS));
+                }
+
+                GET_FIRST_OCUR(init_ptr, ':');
+                end_ptr = ++init_ptr;
+                GET_FIRST_CHAR(init_ptr);
+                end_ptr = init_ptr;
+                GET_FIRST_OCUR(end_ptr, ' ');
+                map->lvls[lvl] = parseULong(init_ptr, end_ptr, num_line);
+            #ifdef DEBUG
+                printf("L%d is of size %ld\n", lvl, map->lvls[lvl]);
+            #endif
+            } else {
+                fprintf(stderr, "After character \'L\' a number is expected (line %ld)\n", num_line);
+                return NULL;
+            }
+        } else {
+            fprintf(stderr, "Propriety not recognized in LEVElS section (line %ld)\n", num_line);
+            return NULL;
+        }
+        goto TRY_NEXT;
+
+    MAP_ENTRY:
+        GET_FIRST_CHAR(init_ptr);
+        end_ptr = init_ptr + 1;
+        GET_FIRST_NONCHAR(end_ptr);
+        if (!isdigit(*init_ptr)) {
+            fprintf(stderr, "In MAP section its expected for an entry to start with addresses (line %ld)\n", num_line);
+            return NULL;
+        }
+
+        map->entries = realloc(map->entries, sizeof(MAP_ENTRY)*(++map->num_entries));
+        if (*(init_ptr+1) == 'x')
+            LP(map->entries[map->num_entries-1].range) = parseXULong(init_ptr, end_ptr, num_line);
+        else
+            LP(map->entries[map->num_entries-1].range) = parseULong(init_ptr, end_ptr, num_line);
+
+        GET_FIRST_OCUR(end_ptr, '-');
+        if (*end_ptr != '-') {
+            fprintf(stderr, "Each entry must have a start and end addresses separated by \'-\' (line %ld)\n", num_line);
+            return NULL;
+        }
+        init_ptr = ++end_ptr;
+        GET_FIRST_CHAR(init_ptr);
+        if (!isdigit(*init_ptr)) {
+            fprintf(stderr, "In a MAP entry its expected for an end address (line %ld)\n", num_line);
+            return NULL;
+        }
+        end_ptr = init_ptr;
+        GET_FIRST_NONCHAR(end_ptr);
+        if (*(init_ptr+1) == 'x')
+            HP(map->entries[map->num_entries-1].range) = parseXULong(init_ptr, end_ptr, num_line);
+        else
+            HP(map->entries[map->num_entries-1].range) = parseULong(init_ptr, end_ptr, num_line);
     #ifdef DEBUG
-        printf("Value: %d\n", *((T_UINT *)flags.TARGET));
+        printf("Range: %lx - %lx\n", LP(map->entries[map->num_entries-1].range), HP(map->entries[map->num_entries-1].range));
     #endif
+
+        GET_FIRST_OCUR(end_ptr, '(');
+        if (*end_ptr != '(') {
+            fprintf(stderr, "Each entry must have a mmu level and attribute (line %ld)\n", num_line);
+            return NULL;
+        }
+        GET_FIRST_OCUR(end_ptr, 'L');
+        init_ptr = ++end_ptr;
+        if (!isdigit(*init_ptr)) {
+            fprintf(stderr, "MMU level not specified (line %ld)\n", num_line);
+            return NULL;
+        }
+        GET_FIRST_NONCHAR(end_ptr);
+        map->entries[map->num_entries-1].lvl = parseInt(init_ptr, end_ptr, num_line);
+    #ifdef DEBUG
+        printf("Level: %d\n", map->entries[map->num_entries-1].lvl);
+    #endif
+        GET_FIRST_OCUR(end_ptr, ':');
+        init_ptr = ++end_ptr;
+        GET_FIRST_CHAR(init_ptr);
+        end_ptr = init_ptr;
+        GET_FIRST_NONCHAR(end_ptr);
+        memcpy(map->entries[map->num_entries-1].attr, init_ptr, end_ptr-init_ptr);
+        map->entries[map->num_entries-1].attr[end_ptr-init_ptr] = '\0';
+    #ifdef DEBUG
+        printf("Attribute: %s\n", map->entries[map->num_entries-1].attr);
+    #endif
+
+        GET_FIRST_OCUR(end_ptr, 'C');
+        if (*end_ptr != 'C') goto TRY_NEXT;
+        if (*(++end_ptr) == 'C') map->entries[map->num_entries-1].cc = TRUE;
+
         goto TRY_NEXT;
 
     NEW_INFO:
@@ -1035,7 +1132,7 @@ static MEM_MAP *parseMemMap(FILE *fd, MEM_MAP *map) {
         GET_FIRST_OCUR(end_ptr, ' ');
 
         /* Decide which field is going to be filled */
-        if ((end_ptr - init_ptr) == 5 && !memcmp(init_ptr, "LEVELS", 6)) {
+        if ((end_ptr - init_ptr) == 6 && !memcmp(init_ptr, "LEVELS", 6)) {
         #ifdef DEBUG
             printf("LEVELS\n");
         #endif
@@ -1062,5 +1159,5 @@ static MEM_MAP *parseMemMap(FILE *fd, MEM_MAP *map) {
         num_line++;
     }
 
-    return desc;
+    return map;
 }

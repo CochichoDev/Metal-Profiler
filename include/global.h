@@ -17,8 +17,6 @@
 
 #define T32SCRIPT "launch_bench.cmm"
 
-#define FALSE 0
-#define TRUE 1
 
 #define MAX_ARCHS 256
 

@@ -6,7 +6,7 @@
 #include "types.h"
 
 typedef struct {
-    T_ULLONG    range[2];
+    T_ULONG     range[2];
     T_UINT      lvl;
     T_STR       attr;
     T_FLAG      cc;
@@ -14,8 +14,9 @@ typedef struct {
 
 typedef struct {
     T_UINT      desc_size;
-    T_UINT     *lvls;
+    T_ULONG    *lvls;
     MAP_ENTRY  *entries;
+    size_t      num_entries;
 } MEM_MAP;
 
 typedef struct {
