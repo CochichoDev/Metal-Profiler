@@ -12,4 +12,4 @@ SHARED:     0
 LINE:       64
 SIZE:       1048576
 WAYS:       16
-SHARED:     32
+SHARED:     4

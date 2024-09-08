@@ -17,4 +17,8 @@ typedef struct {
     size_t num_lvls;
 } MMU;
 
+T_ERROR mapToMMU(MEM_MAP *map, MMU *mmu);
+MMU *createMMU(MEM_MAP *map);
+T_ERROR genTranslationTable(MMU *mmu, MEM_MAP *map);
+T_ERROR genLinkerSkeleton(MMU *mmu, MEM_MAP *map);
 #endif

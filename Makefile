@@ -12,9 +12,10 @@ LIB:=lib
 INCLUDE:=include include/api
 ARCH:=arch
 
+LIBS:=dl crypto pthread m TUI
 CFLAGS:=
 CPPFLAGS:=$(foreach inc, $(INCLUDE), -I$(inc))
-LFLAGS:=-L$(LIB)
+LFLAGS:=-L$(LIB) $(foreach lib,$(LIBS),-l$(lib)) -Wl,--no-as-needed -lAMBapi
 
 TARGET:=$(BIN)/autometalbench
 TARGET_API:=$(BIN)/libAMBapi.so
@@ -30,7 +31,7 @@ ARCH_LIBS:=$(foreach module, $(sort $(dir $(wildcard $(ARCH)/*/module/))), $(mod
 all: $(TARGET)
 
 $(TARGET): $(OBJ_FILES) $(TARGET_API)
-	$(CC) $(LFLAGS) -Wall $(filter %.o, $^) -o $@ -lTUI -Wl,--no-as-needed -ldl -lAMBapi -lcrypto -lpthread
+	$(CC) -Wall $(filter %.o, $^) -o $@ $(LFLAGS)
 
 $(TARGET_API): $(API_OBJ_FILES)
 	$(CC) -Wall -shared $^ -o $(TARGET_API)

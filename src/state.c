@@ -18,8 +18,9 @@
 #include "utils.h"
 #include "default_mod.h"
 #include "calc.h"
+#include "mmu_gen.h"
 
-//#define DEBUG
+#define DEBUG
 
 static T_UINT __getType(T_STR *type_options, size_t num_options, T_PSTR type);
 static const T_PSTR __getTypeName(T_STR *type_options, size_t num_options, T_UINT type);
@@ -276,8 +277,15 @@ T_VOID selectArch(size_t choice) {
     strcat(mem_path, "/mem.map");
     FILE *mem_map = fopen(mem_path, "r");
     parseMemMap(mem_map, &SELECTED_ARCH.map);
+#ifdef DEBUG
+    printf("Map parsed\n");
+#endif
+    MMU *mmu = createMMU(&SELECTED_ARCH.map);
+    mapToMMU(&SELECTED_ARCH.map, mmu);
     fclose(mem_map);
 
+    genTranslationTable(mmu, &SELECTED_ARCH.map);
+    genLinkerSkeleton(mmu, &SELECTED_ARCH.map);
 
     char module_path[512];
     strcpy(module_path, SELECTED_ARCH.path);
@@ -783,7 +791,7 @@ static T_ULONG parseXULong(const char *init, const char *end, const size_t num_l
         num *= 16;
         num += (*init - offset);
         num_chars++;
-        if (num_chars == 8) break;
+        if (num_chars == 16) break;
     TRY_AGAIN:
         init++;
     }
@@ -1034,6 +1042,7 @@ static MEM_MAP *parseMemMap(FILE *fd, MEM_MAP *map) {
                 T_UINT lvl = parseInt(init_ptr, end_ptr, num_line);
                 if ((lvl+1) > flags.LVLS) {
                     flags.LVLS = lvl+1;
+                    map->num_lvls = flags.LVLS;
                     map->lvls = realloc(map->lvls, sizeof(T_ULONG) * (flags.LVLS));
                 }
 
@@ -1119,6 +1128,30 @@ static MEM_MAP *parseMemMap(FILE *fd, MEM_MAP *map) {
         printf("Attribute: %s\n", map->entries[map->num_entries-1].attr);
     #endif
 
+        GET_FIRST_GRAPH(end_ptr);
+        if (*end_ptr == ':') {
+            end_ptr++;
+            GET_FIRST_CHAR(end_ptr);
+            init_ptr = end_ptr;
+            GET_FIRST_NONCHAR(end_ptr);
+            if (end_ptr - init_ptr == 6 && !memcmp(init_ptr, "SHARED", 6)) {
+                map->shared_section = map->num_entries-1;
+            #ifdef DEBUG
+                printf("Entry %ld is the shared section\n", map->shared_section);
+            #endif
+            } else if (end_ptr - init_ptr == 4 && !memcmp(init_ptr, "LINK", 4)) {
+                map->link_section = map->num_entries-1;
+            #ifdef DEBUG
+                printf("Entry %ld is the link section\n", map->link_section);
+            #endif
+            } else if (end_ptr - init_ptr == 4 && !memcmp(init_ptr, "LOAD", 4)) {
+                map->load_section = map->num_entries-1;
+            #ifdef DEBUG
+                printf("Entry %ld is the load section\n", map->load_section);
+            #endif
+            }
+        }
+        
         GET_FIRST_OCUR(end_ptr, 'C');
         if (*end_ptr != 'C') goto TRY_NEXT;
         if (*(++end_ptr) == 'C') map->entries[map->num_entries-1].cc = TRUE;
