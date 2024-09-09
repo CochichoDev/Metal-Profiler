@@ -72,9 +72,8 @@ InterCom A53_0 CACHE.INVALIDATE IC
 InterCom A53_0 CACHE.INVALIDATE DC
 InterCom A53_0 CACHE.INVALIDATE L2
 InterCom A53_0 Break
-InterCom A53_0 Data.LOAD.Elf "&ppd/Core0/bin/Core0.elf"
-STOP
 
+InterCom A53_0 Data.LOAD.Elf "&ppd/LOADER/bin/LOADER.elf"
 
 ; --------------------------------------------------------------------------------
 Intercom.name A53_0
@@ -96,9 +95,9 @@ InterCom A53_3 Trace.DISable
 InterCom A53_3 SYStem.Mode.Attach
 
 InterCom A53_3 Break
-InterCom A53_3 Data.LOAD.Elf "&ppd/Core3/bin/Core3.elf"
-InterCom A53_3 Go
-InterCom A53_3 QUIT
+InterCom A53_3 Data.LOAD.Elf "&ppd/Core4/bin/Core4.elf"
+;InterCom A53_3 Go
+;InterCom A53_3 QUIT
 )
 IF "&core2"=="TRUE"
 (
@@ -118,9 +117,9 @@ InterCom A53_2 Trace.DISable
 InterCom A53_2 SYStem.Mode.Attach
 
 InterCom A53_2 Break
-InterCom A53_2 Data.LOAD.Elf "&ppd/Core2/bin/Core2.elf"
-InterCom A53_2 Go
-InterCom A53_2 QUIT
+InterCom A53_2 Data.LOAD.Elf "&ppd/Core3/bin/Core3.elf"
+;InterCom A53_2 Go
+;InterCom A53_2 QUIT
 )
 IF "&core1"=="TRUE"
 (
@@ -140,9 +139,9 @@ InterCom A53_1 Trace.DISable
 InterCom A53_1 SYStem.Mode.Attach
 
 InterCom A53_1 Break
-InterCom A53_1 Data.LOAD.Elf "&ppd/Core1/bin/Core1.elf"
-InterCom A53_1 Go
-InterCom A53_1 QUIT
+InterCom A53_1 Data.LOAD.Elf "&ppd/Core2/bin/Core2.elf"
+;InterCom A53_1 Go
+;InterCom A53_1 QUIT
 )
 IF "&core0"=="TRUE"
 (
@@ -151,6 +150,6 @@ InterCom A53_0 CACHE.INVALIDATE IC
 InterCom A53_0 CACHE.INVALIDATE DC
 InterCom A53_0 CACHE.INVALIDATE L2
 InterCom A53_0 Break
-InterCom A53_0 Data.LOAD.Elf "&ppd/Core0/bin/Core0.elf"
-InterCom A53_0 Go
+InterCom A53_0 Data.LOAD.Elf "&ppd/Core1/bin/Core1.elf"
+;InterCom A53_0 Go
 )

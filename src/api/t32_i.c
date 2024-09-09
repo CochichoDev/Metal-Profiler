@@ -110,14 +110,16 @@ T_INT INIT_T32_CONN(const char *node, const char *port) {
 
 
 T_INT EX_T32_SCRIPT(const char *scriptname, size_t num_cores, T_FLAG core_state[]) {
-    T_STR query;
+    char query[128];
     strcpy(query, scriptname);
     for (size_t i = 0 ; i < num_cores ; i++) {
         strcat(query, " ");
-        if (core_state != NULL && core_state[i]) {
-            strcat(query, "\"TRUE\"");
-        } else {
-            strcat(query, "\"FALSE\"");
+        if (core_state != NULL) {
+            if (core_state[i]) {
+                strcat(query, "\"TRUE\"");
+            } else {
+                strcat(query, "\"FALSE\"");
+            }
         }
     }
     if (T32_Cmd_f("DO %s", query) != T32_OK) {

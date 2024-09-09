@@ -9,10 +9,10 @@
 	.quad	__sbss_end
 
 .Lbss_start:
-	.quad	__bss_start__
+	.quad	__bss_start
 
 .Lbss_end:
-	.quad	__bss_end__
+	.quad	__bss_end
 
 
 .globl	_startup

@@ -23,7 +23,7 @@ void default_BUILD_PROJECT(CONFIG *config) {
 
     const COMP *victim;
     T_UINT limit;
-    if (GET_COMP_BY_ID(config, 0, &victim) == -1) {
+    if (GET_COMP_BY_ID(config, config->VICTIM_ID, &victim) == -1) {
         fprintf(stderr, "Error: Victim core is not configured");
         return;
     }
@@ -52,12 +52,14 @@ void default_INIT_BENCH() {
 }
 
 void default_RUN_BENCH(RESULT *results) {
-    char script_query[256] = T32SCRIPT;
+    char script_query[256];
+    strcpy(script_query, SELECTED_ARCH.path);
+    strcat(script_query, "/project/"T32SCRIPT);
 
     T_FLAG *core_state = alloca(sizeof(T_FLAG) * SELECTED_ARCH.desc.NUM_CORES);
 
     for (size_t idx = 1 ; idx <= SELECTED_ARCH.desc.NUM_CORES ; idx++) {
-        core_state[idx] = (GET_COMP_BY_ID(CUR_CFG, idx, NULL) != -1) ? 1 : 0;
+        core_state[idx-1] = (GET_COMP_BY_ID(CUR_CFG, idx, NULL) != -1) ? 1 : 0;
     }
     
     EX_T32_SCRIPT(script_query, SELECTED_ARCH.desc.NUM_CORES, core_state);

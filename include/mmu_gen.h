@@ -19,6 +19,7 @@ typedef struct {
 
 T_ERROR mapToMMU(MEM_MAP *map, MMU *mmu);
 MMU *createMMU(MEM_MAP *map);
+T_ERROR freeMMU(MMU *mmu);
 T_ERROR genTranslationTable(MMU *mmu, MEM_MAP *map);
 T_ERROR genLinkerSkeleton(MMU *mmu, MEM_MAP *map);
 #endif

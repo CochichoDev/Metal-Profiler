@@ -287,6 +287,8 @@ T_VOID selectArch(size_t choice) {
     genTranslationTable(mmu, &SELECTED_ARCH.map);
     genLinkerSkeleton(mmu, &SELECTED_ARCH.map);
 
+    freeMMU(mmu);
+
     char module_path[512];
     strcpy(module_path, SELECTED_ARCH.path);
     strcat(module_path, "/module/bin/dmodule.so");
@@ -680,10 +682,13 @@ static CONFIG *parseConfig(FILE *fd) {
         }
     }
 
-    if (GET_COMP_BY_ID(config, MODULE_CONFIG->VICTIM_ID, NULL) == -1) {
+    size_t victim_id = GET_COMP_BY_ID(config, MODULE_CONFIG->VICTIM_ID, NULL);
+    if (victim_id == -1) {
         fprintf(stderr, "Error: The victim component (ID %ld) was not configured", MODULE_CONFIG->VICTIM_ID);
         return NULL;
     }
+
+    config->VICTIM_ID = victim_id;
 
     return config;
 }

@@ -7,7 +7,7 @@
 
 MMUTableL0.0:
 .set SECT, MMUTableL1.0
-.rep 0x2
+.rept 0x2
 .8byte SECT + NEXT_PAGE_ATTR
 .set SECT, SECT + 0x1000
 .endr
@@ -16,147 +16,140 @@ MMUTableL0.0:
 
 MMUTableL1.0:
 .set SECT, MMUTableL2.0
-.rep 0x400
+.rept 0x4
 .8byte SECT + NEXT_PAGE_ATTR
 .set SECT, SECT + 0x1000
+.endr
+
+MMUTableL1.1:
+.set SECT, 0x100000000
+.rept 0xc
+.8byte SECT + RESERVED
+.set SECT, SECT + 0x40000000
+.endr
+
+MMUTableL1.2:
+.set SECT, 0x400000000
+.rept 0x10
+.8byte SECT + DEVICE
+.set SECT, SECT + 0x40000000
+.endr
+
+MMUTableL1.3:
+.set SECT, 0x800000000
+.rept 0x20
+.8byte SECT + MEMORY
+.set SECT, SECT + 0x40000000
+.endr
+
+MMUTableL1.4:
+.set SECT, 0x1000000000
+.rept 0x2c0
+.8byte SECT + DEVICE
+.set SECT, SECT + 0x40000000
+.endr
+
+MMUTableL1.5:
+.set SECT, 0xc000000000
+.rept 0x100
+.8byte SECT + RESERVED
+.set SECT, SECT + 0x40000000
 .endr
 
 .section .mmu_tbl2, "a"
 
 MMUTableL2.0:
+.set SECT, 0x0
+.rept 0x3
+.8byte SECT + MEM2
+.set SECT, SECT + 0x200000
+.endr
+
+MMUTableL2.1:
 .set SECT, MMUTableL3.0
-.rep 0x400
+.rept 0x3fd
 .8byte SECT + NEXT_PAGE_ATTR
 .set SECT, SECT + 0x1000
 .endr
 
-MMUTableL2.1:
-.set SECT, 0x80000000
-.rep 0x380
-.8byte SECT + DEVICE
-.set SECT, SECT + 0x200000
-.endr
-
 MMUTableL2.2:
-.set SECT, 0xf0000000
-.rep 0x40
-.8byte SECT + RESERVED
+.set SECT, 0x80000000
+.rept 0x380
+.8byte SECT + DEVICE
 .set SECT, SECT + 0x200000
 .endr
 
 MMUTableL2.3:
-.set SECT, 0xf8000000
-.rep 0x9
-.8byte SECT + DEVICE
+.set SECT, 0xf0000000
+.rept 0x40
+.8byte SECT + RESERVED
 .set SECT, SECT + 0x200000
 .endr
 
 MMUTableL2.4:
-.set SECT, 0xf9200000
-.rep 0x1f
-.8byte SECT + RESERVED
+.set SECT, 0xf8000000
+.rept 0x9
+.8byte SECT + DEVICE
 .set SECT, SECT + 0x200000
 .endr
 
 MMUTableL2.5:
-.set SECT, 0xfd000000
-.rep 0x17
-.8byte SECT + DEVICE
+.set SECT, 0xf9200000
+.rept 0x1f
+.8byte SECT + RESERVED
 .set SECT, SECT + 0x200000
 .endr
 
 MMUTableL2.6:
-.set SECT, 0xffe00000
-.rep 0x1
-.8byte SECT + MEMORY
+.set SECT, 0xfd000000
+.rept 0x17
+.8byte SECT + DEVICE
 .set SECT, SECT + 0x200000
 .endr
 
 MMUTableL2.7:
-.set SECT, 0x100000000
-.rep 0x1800
-.8byte SECT + RESERVED
-.set SECT, SECT + 0x200000
-.endr
-
-MMUTableL2.8:
-.set SECT, 0x400000000
-.rep 0x2000
-.8byte SECT + DEVICE
-.set SECT, SECT + 0x200000
-.endr
-
-MMUTableL2.9:
-.set SECT, MMUTableL3.1
-.rep 0x4000
-.8byte SECT + NEXT_PAGE_ATTR
-.set SECT, SECT + 0x1000
-.endr
-
-MMUTableL2.10:
-.set SECT, 0x1000000000
-.rep 0x58000
-.8byte SECT + DEVICE
-.set SECT, SECT + 0x200000
-.endr
-
-MMUTableL2.11:
-.set SECT, 0xc000000000
-.rep 0x20000
-.8byte SECT + RESERVED
+.set SECT, 0xffe00000
+.rept 0x1
+.8byte SECT + MEMORY
 .set SECT, SECT + 0x200000
 .endr
 
 .section .mmu_tbl3, "a"
 
 MMUTableL3.0:
-.set SECT, 0x0
-.rep 0x200
-.8byte SECT + MEM2
-.set SECT, SECT + 0x1000
-.endr
-
-MMUTableL3.1:
-.set SECT, 0x200000 + 0x0
-.rep 0x7fe0
-.rep 0x4
+.set SECT, 0x500000 + 0x0
+.rept 0x7fb0
+.rept 0x4
 .8byte SECT + MEM2
 .set SECT, SECT + 0x1000
 .endr
 .set SECT, SECT + 0xc000
 .endr
 
-.set SECT, 0x200000 + 0x4000
-.rep 0x7fe0
-.rep 0x4
+.set SECT, 0x500000 + 0x4000
+.rept 0x7fb0
+.rept 0x4
 .8byte SECT + MEM2
 .set SECT, SECT + 0x1000
 .endr
 .set SECT, SECT + 0xc000
 .endr
 
-.set SECT, 0x200000 + 0x8000
-.rep 0x7fe0
-.rep 0x4
+.set SECT, 0x500000 + 0x8000
+.rept 0x7fb0
+.rept 0x4
 .8byte SECT + MEM2
 .set SECT, SECT + 0x1000
 .endr
 .set SECT, SECT + 0xc000
 .endr
 
-.set SECT, 0x200000 + 0xc000
-.rep 0x7fe0
-.rep 0x4
+.set SECT, 0x500000 + 0xc000
+.rept 0x7fb0
+.rept 0x4
 .8byte SECT + MEM2
 .set SECT, SECT + 0x1000
 .endr
 .set SECT, SECT + 0xc000
-.endr
-
-MMUTableL3.2:
-.set SECT, 0x800000000
-.rep 0x800000
-.8byte SECT + MEMORY
-.set SECT, SECT + 0x1000
 .endr
 

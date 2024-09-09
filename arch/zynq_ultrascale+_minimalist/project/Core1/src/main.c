@@ -27,13 +27,13 @@
 
 extern char __text_start;
 extern char __text_end;
-extern uint8_t __buf_start_0;
+extern uint8_t __buffer_start;
 
 
 __attribute__((section(".bench"))) int main(int argc, char *argv[]) {
     //Xil_ConfigureL1Prefetch(0x0U);
     register uint64_t SC_TICKS = 0;
-    register volatile uint8_t *target = &__buf_start_0;
+    register volatile uint8_t *target = &__buffer_start;
 
     // Biggest resolution before unstable
     write_timestampref_div(0x02u);

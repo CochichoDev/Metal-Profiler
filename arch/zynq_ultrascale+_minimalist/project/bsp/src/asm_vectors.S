@@ -141,6 +141,7 @@ _vector_table:
 	b	SErrorInterruptHandler
 
 
+.section .handlers, "ax"
 SynchronousInterruptHandler:
 	saveregister
 

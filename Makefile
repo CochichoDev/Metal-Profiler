@@ -14,7 +14,7 @@ ARCH:=arch
 
 LIBS:=dl crypto pthread m TUI
 CFLAGS:=
-CPPFLAGS:=$(foreach inc, $(INCLUDE), -I$(inc))
+CPPFLAGS:=$(foreach inc, $(INCLUDE), -I$(inc)) -fno-stack-protector 
 LFLAGS:=-L$(LIB) $(foreach lib,$(LIBS),-l$(lib)) -Wl,--no-as-needed -lAMBapi
 
 TARGET:=$(BIN)/autometalbench

@@ -23,7 +23,7 @@ TARGET=Core4.elf
 all:$(RELEASEDIR)$(TARGET)
 $(RELEASEDIR)$(TARGET): $(OBJS) lscript.ld
 	@echo 'Building target: $@'
-	$(CC) -Wl,-T -Wl,lscript.ld $(LIBPATH) -nostdlib -o $@ $(OBJS) $(LIBS) 
+	$(CC) -Wl,-T -Wl,lscript.ld -Wl,--build-id=none $(LIBPATH) -nostdlib -o $@ $(OBJS) $(LIBS) 
 	@echo 'Finished building target: $@'
 
 $(RELEASEDIR)%.o: $(SRCDIR)%.c

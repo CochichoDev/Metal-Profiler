@@ -1,6 +1,11 @@
 #include "xparameters.h"
 #include "bspconfig.h"
 
+.extern __text_start
+.extern __text_end
+.extern __ld_text
+
+.extern __
 
 .globl MMUTableL0
 .globl MMUTableL1
@@ -9,24 +14,15 @@
 .global _prestart
 .global _boot
 
-.global __el3_stack
-.global __el2_stack
-.global __el1_stack
-.global __el0_stack
+.global __stack_start
 .global _vector_table
 
-.set EL3_stack,		__el3_stack
-.set EL2_stack,		__el2_stack
-.set EL1_stack,		__el1_stack
-.set EL0_stack,		__el0_stack
+.set EL3_stack,		__stack_start
 
 .set TT_S1_FAULT,	0x0
 .set TT_S1_TABLE,	0x3
 
-.set L0Table,	MMUTableL0
-.set L1Table,	MMUTableL1
-.set L2Table,	MMUTableL2
-.set L3Table,   MMUTableL3
+.set L0Table,	MMUTableL0.0
 .set vector_base,	_vector_table
 .set rvbar_base,	0xFD5C0040
 
@@ -43,6 +39,12 @@
 
 
 /* this initializes the various processor modes */
+.text_start:
+    .quad __text_start
+.text_end:
+    .quad  __text_end
+.text_ld:
+    .quad  __ld_text
 
 _prestart:
 _boot:
@@ -232,6 +234,12 @@ InitEL3:
 	msr      SCTLR_EL3, x1
 	dsb	 sy
 	isb
+
+    ldr     x0, .text_start
+    ldr     x1, .text_ld
+    ldr     x2, .text_end
+    sub     x2, x2, x0
+    bl      loader
 
 	b 	 _startup		//jump to start
 .else

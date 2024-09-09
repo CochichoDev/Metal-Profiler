@@ -44,17 +44,17 @@ pBUFFER buffer_core1 = {
 };
 
 pBUFFER buffer_core2 = {
-    .PROPS=proprieties_core1,
-    .NUM=3
-};
-
-pBUFFER buffer_core3 = {
     .PROPS=proprieties_core2,
     .NUM=3
 };
 
-pBUFFER buffer_core4 = {
+pBUFFER buffer_core3 = {
     .PROPS=proprieties_core3,
+    .NUM=3
+};
+
+pBUFFER buffer_core4 = {
+    .PROPS=proprieties_core4,
     .NUM=3
 };
 
@@ -90,7 +90,7 @@ COMP core4 = {
 };
 
 CONFIG ARCH_CONFIG = {
-    .COMPS={&system,&core1,&core1,&core2,&core3},
+    .COMPS={&system,&core1,&core2,&core3,&core4},
     .VICTIM_ID=1,
     .NUM=5
 };

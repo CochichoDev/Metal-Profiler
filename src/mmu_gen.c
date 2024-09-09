@@ -215,9 +215,22 @@ MMU *createMMU(MEM_MAP *map) {
     return mmu;
 }
 
+T_ERROR freeMMU(MMU *mmu) {
+    for (size_t lvl_idx = 0; lvl_idx < mmu->num_lvls; lvl_idx++) {
+        MMU_Block *block_ptr = mmu->lvl[lvl_idx], *next = NULL;
+        while (block_ptr != NULL) {
+            next = block_ptr->next;
+            free(block_ptr);
+            block_ptr = next;
+        }
+    }
+    free(mmu);
+    return 0;
+}
+
 T_VOID writePageLoop(FILE *fd, size_t rep, T_PSTR base, T_PSTR attr, size_t inc, size_t desc_size) {
     fprintf(fd, ".set SECT, %s\n", base);
-    fprintf(fd, ".rep 0x%lx\n", rep);
+    fprintf(fd, ".rept 0x%lx\n", rep);
     fprintf(fd, ".%ldbyte SECT + %s\n", desc_size, attr);
     fprintf(fd, ".set SECT, SECT + 0x%lx\n", inc);
     fprintf(fd, ".endr\n\n");
@@ -229,8 +242,8 @@ T_VOID writeCCPageLoop(FILE *fd, size_t rep, T_PSTR base, T_PSTR attr, size_t in
     rep /= (SELECTED_ARCH.desc.NUM_CORES * contiguous);
     for (size_t color_idx = 0; color_idx < SELECTED_ARCH.desc.NUM_CORES; color_idx++) {
         fprintf(fd, ".set SECT, %s + 0x%lx\n", base, contiguous*color_idx*inc);
-        fprintf(fd, ".rep 0x%lx\n", rep);
-        fprintf(fd, ".rep 0x%lx\n", contiguous);
+        fprintf(fd, ".rept 0x%lx\n", rep);
+        fprintf(fd, ".rept 0x%lx\n", contiguous);
         fprintf(fd, ".%ldbyte SECT + %s\n", desc_size, attr);
         fprintf(fd, ".set SECT, SECT + 0x%lx\n", inc);
         fprintf(fd, ".endr\n");
@@ -314,16 +327,18 @@ T_ERROR genLinkerSkeleton(MMU *mmu, MEM_MAP *map) {
                 fprintf(ls, "_LINK");
                 goto DIVIDE_ADDRESS;
             }
-            fprintf(ls, ":\t ORIGIN = 0x%lx, LENGTH = 0x%lx\n", map->entries[entry_idx].range[0], \
+            fprintf(ls, " :\t ORIGIN = 0x%lx, LENGTH = 0x%lx\n", map->entries[entry_idx].range[0], \
                         entry_size);
             continue;
         DIVIDE_ADDRESS:
-            fprintf(ls, ":\t ORIGIN = 0x%lx, LENGTH = 0x%lx\n", \ 
+            fprintf(ls, " :\t ORIGIN = 0x%lx, LENGTH = 0x%lx\n", \ 
                     map->entries[entry_idx].range[0] + app_idx * (entry_size / (SELECTED_ARCH.desc.NUM_CORES)), \
                     entry_size / (SELECTED_ARCH.desc.NUM_CORES));
 
         }
         fprintf(ls, "}\n\n");
+
+        fprintf(ls, "ENTRY(_vector_table)\n\n");
 
         /* Section generation */
         fprintf(ls, "SECTIONS\n"
@@ -332,12 +347,12 @@ T_ERROR genLinkerSkeleton(MMU *mmu, MEM_MAP *map) {
 
         // MMU section
         for (size_t tbl_idx = 0; tbl_idx < mmu->num_lvls; tbl_idx++) {
-            fprintf(ls, ".mmu_tbl%ld : {\n", tbl_idx);
-            fprintf(ls, "\t. = ALIGN(64);\n");
+            fprintf(ls, ".mmu_tbl%ld (NOLOAD) : {\n", tbl_idx);
+            fprintf(ls, "\t. = ALIGN(%ld);\n", map->lvls[map->num_lvls-1]);
             fprintf(ls, "\t__mmu_tbl%ld_start = .;\n", tbl_idx);
             fprintf(ls, "\t*(.mmu_tbl%ld)\n", tbl_idx);
             fprintf(ls, "\t__mmu_tbl%ld_end = .;\n", tbl_idx);
-            fprintf(ls, "} > MEM_REGION_%ld%s_LOAD\n", \
+            fprintf(ls, "} > MEM_REGION_%ld%s_SHARED\n", \
                     map->shared_section, \
                     (map->entries[map->shared_section].cc) ? "_CC" : "");
         }
@@ -346,17 +361,19 @@ T_ERROR genLinkerSkeleton(MMU *mmu, MEM_MAP *map) {
         fprintf(ls, ".boot : {\n");
         fprintf(ls, "\t. = ALIGN(64);\n");
         fprintf(ls, "\t__boot_start = .;\n");
+        fprintf(ls, "\tKEEP (*(.vectors))\n");
         fprintf(ls, "\t*(.boot)\n");
         fprintf(ls, "\t__boot_end = .;\n");
-        fprintf(ls, "} > MEM_REGION_%ld%s_LOAD\n", \
-                map->load_section, \
-                (map->entries[map->load_section].cc) ? "_CC" : "");
+        fprintf(ls, "} > MEM_REGION_%ld%s_LINK\n", \
+                map->link_section, \
+                (map->entries[map->link_section].cc) ? "_CC" : "");
 
         // Text section
         fprintf(ls, ".text : {\n");
-        fprintf(ls, "\t. = ALIGN(64);\n");
+        fprintf(ls, "\t__ld_text = LOADADDR(.text);\n");
         fprintf(ls, "\t__text_start = .;\n");
-        fprintf(ls, "\tKEEP (*(.vectors))\n");
+        fprintf(ls, "\t. = ALIGN(64);\n");
+        fprintf(ls, "\t*(.handlers)\n");
         fprintf(ls, "\t*(.text)\n");
         fprintf(ls, "\t*(.text)\n");
         fprintf(ls, "\t*(.text.*)\n");
@@ -369,8 +386,9 @@ T_ERROR genLinkerSkeleton(MMU *mmu, MEM_MAP *map) {
 
         // ROData section
         fprintf(ls, ".rodata : {\n");
-        fprintf(ls, "\t. = ALIGN(64);\n");
+        fprintf(ls, "\t__ld_rodata = LOADADDR(.rodata);\n");
         fprintf(ls, "\t__rodata_start = .;\n");
+        fprintf(ls, "\t. = ALIGN(64);\n");
         fprintf(ls, "\t*(.rodata)\n");
         fprintf(ls, "\t*(.rodata.*)\n");
         fprintf(ls, "\t__rodata_end = .;\n");
@@ -382,8 +400,9 @@ T_ERROR genLinkerSkeleton(MMU *mmu, MEM_MAP *map) {
 
         // Data section
         fprintf(ls, ".data : {\n");
-        fprintf(ls, "\t. = ALIGN(64);\n");
+        fprintf(ls, "\t__ld_data = LOADADDR(.data);\n");
         fprintf(ls, "\t__data_start = .;\n");
+        fprintf(ls, "\t. = ALIGN(64);\n");
         fprintf(ls, "\t*(.data)\n");
         fprintf(ls, "\t*(.data.*)\n");
         fprintf(ls, "\t__data_end = .;\n");
@@ -427,6 +446,17 @@ T_ERROR genLinkerSkeleton(MMU *mmu, MEM_MAP *map) {
         fprintf(ls, "\t*(.gnu.linkonce.sb.*)\n");
         fprintf(ls, "\t. = ALIGN(64);\n");
         fprintf(ls, "\t__sbss_end = .;\n");
+        fprintf(ls, "} > MEM_REGION_%ld%s_LINK\n", \
+                map->link_section, \
+                (map->entries[map->link_section].cc) ? "_CC" : "");
+        
+        // Buffer section (usefull only for the benchmark)
+        fprintf(ls, "/* This section is only useful for the standard benchmarks */\n");
+        fprintf(ls, ".buffer : {\n");
+        fprintf(ls, "\t. = ALIGN(64);\n");
+        fprintf(ls, "\t__buffer_start = .;\n");
+        fprintf(ls, "\t. += _BUFFER_SIZE;\n");
+        fprintf(ls, "\t__buffer_end = .;\n");
         fprintf(ls, "} > MEM_REGION_%ld%s_LINK\n", \
                 map->link_section, \
                 (map->entries[map->link_section].cc) ? "_CC" : "");
