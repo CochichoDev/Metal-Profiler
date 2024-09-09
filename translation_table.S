@@ -61,7 +61,7 @@ MMUTableL1.5:
 MMUTableL2.0:
 .set SECT, 0x0
 .rept 0x3
-.8byte SECT + MEM2
+.8byte SECT + MEMORY
 .set SECT, SECT + 0x200000
 .endr
 

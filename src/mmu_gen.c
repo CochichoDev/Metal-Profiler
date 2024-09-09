@@ -357,6 +357,9 @@ T_ERROR genLinkerSkeleton(MMU *mmu, MEM_MAP *map) {
                     (map->entries[map->shared_section].cc) ? "_CC" : "");
         }
 
+        fprintf(ls, "\n. = ALIGN(64);\n");
+        fprintf(ls, "__loader_vma = .;\n\n");
+
         // Boot section
         fprintf(ls, ".boot : {\n");
         fprintf(ls, "\t. = ALIGN(64);\n");

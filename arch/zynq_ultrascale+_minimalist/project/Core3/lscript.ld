@@ -28,29 +28,33 @@ ENTRY(_vector_table)
 SECTIONS
 {
 .mmu_tbl0 (NOLOAD) : {
-	. = ALIGN(64);
+	. = ALIGN(4096);
 	__mmu_tbl0_start = .;
 	*(.mmu_tbl0)
 	__mmu_tbl0_end = .;
 } > MEM_REGION_0_SHARED
 .mmu_tbl1 (NOLOAD) : {
-	. = ALIGN(64);
+	. = ALIGN(4096);
 	__mmu_tbl1_start = .;
 	*(.mmu_tbl1)
 	__mmu_tbl1_end = .;
 } > MEM_REGION_0_SHARED
 .mmu_tbl2 (NOLOAD) : {
-	. = ALIGN(64);
+	. = ALIGN(4096);
 	__mmu_tbl2_start = .;
 	*(.mmu_tbl2)
 	__mmu_tbl2_end = .;
 } > MEM_REGION_0_SHARED
 .mmu_tbl3 (NOLOAD) : {
-	. = ALIGN(64);
+	. = ALIGN(4096);
 	__mmu_tbl3_start = .;
 	*(.mmu_tbl3)
 	__mmu_tbl3_end = .;
 } > MEM_REGION_0_SHARED
+
+. = ALIGN(64);
+__loader_vma = .;
+
 .boot : {
 	. = ALIGN(64);
 	__boot_start = .;

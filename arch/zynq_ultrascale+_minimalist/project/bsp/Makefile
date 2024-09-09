@@ -3,15 +3,9 @@ ARCHIVER=aarch64-none-elf-ar
 CC=$(COMPILER)
 AR=$(ARCHIVER)
 CP=cp
-COMPILER_FLAGS= -c
-EXTRA_COMPILER_FLAGS?=
 LIB=libxil.a
-CC_FLAGS = $(subst -pg, -DPROFILING, $(COMPILER_FLAGS))
-ECC_FLAGS = $(subst -pg, -DPROFILING, $(EXTRA_COMPILER_FLAGS))
 
-ECC_FLAGS	+= -nostartfiles -march=armv8-a
-ECC_FLAGS_NO_FLTO1 = $(subst -flto,,$(ECC_FLAGS))
-ECC_FLAGS_NO_FLTO = $(subst -ffat-lto-objects,,$(ECC_FLAGS_NO_FLTO1))
+CPFLAGS = -c -nostdlib -nostartfiles -march=armv8-a $(CFLAGS)
 
 SRCDIR=./src/
 RELEASEDIR=./bin/
@@ -35,11 +29,10 @@ $(RELEASEDIR)$(LIB): $(OBJECTS) $(ASSEMBLY_OBJECTS)
 	$(ARCHIVER) -r $@ $^
 
 $(RELEASEDIR)%.o: $(SRCDIR)%.S
-	echo $(ECC_FLAGS)
-	$(CC) $(CFLAGS) $(CC_FLAGS) $(ECC_FLAGS) $(INCLUDES)  $(DEPENDENCY_FLAGS) -o $@ $<
+	$(CC) $(CPFLAGS) $(INCLUDES) -o $@ $<
 
 $(RELEASEDIR)%.o: $(SRCDIR)%.c
-	$(CC) $(CFLAGS) $(CC_FLAGS) $(ECC_FLAGS) $(INCLUDES) $(DEPENDENCY_FLAGS) -o $@ $<
+	$(CC) $(CPFLAGS) $(INCLUDES) -o $@ $<
 
 
 clean:

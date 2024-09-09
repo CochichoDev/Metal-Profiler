@@ -28,7 +28,7 @@ ENTRY(_vector_table)
 SECTIONS
 {
 .mmu_tbl0 (NOLOAD) : {
-	. = ALIGN(64);
+	. = ALIGN(4096);
 	__mmu_tbl0_start = .;
 	*(.mmu_tbl0)
 	__mmu_tbl0_end = .;
@@ -51,6 +51,10 @@ SECTIONS
 	*(.mmu_tbl3)
 	__mmu_tbl3_end = .;
 } > MEM_REGION_0_SHARED
+
+. = ALIGN(64);
+__loader_vma = .;
+
 .boot : {
 	. = ALIGN(64);
 	__boot_start = .;

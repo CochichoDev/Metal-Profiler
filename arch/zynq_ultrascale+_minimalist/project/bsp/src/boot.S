@@ -5,7 +5,7 @@
 .extern __text_end
 .extern __ld_text
 
-.extern __
+.extern __loader_vma
 
 .globl MMUTableL0
 .globl MMUTableL1
@@ -45,6 +45,8 @@
     .quad  __text_end
 .text_ld:
     .quad  __ld_text
+.loader:
+    .quad  __loader_vma
 
 _prestart:
 _boot:
@@ -239,7 +241,8 @@ InitEL3:
     ldr     x1, .text_ld
     ldr     x2, .text_end
     sub     x2, x2, x0
-    bl      loader
+    ldr     x3, .loader
+    blr     x3
 
 	b 	 _startup		//jump to start
 .else

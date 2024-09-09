@@ -25,35 +25,32 @@ SECTIONS
 .mmu_tbl0 : {
 	. = ALIGN(64);
 	__mmu_tbl0_start = .;
-	*(.mmu_tbl0)
+	KEEP(*(.mmu_tbl0))
 	__mmu_tbl0_end = .;
 } > MEM_REGION_0_SHARED
 .mmu_tbl1 : {
 	. = ALIGN(4096);
 	__mmu_tbl1_start = .;
-	*(.mmu_tbl1)
+	KEEP(*(.mmu_tbl1))
 	__mmu_tbl1_end = .;
 } > MEM_REGION_0_SHARED
 .mmu_tbl2 : {
-	. = ALIGN(64);
+	. = ALIGN(4096);
 	__mmu_tbl2_start = .;
-	*(.mmu_tbl2)
+	KEEP(*(.mmu_tbl2))
 	__mmu_tbl2_end = .;
 } > MEM_REGION_0_SHARED
 .mmu_tbl3 : {
-	. = ALIGN(64);
+	. = ALIGN(4096);
 	__mmu_tbl3_start = .;
-	*(.mmu_tbl3)
+	KEEP(*(.mmu_tbl3))
 	__mmu_tbl3_end = .;
 } > MEM_REGION_0_SHARED
-.text : {
+.loader : {
 	. = ALIGN(64);
-	__ld_text = LOADADDR(.text);
-	__text_start = .;
-	KEEP (*(.vectors))
-	*(.text)
-	*(.text)
-	*(.text.*)
-	__text_end = .;
+	__loader_start = .;
+	*(.loader)
+	*(.loader.*)
+	__loader_end = .;
 } > MEM_REGION_0_SHARED
 }
