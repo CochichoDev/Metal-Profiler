@@ -9,21 +9,23 @@ _BUFFER_SIZE = 0x200000;
 MEMORY
 {
 	MEM_REGION_0_SHARED :	 ORIGIN = 0x0, LENGTH = 0x500000
-	MEM_REGION_1_CC_LINK :	 ORIGIN = 0x203c0000, LENGTH = 0x1fec0000
-	MEM_REGION_2 :	 ORIGIN = 0x80000000, LENGTH = 0x70000000
-	MEM_REGION_3 :	 ORIGIN = 0xf0000000, LENGTH = 0x8000000
-	MEM_REGION_4 :	 ORIGIN = 0xf8000000, LENGTH = 0x1200000
-	MEM_REGION_5 :	 ORIGIN = 0xf9200000, LENGTH = 0x3e00000
-	MEM_REGION_6 :	 ORIGIN = 0xfd000000, LENGTH = 0x2e00000
-	MEM_REGION_7 :	 ORIGIN = 0xffe00000, LENGTH = 0x200000
-	MEM_REGION_8 :	 ORIGIN = 0x100000000, LENGTH = 0x300000000
-	MEM_REGION_9 :	 ORIGIN = 0x400000000, LENGTH = 0x400000000
-	MEM_REGION_10_LOAD :	 ORIGIN = 0xa00000000, LENGTH = 0x200000000
-	MEM_REGION_11 :	 ORIGIN = 0x1000000000, LENGTH = 0xb000000000
-	MEM_REGION_12 :	 ORIGIN = 0xc000000000, LENGTH = 0x4000000000
+	MEM_REGION_1_BOOT :	 ORIGIN = 0x540000, LENGTH = 0x40000
+	MEM_REGION_2_CC_LINK :	 ORIGIN = 0x20480000, LENGTH = 0x1fe80000
+	MEM_REGION_3 :	 ORIGIN = 0x80000000, LENGTH = 0x70000000
+	MEM_REGION_4 :	 ORIGIN = 0xf0000000, LENGTH = 0x8000000
+	MEM_REGION_5 :	 ORIGIN = 0xf8000000, LENGTH = 0x1200000
+	MEM_REGION_6 :	 ORIGIN = 0xf9200000, LENGTH = 0x3e00000
+	MEM_REGION_7 :	 ORIGIN = 0xfd000000, LENGTH = 0x2e00000
+	MEM_REGION_8 :	 ORIGIN = 0xffe00000, LENGTH = 0x200000
+	MEM_REGION_9 :	 ORIGIN = 0x100000000, LENGTH = 0x300000000
+	MEM_REGION_10 :	 ORIGIN = 0x400000000, LENGTH = 0x400000000
+	MEM_REGION_11_LOAD :	 ORIGIN = 0x820000000, LENGTH = 0x20000000
+	MEM_REGION_12 :	 ORIGIN = 0x880000000, LENGTH = 0x180000000
+	MEM_REGION_13 :	 ORIGIN = 0x1000000000, LENGTH = 0xb000000000
+	MEM_REGION_14 :	 ORIGIN = 0xc000000000, LENGTH = 0x4000000000
 }
 
-ENTRY(_vector_table)
+ENTRY(_boot)
 
 SECTIONS
 {
@@ -58,20 +60,20 @@ __loader_vma = .;
 .boot : {
 	. = ALIGN(64);
 	__boot_start = .;
-	KEEP (*(.vectors))
 	*(.boot)
 	__boot_end = .;
-} > MEM_REGION_1_CC_LINK
+} > MEM_REGION_1_BOOT
 .text : {
 	__ld_text = LOADADDR(.text);
 	__text_start = .;
 	. = ALIGN(64);
+	KEEP (*(.vectors))
 	*(.handlers)
 	*(.text)
 	*(.text)
 	*(.text.*)
 	__text_end = .;
-} > MEM_REGION_1_CC_LINK AT > MEM_REGION_10_LOAD
+} > MEM_REGION_2_CC_LINK AT > MEM_REGION_11_LOAD
 .rodata : {
 	__ld_rodata = LOADADDR(.rodata);
 	__rodata_start = .;
@@ -79,7 +81,7 @@ __loader_vma = .;
 	*(.rodata)
 	*(.rodata.*)
 	__rodata_end = .;
-} > MEM_REGION_1_CC_LINK AT > MEM_REGION_10_LOAD
+} > MEM_REGION_2_CC_LINK AT > MEM_REGION_11_LOAD
 .data : {
 	__ld_data = LOADADDR(.data);
 	__data_start = .;
@@ -87,13 +89,13 @@ __loader_vma = .;
 	*(.data)
 	*(.data.*)
 	__data_end = .;
-} > MEM_REGION_1_CC_LINK AT > MEM_REGION_10_LOAD
+} > MEM_REGION_2_CC_LINK AT > MEM_REGION_11_LOAD
 .stack : {
 	. = ALIGN(64);
 	__stack_start = .;
 	. += _STACK_SIZE;
 	__stack_end = .;
-} > MEM_REGION_1_CC_LINK
+} > MEM_REGION_2_CC_LINK
 .bss : {
 	. = ALIGN(64);
 	__bss_start = .;
@@ -103,7 +105,7 @@ __loader_vma = .;
 	*(COMMON)
 	. = ALIGN(64);
 	__bss_end = .;
-} > MEM_REGION_1_CC_LINK
+} > MEM_REGION_2_CC_LINK
 .sbss : {
 	. = ALIGN(64);
 	__sbss_start = .;
@@ -112,12 +114,12 @@ __loader_vma = .;
 	*(.gnu.linkonce.sb.*)
 	. = ALIGN(64);
 	__sbss_end = .;
-} > MEM_REGION_1_CC_LINK
+} > MEM_REGION_2_CC_LINK
 /* This section is only useful for the standard benchmarks */
 .buffer : {
 	. = ALIGN(64);
 	__buffer_start = .;
 	. += _BUFFER_SIZE;
 	__buffer_end = .;
-} > MEM_REGION_1_CC_LINK
+} > MEM_REGION_2_CC_LINK
 }

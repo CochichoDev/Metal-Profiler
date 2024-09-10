@@ -127,7 +127,7 @@
 _vector_table:
 .set	VBAR, _vector_table
 .org VBAR
-	b	_boot
+	//b	_boot
 .org (VBAR + 0x200)
 	b	SynchronousInterruptHandler
 

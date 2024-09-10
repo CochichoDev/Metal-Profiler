@@ -42,9 +42,6 @@ _startup:
 
 .Lenclbss:
 	/* Reset and start Triple Timer Counter */
-	#if defined (SLEEP_TIMER_BASEADDR)
-	bl XTime_StartTTCTimer
-	#endif
 
 	/* make sure argc and argv are valid */
 	mov	x0, #0

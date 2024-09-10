@@ -39,7 +39,7 @@
 extern char __text_start, __text_end;
 extern uint8_t __buffer_start;
 
-__attribute__((section(".bench"))) int main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
     register volatile uint8_t *target = &__buffer_start;
 
     no_allocate_threshold_L1(0b11);

@@ -1154,6 +1154,11 @@ static MEM_MAP *parseMemMap(FILE *fd, MEM_MAP *map) {
             #ifdef DEBUG
                 printf("Entry %ld is the load section\n", map->load_section);
             #endif
+            } else if (end_ptr - init_ptr == 4 && !memcmp(init_ptr, "BOOT", 4)) {
+                map->boot_section = map->num_entries-1;
+            #ifdef DEBUG
+                printf("Entry %ld is the boot section\n", map->boot_section);
+            #endif
             }
         }
         

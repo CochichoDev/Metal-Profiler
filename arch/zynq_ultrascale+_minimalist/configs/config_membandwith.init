@@ -1,6 +1,6 @@
 #0
 CACHECOLORING:  1b          [M]
-MEMBANDWIDTH:   1b          [M]
+MEMBANDWIDTH:   0b          [M]
 BUDGET:         2000        [O]
 PERIOD:         50          [O]
 REPLENISHMENT:  50          [O]

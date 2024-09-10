@@ -18,7 +18,7 @@ typedef struct {
     MAP_ENTRY  *entries;
     size_t      num_lvls;
     size_t      num_entries;
-    size_t      shared_section, link_section, load_section;
+    size_t      shared_section, link_section, load_section, boot_section;
 } MEM_MAP;
 
 typedef struct {

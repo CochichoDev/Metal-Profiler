@@ -326,6 +326,9 @@ T_ERROR genLinkerSkeleton(MMU *mmu, MEM_MAP *map) {
             } else if (entry_idx == map->link_section) {
                 fprintf(ls, "_LINK");
                 goto DIVIDE_ADDRESS;
+            } else if (entry_idx == map->boot_section) {
+                fprintf(ls, "_BOOT");
+                goto DIVIDE_ADDRESS;
             }
             fprintf(ls, " :\t ORIGIN = 0x%lx, LENGTH = 0x%lx\n", map->entries[entry_idx].range[0], \
                         entry_size);
@@ -338,7 +341,7 @@ T_ERROR genLinkerSkeleton(MMU *mmu, MEM_MAP *map) {
         }
         fprintf(ls, "}\n\n");
 
-        fprintf(ls, "ENTRY(_vector_table)\n\n");
+        fprintf(ls, "ENTRY(_boot)\n\n");
 
         /* Section generation */
         fprintf(ls, "SECTIONS\n"
@@ -364,18 +367,16 @@ T_ERROR genLinkerSkeleton(MMU *mmu, MEM_MAP *map) {
         fprintf(ls, ".boot : {\n");
         fprintf(ls, "\t. = ALIGN(64);\n");
         fprintf(ls, "\t__boot_start = .;\n");
-        fprintf(ls, "\tKEEP (*(.vectors))\n");
         fprintf(ls, "\t*(.boot)\n");
         fprintf(ls, "\t__boot_end = .;\n");
-        fprintf(ls, "} > MEM_REGION_%ld%s_LINK\n", \
-                map->link_section, \
-                (map->entries[map->link_section].cc) ? "_CC" : "");
+        fprintf(ls, "} > MEM_REGION_%ld_BOOT\n", map->boot_section);
 
         // Text section
         fprintf(ls, ".text : {\n");
         fprintf(ls, "\t__ld_text = LOADADDR(.text);\n");
         fprintf(ls, "\t__text_start = .;\n");
         fprintf(ls, "\t. = ALIGN(64);\n");
+        fprintf(ls, "\tKEEP (*(.vectors))\n");
         fprintf(ls, "\t*(.handlers)\n");
         fprintf(ls, "\t*(.text)\n");
         fprintf(ls, "\t*(.text)\n");

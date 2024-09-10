@@ -4,20 +4,24 @@
 .extern __text_start
 .extern __text_end
 .extern __ld_text
+.extern __rodata_start
+.extern __rodata_end
+.extern __ld_rodata
+.extern __data_start
+.extern __data_end
+.extern __ld_data
 
 .extern __loader_vma
 
-.globl MMUTableL0
-.globl MMUTableL1
-.globl MMUTableL2
-.globl MMUTableL3
+.extern MMUTableL0.0
+
 .global _prestart
 .global _boot
 
-.global __stack_start
+.extern __stack_end
 .global _vector_table
 
-.set EL3_stack,		__stack_start
+.set EL3_stack,		__stack_end
 
 .set TT_S1_FAULT,	0x0
 .set TT_S1_TABLE,	0x3
@@ -45,6 +49,18 @@
     .quad  __text_end
 .text_ld:
     .quad  __ld_text
+.rodata_start:
+    .quad __rodata_start
+.rodata_end:
+    .quad  __rodata_end
+.rodata_ld:
+    .quad  __ld_rodata
+.data_start:
+    .quad __data_start
+.data_end:
+    .quad  __data_end
+.data_ld:
+    .quad  __ld_data
 .loader:
     .quad  __loader_vma
 
@@ -237,11 +253,21 @@ InitEL3:
 	dsb	 sy
 	isb
 
+    ldr     x3, .loader
     ldr     x0, .text_start
     ldr     x1, .text_ld
     ldr     x2, .text_end
     sub     x2, x2, x0
-    ldr     x3, .loader
+    blr     x3
+    ldr     x0, .rodata_start
+    ldr     x1, .rodata_ld
+    ldr     x2, .rodata_end
+    sub     x2, x2, x0
+    blr     x3
+    ldr     x0, .data_start
+    ldr     x1, .data_ld
+    ldr     x2, .data_end
+    sub     x2, x2, x0
     blr     x3
 
 	b 	 _startup		//jump to start

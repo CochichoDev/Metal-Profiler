@@ -30,7 +30,7 @@ extern char __text_end;
 extern uint8_t __buffer_start;
 
 
-__attribute__((section(".bench"))) int main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
     //Xil_ConfigureL1Prefetch(0x0U);
     register uint64_t SC_TICKS = 0;
     register volatile uint8_t *target = &__buffer_start;
