@@ -151,5 +151,5 @@ InterCom A53_0 CACHE.INVALIDATE DC
 InterCom A53_0 CACHE.INVALIDATE L2
 InterCom A53_0 Break
 InterCom A53_0 Data.LOAD.Elf "&ppd/Core1/bin/Core1.elf"
-InterCom A53_0 Go
+;InterCom A53_0 Go
 )

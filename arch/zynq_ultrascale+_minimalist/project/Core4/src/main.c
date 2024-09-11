@@ -4,6 +4,7 @@
 #include "PMU.h"
 #include "GIC.h"
 #include "timer.h"
+#include "cache_controller.h"
 
 /*
  *  DUMMY DEFINITIONS FOR WARNING AVOIDANCE
@@ -41,6 +42,7 @@ extern char __text_start, __text_end;
 int main(int argc, char *argv[]) {
     register volatile uint8_t *target = &__buffer_start;
 
+    set_outstanding_prefetching(0x00U);
     no_allocate_threshold_L1(0b11);
     no_allocate_threshold_L2(0b11);
 #ifdef CACHECOLORING

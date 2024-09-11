@@ -15,8 +15,6 @@
 
 #define PMEVTYPER_MASK          (0xFFFFU)
 
-#define CPUACTLR_MASK	        (0xF9FFFFFF)
-#define CPUACTLR_MASK2	        (0xE7FFFFFF)
 /****************EVENTS*****************/
 #define L2D_CACHE_REFILL        (0x17U)
 #define L2D_CACHE_WB            (0x18U)

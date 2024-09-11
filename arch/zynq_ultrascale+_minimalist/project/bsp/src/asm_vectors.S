@@ -3,7 +3,7 @@
 .org 0
 .text
 
-.globl _boot
+.extern _boot
 .globl _vector_table
 
 .globl FIQInterrupt
@@ -127,7 +127,9 @@
 _vector_table:
 .set	VBAR, _vector_table
 .org VBAR
-	//b	_boot
+	ldr x1, boot
+    br  x1
+
 .org (VBAR + 0x200)
 	b	SynchronousInterruptHandler
 
@@ -140,6 +142,9 @@ _vector_table:
 .org (VBAR + 0x380)
 	b	SErrorInterruptHandler
 
+
+boot:
+    .quad _boot
 
 .section .handlers, "ax"
 SynchronousInterruptHandler:

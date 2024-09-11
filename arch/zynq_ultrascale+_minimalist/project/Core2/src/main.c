@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "PMU.h"
+#include "cache_controller.h"
 #include "timer.h"
 #include "GIC.h"
 
@@ -42,12 +43,9 @@ extern uint8_t __buffer_start;
 int main(int argc, char *argv[]) {
     register volatile uint8_t *target = &__buffer_start;
 
+    set_outstanding_prefetching(0x00U);
     no_allocate_threshold_L1(0b11);
     no_allocate_threshold_L2(0b11);
-
-#ifdef CACHECOLORING
-    //Xil_SetTlbAttributesRange(&__text_start, &__text_end, NORM_NONCACHE);
-#endif
 
 #ifdef MEMBANDWIDTH
     initPMU();

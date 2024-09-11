@@ -4,6 +4,7 @@
 #include "PMU.h"
 #include "GIC.h"
 #include "timer.h"
+#include "cache_controller.h"
 
 /*
  *  DUMMY DEFINITIONS FOR WARNING AVOIDANCE
@@ -31,7 +32,7 @@ extern uint8_t __buffer_start;
 
 
 int main(int argc, char *argv[]) {
-    //Xil_ConfigureL1Prefetch(0x0U);
+    set_outstanding_prefetching(0x00U);
     register uint64_t SC_TICKS = 0;
     register volatile uint8_t *target = &__buffer_start;
 
@@ -39,8 +40,6 @@ int main(int argc, char *argv[]) {
     write_timestampref_div(0x02u);
 
     enable_cntc();
-
-    //Xil_SetTlbAttributesRange((UINTPTR) &__text_start, (UINTPTR) &__text_end, NORM_NONCACHE);
 
     initPMU();
 #ifdef MEMBANDWIDTH
