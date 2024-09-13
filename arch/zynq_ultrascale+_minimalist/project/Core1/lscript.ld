@@ -29,8 +29,15 @@ ENTRY(_boot)
 
 SECTIONS
 {
+.loader (NOLOAD) : {
+	. = ALIGN(64);
+	__loader_start = .;
+	*(.loader)
+	*(.loader.*)
+	__loader_end = .;
+} > MEM_REGION_0_SHARED
 .mmu_tbl0 (NOLOAD) : {
-	. = ALIGN(4096);
+	. = ALIGN(64);
 	__mmu_tbl0_start = .;
 	*(.mmu_tbl0)
 	__mmu_tbl0_end = .;
@@ -54,8 +61,6 @@ SECTIONS
 	__mmu_tbl3_end = .;
 } > MEM_REGION_0_SHARED
 
-. = ALIGN(64);
-__loader_vma = .;
 
 .boot : {
 	. = ALIGN(64);

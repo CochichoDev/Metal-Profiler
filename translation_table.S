@@ -124,6 +124,8 @@ MMUTableL2.7:
 .section .mmu_tbl3, "a"
 
 MMUTableL3.0:
+#ifdef CACHECOLORING
+
 .set SECT, 0x600000 + 0x0
 .rept 0x7fa0
 .rept 0x4
@@ -159,4 +161,13 @@ MMUTableL3.0:
 .endr
 .set SECT, SECT + 0xc000
 .endr
+
+#else
+.set SECT, 0x600000
+.rept 0x7fa00
+.8byte SECT + MEM2
+.set SECT, SECT + 0x1000
+.endr
+
+#endif
 

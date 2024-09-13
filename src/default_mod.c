@@ -32,7 +32,10 @@ void default_BUILD_PROJECT(CONFIG *config) {
         return;
     }
     REGISTER_OUTPUT(T_UINT, limit, "CYCLES");
-    REGISTER_OUTPUT(T_UINT, limit, "L2_REFILLS");
+    REGISTER_OUTPUT(T_UINT, limit, "L1D-REFILLS");
+    REGISTER_OUTPUT(T_UINT, limit, "L1D-WB");
+    REGISTER_OUTPUT(T_UINT, limit, "L2-REFILLS");
+    REGISTER_OUTPUT(T_UINT, limit, "L2-WB");
 }
 
 void default_INIT_BENCH() {

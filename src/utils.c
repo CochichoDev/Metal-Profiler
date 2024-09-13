@@ -101,6 +101,16 @@ T_PSTR getNameFromPath(T_PSTR path) {
     return after_slash;
 }
 
+T_PSTR replaceChar(T_PSTR string, T_CHAR init, T_CHAR replace) {
+    assert(string != NULL);
+    T_PSTR ptr = string;
+    while (*ptr != '\0') {
+        if (*ptr == init) *ptr = replace;
+        ptr++;
+    }
+    return string;
+}
+
 /************** FILE HANDLING FUNCTIONS ****************/
 T_UINT numColumnInFile(FILE *file) {
     if (!file)
@@ -375,7 +385,7 @@ JOIN:
 }
 
 T_ERROR CALL_MAKEFILES(CONFIG *config) {
-    pid_t make_bsp, make_fsbl;
+    pid_t make_bsp, make_fsbl, make_loader;
     pid_t *make_cores = alloca(sizeof(pid_t)*SELECTED_ARCH.desc.NUM_CORES);
     bzero(make_cores, sizeof(pid_t)*SELECTED_ARCH.desc.NUM_CORES);
 
@@ -411,6 +421,12 @@ T_ERROR CALL_MAKEFILES(CONFIG *config) {
     strcat(fsbl_path, "/fsbl");
     make_fsbl = RUN_PROCESS_IMAGE(NULL, "/bin/make", "make", "-C", fsbl_path, "clean", "all", NULL);
 
+    /* LOADER APPLICATION W/ TRANSLATION TABLE */
+    char loader_path[512];
+    strcpy(loader_path, path);
+    strcat(loader_path, "/LOADER");
+    make_loader = RUN_PROCESS_IMAGE(NULL, "/bin/make", "make", "-C", loader_path, "clean", "all", NULL);
+    waitpid(make_loader, NULL, 0);
 
     for (uint8_t i = 1 ; i <= SELECTED_ARCH.desc.NUM_CORES ; i++) {
         const COMP *core_ptr;

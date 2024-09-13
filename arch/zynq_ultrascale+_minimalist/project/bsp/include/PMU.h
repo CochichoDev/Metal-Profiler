@@ -16,9 +16,11 @@
 #define PMEVTYPER_MASK          (0xFFFFU)
 
 /****************EVENTS*****************/
-#define L2D_CACHE_REFILL        (0x17U)
-#define L2D_CACHE_WB            (0x18U)
-#define BUS_CYCLES              (0x1DU)
+#define L1D_CACHE_REFILL    (0x03U)
+#define L1D_CACHE_WB        (0x15U)
+#define L2_CACHE_REFILL     (0x17U)
+#define L2_CACHE_WB         (0x18U)
+#define BUS_CYCLES          (0x1DU)
 
 
 /*****************INLINE FUNCTION DEFINITION**************/

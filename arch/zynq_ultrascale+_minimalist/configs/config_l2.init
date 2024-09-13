@@ -1,0 +1,29 @@
+#0
+CACHECOLORING:  0b          [M]
+MEMBANDWIDTH:   0b          [M]
+BUDGET:         2000        [O]
+PERIOD:         50          [O]
+REPLENISHMENT:  50          [O]
+
+#1
+APP:    READ
+SIZE:   250000
+STRIDE: 64
+LIMIT:  5000
+
+#2
+APP:    WRITE
+SIZE:   250000
+STRIDE: 64
+
+#3
+APP:    WRITE
+SIZE:   250000
+STRIDE: 64
+
+#4
+APP:    WRITE
+SIZE:   250000
+STRIDE: 64
+
+

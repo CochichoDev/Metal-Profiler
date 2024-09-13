@@ -14,7 +14,7 @@ LIBPATH=$(foreach lib, $(LIBDIR), -L$(lib))
 
 LIBS=-Wl,--start-group,$(patsubst lib%,-l%,$(basename $(notdir $(foreach libdir,$(LIBDIR),$(wildcard $(libdir)*.a)))),)-lgcc,--end-group
 
-OBJS=$(addsuffix .o, $(addprefix $(RELEASEDIR), $(basename $(notdir $(wildcard $(SRCDIR)*.c)))))
+OBJS=$(addsuffix .o, $(addprefix $(RELEASEDIR), $(basename $(notdir $(wildcard $(SRCDIR)*.c))))) ../LOADER/bin/main.o
 
 TARGET=Core3.elf
 
@@ -28,7 +28,7 @@ $(RELEASEDIR)$(TARGET): $(OBJS) lscript.ld
 
 $(RELEASEDIR)%.o: $(SRCDIR)%.c
 	@echo 'Building file: $<'
-	$(CC) -Wall -O0 -c $(AFLAGS) $(INCLUDEPATH) -o $@ $<
+	$(CC) -Wall -O1 -c $(AFLAGS) $(INCLUDEPATH) -o $@ $<
 	@echo 'Finished building: $<'
 
 
