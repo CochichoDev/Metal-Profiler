@@ -283,12 +283,16 @@ T_ERROR genTranslationTable(MMU *mmu, MEM_MAP *map) {
 
             }
 
-            if (block_ptr->terminal && block_ptr->map_e->cc)
+            if (block_ptr->terminal && block_ptr->map_e->cc) {
+                fprintf(ts, "#ifdef CACHECOLORING\n\n");
                 writeCCPageLoop(ts, block_ptr->size, base, attr, \
                                inc, map->desc_size);
-            else
-                writePageLoop(ts, block_ptr->size, base, attr, \
-                               inc, map->desc_size);
+                fprintf(ts, "#else\n");
+            }
+            writePageLoop(ts, block_ptr->size, base, attr, \
+                           inc, map->desc_size);
+            if (block_ptr->terminal && block_ptr->map_e->cc)
+                fprintf(ts, "#endif\n\n");
 
             block_ptr = block_ptr->next;
             own_block_idx++;
