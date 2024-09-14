@@ -16,9 +16,11 @@
 #include "state.h"
 #include "optimization.h"
 #include "bench.h"
+#include "mmu_gen.h"
 
 /************** CLI STATIC FUNCTION DECLARATION ****************/
 static ACTION parseAction(TERM *term);
+static GENERATE_ACTION parseGenerateArg(TERM *term);
 static LIST_ACTION parseListArg(TERM *term);
 static OPTIMIZE_ACTION parseOptimizeArg(TERM *term);
 static SET_ACTION parseSetArg(TERM *term);
@@ -135,6 +137,20 @@ uint8_t cliGetInput(TERM *term) {
             cliClose(term);
             cleanState();
             return 1;
+        case GENERATE:
+            switch (parseGenerateArg(term)) {
+                case G_MMU:
+                    genMMU(&SELECTED_ARCH);
+                    break;
+                case G_LINKER:
+                    genLinker(&SELECTED_ARCH);
+                    break;
+                case L_ERROR:
+                    return 1;
+                case L_NONE:
+                    break;
+            }
+            break;
         case HELP:
             switch(parseHelpArg(term)) {
                 case H_OUTPUT:
@@ -271,6 +287,10 @@ static ACTION parseAction(TERM *term) {
                     goto lNACTION;
             }
             goto lNACTION;
+        case 'G':
+            // Match for G+ENERATE
+            if (matchKey(term, "ENERATE")) return GENERATE;
+            goto lNACTION;
         case 'H':
             // Match for H+ELP
             if (matchKey(term, "ELP")) return HELP;
@@ -315,6 +335,44 @@ static ACTION parseAction(TERM *term) {
         return NONE;
 }
 
+static GENERATE_ACTION parseGenerateArg(TERM *term) {
+    while (!isnotblank(term->lastchar)) {
+        if (term->lastchar == '\n') return G_NONE;
+        if (read(term->in_descr, &term->lastchar, 1) <= 0) goto lERROR;
+    }
+    if (isalpha(term->lastchar))
+        term->lastchar &= 0xDF;         // Capitalize letter
+    
+    switch (term->lastchar) {
+        case 'L':
+            // Match for L+INKER
+            if (matchKey(term, "INKER")) return G_LINKER;
+            goto lNACTION;
+        case 'M':
+            // Match for M+MU
+            if (matchKey(term, "MU")) return G_MMU;
+            goto lNACTION;
+        case ' ':
+        case '\0':
+        case '\t':
+            // Recursive call to ignore the blank character
+            return parseGenerateArg(term);
+            break;
+        case '\n':
+            return G_NONE;
+        default:
+            goto lNACTION;
+    }
+
+    return 0;
+
+    lERROR:
+        perror("Error: Problem reading input\n");
+    return G_ERROR;
+    lNACTION:
+        fprintf(stdout, "Generate action not recognized\n");
+        return G_NONE;
+}
 /*
  * parseListArg: Parses the input into arguments for list action
  * Parameters: 

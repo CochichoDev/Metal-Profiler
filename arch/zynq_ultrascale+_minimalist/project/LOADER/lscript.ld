@@ -22,6 +22,13 @@ MEMORY
 
 SECTIONS
 {
+.loader : {
+	. = ALIGN(64);
+	__loader_start = .;
+	*(.loader)
+	*(.loader.*)
+	__loader_end = .;
+} > MEM_REGION_0_SHARED
 .mmu_tbl0 : {
 	. = ALIGN(64);
 	__mmu_tbl0_start = .;
@@ -45,12 +52,5 @@ SECTIONS
 	__mmu_tbl3_start = .;
 	KEEP(*(.mmu_tbl3))
 	__mmu_tbl3_end = .;
-} > MEM_REGION_0_SHARED
-.loader : {
-	. = ALIGN(64);
-	__loader_start = .;
-	*(.loader)
-	*(.loader.*)
-	__loader_end = .;
 } > MEM_REGION_0_SHARED
 }

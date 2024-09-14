@@ -3,10 +3,14 @@
 
 void initPMU() {
     enable_pmc();
-    cfg_pmevcntr(0u, L2D_CACHE_REFILL);
-    cfg_pmevcntr(1u, L2D_CACHE_WB);
+    cfg_pmevcntr(0u, L1D_CACHE_REFILL);
+    cfg_pmevcntr(1u, L1D_CACHE_WB);
+    cfg_pmevcntr(2u, L2_CACHE_REFILL);
+    cfg_pmevcntr(3u, L2_CACHE_WB);
     enable_pmevcntr(0u);
     enable_pmevcntr(1u);
+    enable_pmevcntr(2u);
+    enable_pmevcntr(3u);
     reset_pmc_events();
 }
 

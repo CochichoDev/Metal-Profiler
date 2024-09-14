@@ -10,7 +10,7 @@
 #include "types.h"
 #include "state.h"
 
-#define TTY_PORT    "/dev/ttyUSB1"
+#define TTY_PORT    "/dev/ttyUSB0"
 
 #define ARCHS_PATH "arch/"
 #define ARCH_CONFIG "archs.txt"

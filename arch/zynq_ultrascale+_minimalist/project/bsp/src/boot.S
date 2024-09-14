@@ -11,7 +11,7 @@
 .extern __data_end
 .extern __ld_data
 
-.extern __loader_vma
+.extern __loader_start
 
 .extern MMUTableL0.0
 
@@ -27,6 +27,7 @@
 .set TT_S1_TABLE,	0x3
 
 .set L0Table,	MMUTableL0.0
+
 .set vector_base,	_vector_table
 .set rvbar_base,	0xFD5C0040
 
@@ -62,7 +63,7 @@
 .data_ld:
     .quad  __ld_data
 .loader:
-    .quad  __loader_vma
+    .quad  __loader_start
 
 _prestart:
 _boot:

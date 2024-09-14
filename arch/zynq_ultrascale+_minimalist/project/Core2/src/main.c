@@ -15,8 +15,8 @@
 #if !defined(HEADER)
 #define HEADER ; ; 
 #endif
-#if !defined(TARGET_SIZE)
-#define TARGET_SIZE 4*128*64
+#if !defined(SIZE)
+#define SIZE 4*128*64
 #endif
 #if !defined(STRIDE)
 #define STRIDE 64
@@ -43,7 +43,7 @@ extern uint8_t __buffer_start;
 int main(int argc, char *argv[]) {
     register volatile uint8_t *target = &__buffer_start;
 
-    set_outstanding_prefetching(0x00U);
+    //set_outstanding_prefetching(0x00U);
     no_allocate_threshold_L1(0b11);
     no_allocate_threshold_L2(0b11);
 
@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     for (HEADER) {
-         for (register int i = 0 ; i < TARGET_SIZE ; i += STRIDE) {
+         for (register int i = 0 ; i < SIZE ; i += STRIDE) {
             ACCESS_METHOD(target+i);
         }
     }

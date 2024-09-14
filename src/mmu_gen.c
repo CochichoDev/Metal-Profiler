@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <assert.h>
 
 #include "mmu_gen.h"
 #include "arch.h"
@@ -468,5 +469,26 @@ T_ERROR genLinkerSkeleton(MMU *mmu, MEM_MAP *map) {
         fclose(ls);
     }
 
+    return 0;
+}
+
+T_ERROR genMMU(ARCH *arch) {
+    assert(arch->desc.CACHES != NULL && arch->map.entries != NULL);
+    MMU *mmu = createMMU(&arch->map);
+    mapToMMU(&SELECTED_ARCH.map, mmu);
+    genTranslationTable(mmu, &SELECTED_ARCH.map);
+    genLinkerSkeleton(mmu, &SELECTED_ARCH.map);
+
+    freeMMU(mmu);
+    return 0;
+}
+
+T_ERROR genLinker(ARCH *arch) {
+    assert(arch->desc.CACHES != NULL && arch->map.entries != NULL);
+    MMU *mmu = createMMU(&arch->map);
+    mapToMMU(&SELECTED_ARCH.map, mmu);
+    genLinkerSkeleton(mmu, &SELECTED_ARCH.map);
+
+    freeMMU(mmu);
     return 0;
 }

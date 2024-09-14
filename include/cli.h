@@ -34,6 +34,7 @@ typedef enum {
     CLEAR,
     EXECUTE,
     EXIT,
+    GENERATE,
     HELP,
     LIST,
     LOAD,
@@ -41,6 +42,13 @@ typedef enum {
     SET,
     ERROR
 } ACTION;
+
+typedef enum {
+    G_NONE,
+    G_MMU,
+    G_LINKER,
+    G_ERROR
+} GENERATE_ACTION;
 
 typedef enum {
     L_NONE,

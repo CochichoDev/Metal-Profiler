@@ -280,14 +280,6 @@ T_VOID selectArch(size_t choice) {
 #ifdef DEBUG
     printf("Map parsed\n");
 #endif
-    MMU *mmu = createMMU(&SELECTED_ARCH.map);
-    mapToMMU(&SELECTED_ARCH.map, mmu);
-    fclose(mem_map);
-
-    genTranslationTable(mmu, &SELECTED_ARCH.map);
-    genLinkerSkeleton(mmu, &SELECTED_ARCH.map);
-
-    freeMMU(mmu);
 
     char module_path[512];
     strcpy(module_path, SELECTED_ARCH.path);

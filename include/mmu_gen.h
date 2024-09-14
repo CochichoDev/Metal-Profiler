@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "arch.h"
+#include "state.h"
 
 typedef struct mmu_block_s {
     T_ULONG init;
@@ -22,4 +23,6 @@ MMU *createMMU(MEM_MAP *map);
 T_ERROR freeMMU(MMU *mmu);
 T_ERROR genTranslationTable(MMU *mmu, MEM_MAP *map);
 T_ERROR genLinkerSkeleton(MMU *mmu, MEM_MAP *map);
+T_ERROR genMMU(ARCH *arch);
+T_ERROR genLinker(ARCH *arch);
 #endif

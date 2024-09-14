@@ -5,11 +5,11 @@
 
 .set NEXT_PAGE_ATTR,    0x3
 .set RESERVED,          0x0 					
-.set MEMORY,	        0x405 | (3 << 8)
+.set MEMORY,	        0x405 | (3 << 8) | (0x0)
 .set DEVICE,	        0x409 | (1 << 53)| (1 << 54) |(0x0)
-.set MEM2,	            0x407 | (3 << 8)
+.set MEM2,	            0x407 | (3 << 8) | (0x0)
 
-.globl MMUTableL0.0
+.global MMUTableL0.0
 
 .section .mmu_tbl0, "a"
 
@@ -132,6 +132,8 @@ MMUTableL2.7:
 .section .mmu_tbl3, "a"
 
 MMUTableL3.0:
+#ifdef CACHECOLORING
+
 .set SECT, 0x600000 + 0x0
 .rept 0x7fa0
 .rept 0x4
@@ -167,4 +169,13 @@ MMUTableL3.0:
 .endr
 .set SECT, SECT + 0xc000
 .endr
+
+#else
+.set SECT, 0x600000
+.rept 0x7fa00
+.8byte SECT + MEM2
+.set SECT, SECT + 0x1000
+.endr
+
+#endif
 
