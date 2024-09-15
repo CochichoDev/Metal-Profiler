@@ -9,6 +9,7 @@
 #include "calc.h"
 #include "global.h"
 #include "types.h"
+#include "optimization.h"
 
 #include <alloca.h>
 #include <assert.h>
@@ -303,6 +304,39 @@ T_ERROR saveDataRESULTBATCH(const T_PSTR output, G_ARRAY *result_array, size_t s
             }
             fprintf(output_file, "\n");
         }
+    }
+    
+    fclose(output_file);
+    return 0;
+}
+
+T_ERROR saveDataOptimizationResults(const T_PSTR output, G_ARRAY *optimization_array, OPT_MAP *map) {
+    assert(optimization_array->TYPE == G_OPTRESULT);
+    FILE *output_file = fopen(output, "w");
+    int fd = fileno(output_file);
+    if (!output_file)
+        return -1;
+    if (!optimization_array)
+        return -1;
+    if (!strlen(output))
+        return -1;
+
+    fprintf(output_file, "%12s", "IDX");
+    fprintf(output_file, "%12s", "DEG");
+    size_t param_columns = 0;
+    for (size_t row_idx = 0; row_idx < map->NUM_COMP; row_idx++) {
+        for (size_t param_idx = 0; param_idx < map->PROPS_P_ROW[row_idx]; param_idx++) {
+            fprintf(output_file, "%11s%ld", "PARAM", param_columns);
+            param_columns++;
+        }
+    }
+    fprintf(output_file, "\n");
+
+
+    for (size_t r_idx = 0 ; r_idx < optimization_array->SIZE ; r_idx++) {
+        fprintf(output_file, "%12ld", r_idx);
+        fprintf(output_file, "%12lf", ((OPT_RESULT *)optimization_array->DATA)[r_idx].DEG);
+        printParameterGrid(fd, map, ((OPT_RESULT *)optimization_array->DATA)[r_idx].GRID);
     }
     
     fclose(output_file);

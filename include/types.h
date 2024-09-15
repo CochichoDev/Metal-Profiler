@@ -103,6 +103,7 @@ typedef enum {
         G_UINT,
         G_DOUBLE,
         G_RESULT, 
+        G_OPTRESULT, 
         G_METRICS
 } TYPE;
 

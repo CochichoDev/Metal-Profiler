@@ -106,30 +106,24 @@ T_VOID calcMaxFromArray(G_ARRAY *input_array, size_t num_elem, G_ARRAY *max_arra
  */
 T_ERROR calculateDegradation(G_ARRAY *garrays_std_iso, size_t size_iso, G_ARRAY *garrays_std_full, size_t size_result, G_ARRAY *garrays_double_deg) {
     G_ARRAY *iso_max = NULL;
-    /*
-    if (size_iso == 1) {
-        iso_max = garrays_std_iso;
-    } else {
-    */
-        iso_max = malloc(sizeof(G_ARRAY));
-        switch (garrays_std_iso->TYPE) {
-            case G_INT:
-            case G_UINT:
-                iso_max->DATA = malloc(sizeof(T_UINT) * size_iso);
-                iso_max->SIZE = size_iso;
-                iso_max->TYPE = G_UINT;
-                break;
-            case G_DOUBLE:
-                iso_max->DATA = malloc(sizeof(T_DOUBLE) * size_iso);
-                iso_max->SIZE = size_iso;
-                iso_max->TYPE = G_DOUBLE;
-                break;
-            default:
-                break;
-        }
+    iso_max = malloc(sizeof(G_ARRAY));
+    switch (garrays_std_iso->TYPE) {
+        case G_INT:
+        case G_UINT:
+            iso_max->DATA = malloc(sizeof(T_UINT) * size_iso);
+            iso_max->SIZE = size_iso;
+            iso_max->TYPE = G_UINT;
+            break;
+        case G_DOUBLE:
+            iso_max->DATA = malloc(sizeof(T_DOUBLE) * size_iso);
+            iso_max->SIZE = size_iso;
+            iso_max->TYPE = G_DOUBLE;
+            break;
+        default:
+            break;
+    }
 
-        calcMaxFromArray(garrays_std_iso, size_iso, iso_max);
-    //}
+    calcMaxFromArray(garrays_std_iso, size_iso, iso_max);
 
     
     METRICS iso_metrics;
@@ -168,6 +162,61 @@ T_ERROR calculateDegradation(G_ARRAY *garrays_std_iso, size_t size_iso, G_ARRAY 
     return 0;
 }
 
+T_DOUBLE *calculateDegradationNormalized(G_ARRAY *garray_result_iso, G_ARRAY *garray_result_full, T_DOUBLE avg, size_t num) {
+    // Calculate vector of degradation
+    G_ARRAY *garrays_std_full = calloc(garray_result_full->SIZE, sizeof(G_ARRAY));
+    G_ARRAY *garrays_std_deg = calloc(garray_result_full->SIZE, sizeof(G_ARRAY));
+
+    for (size_t result_idx = 0; result_idx < garray_result_full->SIZE; result_idx++) {
+        RESULT *result = ((RESULT *) garray_result_full->DATA) + result_idx;
+        garrays_std_full[result_idx].DATA = result->ARRAY.DATA;
+        garrays_std_full[result_idx].SIZE = result->ARRAY.SIZE;
+        garrays_std_full[result_idx].TYPE = result->ARRAY.TYPE;
+
+        garrays_std_deg[result_idx].DATA = calloc(result->ARRAY.SIZE, sizeof(T_DOUBLE));
+        garrays_std_deg[result_idx].SIZE = result->ARRAY.SIZE;
+        garrays_std_deg[result_idx].TYPE = G_DOUBLE;
+    }
+
+
+    // Since the calculateDegradation takes the result data in an array format
+    G_ARRAY *garrays_std_iso = malloc(garray_result_iso->SIZE * sizeof(G_ARRAY));
+
+    // Transform GARRAY of RESULT into GARRAY of std type 
+    for (size_t result_idx = 0; result_idx < garray_result_iso->SIZE; result_idx++) {
+        garrays_std_iso[result_idx].TYPE = ((RESULT *) (garray_result_iso->DATA))[result_idx].ARRAY.TYPE;
+        garrays_std_iso[result_idx].SIZE = ((RESULT *) (garray_result_iso->DATA))[result_idx].ARRAY.SIZE;
+        garrays_std_iso[result_idx].DATA = ((RESULT *) (garray_result_iso->DATA))[result_idx].ARRAY.DATA;
+    }
+
+    calculateDegradation(garrays_std_iso, garray_result_iso->SIZE, garrays_std_full, garray_result_full->SIZE, garrays_std_deg);
+
+    // Find the maximum of the vector of degradation -> OBJECTIVE
+    G_ARRAY garray_std_max_deg = {.SIZE = garray_result_full->SIZE, .TYPE = G_DOUBLE, .DATA = calloc(garray_result_full->SIZE, sizeof(T_DOUBLE))};    
+    calcMaxFromArray(garrays_std_deg, garray_result_full->SIZE, &garray_std_max_deg);
+
+    G_ARRAY garray_std_abs_max_deg = {.SIZE = 1, .TYPE = G_DOUBLE, .DATA = malloc(sizeof(T_DOUBLE))};
+    calcMaxFromArray(&garray_std_max_deg, 1, &garray_std_abs_max_deg);
+
+    T_DOUBLE deg1 = -((T_DOUBLE *) garray_std_abs_max_deg.DATA)[0];
+    avg = avg * ((T_DOUBLE) num / num+1);
+    avg += (deg1 / num+1);
+    
+    deg1 /= avg;
+    T_DOUBLE *result = malloc(2 * sizeof(T_DOUBLE));
+    result[0] = deg1;
+    result[1] = avg;
+
+    for (size_t result_idx = 0; result_idx < garray_result_full->SIZE; result_idx++) 
+        free(garrays_std_deg[result_idx].DATA);
+    free(garrays_std_iso);
+    free(garrays_std_full);
+    free(garrays_std_deg);
+    free(garray_std_max_deg.DATA);
+    free(garray_std_abs_max_deg.DATA);
+
+    return result;
+}
 
 /************** METRICS RELATED FUNCTIONS ****************/
 /*
@@ -271,7 +320,6 @@ T_VOID destroyMetrics(METRICS *metrics) {
     metrics->MEDIAN.SIZE = 0;
 }
 
-
 /************** CACHE CALC FUNCTIONS ****************/
 /*
  * contiguousPages : Calculates the number of contiguos pages that should be
@@ -307,8 +355,6 @@ T_UINT contiguousPages(ARCH_DESC *arch) {
     }
     return 1 << (first_b - __builtin_ctz(arch->PAGE_SIZE));
 }
-
-
 
 /************** MATH FUNCTIONS ****************/
 T_INT uniformRandom(T_INT min, T_INT max) {

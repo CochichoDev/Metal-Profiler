@@ -4,16 +4,10 @@
 
 #if defined(WRITE)
 #define ACCESS_METHOD(TARGET)   \
-    __asm__("strb w0, [%0]"     \
-        :                       \ 
-        :"r"(TARGET)            \
-        :"x0")           
+    *(volatile uint8_t *)(TARGET) = 0x00U;
 #elif defined(READ)             
 #define ACCESS_METHOD(TARGET)   \
-    __asm__("ldrb w0, [%0]"     \
-            :                   \
-            : "r"(TARGET)       \
-            : "x0")           
+    *(volatile uint8_t *)(TARGET)
 #elif defined(WRITEX6)          
 #define ACCESS_METHOD(TARGET)   \
     __asm__("                   \

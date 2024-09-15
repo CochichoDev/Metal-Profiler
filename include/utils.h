@@ -4,8 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "api/api.h"
-#include "calc.h"
+#include "optimization.h"
 
 
 /************** MACRO DEFINITION ****************/
@@ -51,6 +50,7 @@ T_UINT numColumnInFile(FILE *file);
 T_VOID saveDataMETRICS(const T_PSTR output, G_ARRAY *metrics_array);
 T_VOID saveDataRESULTS(const T_PSTR output, G_ARRAY *result_array);
 T_ERROR saveDataRESULTBATCH(const T_PSTR output, G_ARRAY *result_array, size_t size_result_array);
+T_ERROR saveDataOptimizationResults(const T_PSTR output, G_ARRAY *optimization_array, OPT_MAP *map);
 
 /************** CONFIG HANDLING FUNCTIONS ****************/
 size_t strProprietyIdxByPtr(T_PSTR *OPTS, T_PSTR prop);

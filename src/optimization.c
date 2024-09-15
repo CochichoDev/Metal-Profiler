@@ -7,37 +7,45 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <assert.h>
 
 #include "api.h"
-#include "apistate.h"
 #include "global.h"
 #include "optimization.h"
 #include "plot.h"
+#include "types.h"
 #include "utils.h"
 #include "bench.h"
 #include "calc.h"
 #include "TUI.h"
+#include "generics.h"
+
+/* STATIC VARIABLE DECLARATION */
+static G_ARRAY *garray_result_iso = NULL;
 
 /* STATIC FUNCTION DECLARATION */
-static T_VOID mapConfigToGrid(OPT_MAP *mapGrid);
+static T_VOID mapConfigToGrid(OPT_MAP *mapGrid, CONFIG *cfg);
 static T_VOID destroyMapGrid(OPT_MAP *mapGrid);
 static PARAM_GRID generateParameterGrid(OPT_MAP *mapGrid);
 static T_VOID destroyParameterGrid(OPT_MAP *mapGrid, PARAM_GRID grid);
-static T_VOID printParameterGrid(T_INT descriptor, OPT_MAP *mapGrid, PARAM_GRID grid);
 static PARAM_GRID cloneParams(OPT_MAP *mapGrid, PARAM_GRID param);
-static T_VOID buildConfigFromParameterGrid(OPT_MAP *mapGrid, PARAM_GRID grid);
+static CONFIG *buildConfigFromParameterGrid(OPT_MAP *mapGrid, PARAM_GRID grid);
 
-static T_DOUBLE objectiveMaximizeInter(OPT_MAP *mapGrid, PARAM_GRID param);
-static T_DOUBLE objectiveMinimizeInterProp(OPT_MAP *mapGrid, PARAM_GRID param);
+static G_ARRAY *objectiveMaximizeInter(OPT_MAP *mapGrid, PARAM_GRID param);
+static G_ARRAY *objectiveMinimizeInterProp(OPT_MAP *mapGrid, PARAM_GRID param);
+static G_ARRAY *objectiveMinimizeMemMonitoring(OPT_MAP *mapGrid, PARAM_GRID param);
 
 static PARAM_GRID randomSearch(OPT_MAP *mapGrid, PARAM_GRID param, size_t iterations, \
-                               T_DOUBLE (*objectiveFunc)(OPT_MAP *, PARAM_GRID), \
+                               G_ARRAY *(*objectiveFunc)(OPT_MAP *, PARAM_GRID), \
                                const char* output);
 static PARAM_GRID randomSearchNR(OPT_MAP *mapGrid, PARAM_GRID param, size_t iterations, \
-                                 T_DOUBLE (*objectiveFunc)(OPT_MAP *, PARAM_GRID), \
+                                 G_ARRAY *(*objectiveFunc)(OPT_MAP *, PARAM_GRID), \
                                  const char* output);
+static PARAM_GRID randomSearchNRWeighted(OPT_MAP *mapGrid, PARAM_GRID param, size_t iterations, \
+                                 G_ARRAY *(*objectiveFunc)(OPT_MAP *, PARAM_GRID), \
+                                 const char *output);
 static PARAM_GRID simulatedAnnealing(OPT_MAP *mapGrid, PARAM_GRID param, size_t iterations, \
-                                     T_DOUBLE (*objectiveFunc)(OPT_MAP *, PARAM_GRID), \
+                                     G_ARRAY *(*objectiveFunc)(OPT_MAP *, PARAM_GRID), \
                                      const char* output);
 
 /* TUI Callback FUNCTIONS */
@@ -47,6 +55,7 @@ static T_VOID hoverMultiOptChoice(T_NODE *button, T_VOID **data) {
 
     T_NODE *buttonRandom;
     T_NODE *buttonRandomLimited;
+    T_NODE *buttonRandomLimitedWeighted;
     T_NODE *buttonAnnealing;
 
     multi_clean_items(multiOptAlgo);
@@ -60,8 +69,13 @@ static T_VOID hoverMultiOptChoice(T_NODE *button, T_VOID **data) {
             multi_add_item(multiOptAlgo, buttonRandomLimited);
             multi_add_item(multiOptAlgo, buttonAnnealing);
             break;
-        case 1: buttonRandomLimited = create_node_button((T_POSGRID) {1, 1}, 5, 1, "Random Search Improved");
+        case 1: 
+            buttonRandomLimited = create_node_button((T_POSGRID) {1, 1}, 5, 1, "Random Search Improved");
             multi_add_item(multiOptAlgo, buttonRandomLimited);
+            break;
+        case 2: 
+            buttonRandomLimitedWeighted = create_node_button((T_POSGRID) {1, 1}, 5, 1, "Random Weighted Search Improved");
+            multi_add_item(multiOptAlgo, buttonRandomLimitedWeighted);
             break;
     }
 }
@@ -93,8 +107,8 @@ static T_VOID returnOKButton(T_NODE *button, T_VOID **data) {
         return;
     }
 
-    T_DOUBLE (*objectiveFunc)(OPT_MAP *, PARAM_GRID) = NULL;
-    PARAM_GRID (*searchAlgo)(OPT_MAP *, PARAM_GRID , size_t , T_DOUBLE (*)(OPT_MAP *, PARAM_GRID), const char*) = NULL;
+    G_ARRAY *(*objectiveFunc)(OPT_MAP *, PARAM_GRID) = NULL;
+    PARAM_GRID (*searchAlgo)(OPT_MAP *, PARAM_GRID , size_t , G_ARRAY *(*)(OPT_MAP *, PARAM_GRID), const char*) = NULL;
 
     switch (choice) {
         case 0:
@@ -119,6 +133,13 @@ static T_VOID returnOKButton(T_NODE *button, T_VOID **data) {
                 case 0:
                     searchAlgo = randomSearchNR;
             }
+            break;
+        case 2:
+            objectiveFunc = &objectiveMinimizeMemMonitoring;
+            switch (algo) {
+                case 0:
+                    searchAlgo = randomSearchNRWeighted;
+            }
     }
 
     optimizeConfig(searchAlgo, objectiveFunc, iterations, output);
@@ -140,14 +161,17 @@ T_VOID optimizationTUI() {
     /* MULTINODE CHOICE ITEMS */
     T_NODE *buttonInterferance = create_node_button((T_POSGRID) {1, 1}, 5, 1, "Interference Maximize");
     T_NODE *buttonProp = create_node_button((T_POSGRID) {1, 1}, 5, 1, "Interference Prop Minimize");
+    T_NODE *buttonMemMonitoring = create_node_button((T_POSGRID) {1, 1}, 5, 1, "Interference MemMonitoring Minimize");
     multi_add_item(multiOptChoices, buttonInterferance);
     multi_add_item(multiOptChoices, buttonProp);
+    multi_add_item(multiOptChoices, buttonMemMonitoring);
 
     T_VOID **data_multi = malloc(2*sizeof(T_NODE *));
     data_multi[0] = multiOptChoices;
     data_multi[1] = multiOptAlgo;
     hook_hover(buttonInterferance, &hoverMultiOptChoice, data_multi);
     hook_hover(buttonProp, &hoverMultiOptChoice, data_multi);
+    hook_hover(buttonMemMonitoring, &hoverMultiOptChoice, data_multi);
 
     /* ITERAATION TEXTBOX */
     T_NODE *textbIterations = create_node_textb( (T_POSGRID) {1+2*WINDOW_WIDTH()/3+4, 1}, WINDOW_WIDTH()/3-10);    
@@ -213,12 +237,15 @@ T_VOID optimizationTUI() {
  * PARAMETERS:
  *                  - mapGrid: the initialized structure of OPT_MAP to be filled
  */
-static T_VOID mapConfigToGrid(OPT_MAP *mapGrid) {
+static T_VOID mapConfigToGrid(OPT_MAP *mapGrid, CONFIG *cfg) {
+    assert(cfg != NULL);
+
+    mapGrid->CFG = cfg;
     mapGrid->NUM_COMP = 0;
     
-    for (size_t comp_idx = 0; comp_idx < INPUT_CONFIG->NUM; comp_idx++) {
+    for (size_t comp_idx = 0; comp_idx < cfg->NUM; comp_idx++) {
         COMP *cur_comp = NULL;
-        GET_COMP_BY_ID(INPUT_CONFIG, INPUT_CONFIG->COMPS[comp_idx]->ID, (const COMP **) &cur_comp);
+        GET_COMP_BY_ID(cfg, cfg->COMPS[comp_idx]->ID, (const COMP **) &cur_comp);
 
         T_FLAG optimizable_comp = FALSE;
 
@@ -306,10 +333,10 @@ static T_VOID destroyParameterGrid(OPT_MAP *mapGrid, PARAM_GRID grid) {
     free(grid);
 }
 
-static T_VOID printParameterGrid(T_INT descriptor, OPT_MAP *mapGrid, PARAM_GRID grid) {
+T_VOID printParameterGrid(T_INT descriptor, OPT_MAP *mapGrid, PARAM_GRID grid) {
     for (size_t row_idx = 0; row_idx < mapGrid->NUM_COMP; row_idx++) {
         for (size_t param_idx = 0; param_idx < mapGrid->PROPS_P_ROW[row_idx]; param_idx++) {
-            dprintf(descriptor, "%ld\t", grid[row_idx][param_idx].cur);
+            dprintf(descriptor, "%12ld\t", grid[row_idx][param_idx].cur);
         }
         dprintf(descriptor, "\n");
     }
@@ -326,7 +353,7 @@ static PARAM_GRID cloneParams(OPT_MAP *mapGrid, PARAM_GRID param) {
     return clone;
 }
 
-static T_VOID buildConfigFromParameterGrid(OPT_MAP *mapGrid, PARAM_GRID grid) {
+static CONFIG *buildConfigFromParameterGrid(OPT_MAP *mapGrid, PARAM_GRID grid) {
     for (size_t row_idx = 0; row_idx < mapGrid->NUM_COMP; row_idx++) {
         for (size_t param_idx = 0; param_idx < mapGrid->PROPS_P_ROW[row_idx]; param_idx++) {
             PROP *cur_prop = mapGrid->PROPS[row_idx][param_idx];
@@ -349,10 +376,11 @@ static T_VOID buildConfigFromParameterGrid(OPT_MAP *mapGrid, PARAM_GRID grid) {
 
         }
     }
+    return mapGrid->CFG;
 }
 
 /* OBJECTIVE FUNCTIONS */
-static T_DOUBLE objectiveMaximizeInter(OPT_MAP *mapGrid, PARAM_GRID param) {
+static G_ARRAY *objectiveMaximizeInter(OPT_MAP *mapGrid, PARAM_GRID param) {
     // Compile the program w/ new config
     buildConfigFromParameterGrid(mapGrid, param);
     
@@ -401,10 +429,15 @@ static T_DOUBLE objectiveMaximizeInter(OPT_MAP *mapGrid, PARAM_GRID param) {
     free(garray_std_max_deg.DATA);
     free(garray_std_abs_max_deg.DATA);
 
-    return degradation;
+    G_ARRAY *result = calloc(1, sizeof(G_ARRAY));
+    result->DATA = malloc(sizeof(T_DOUBLE));
+    ((T_DOUBLE *)result->DATA)[0] = degradation;
+    result->SIZE = 1;
+    result->TYPE = G_DOUBLE;
+    return result;
 }
 
-static T_DOUBLE objectiveMinimizeInterProp(OPT_MAP *mapGrid, PARAM_GRID param) {
+static G_ARRAY *objectiveMinimizeInterProp(OPT_MAP *mapGrid, PARAM_GRID param) {
     // Compile the program w/ new config
     buildConfigFromParameterGrid(mapGrid, param);
     
@@ -453,24 +486,123 @@ static T_DOUBLE objectiveMinimizeInterProp(OPT_MAP *mapGrid, PARAM_GRID param) {
     free(garray_std_max_deg.DATA);
     free(garray_std_abs_max_deg.DATA);
 
-    return degradation;
+    G_ARRAY *result = calloc(1, sizeof(G_ARRAY));
+    result->DATA = malloc(sizeof(T_DOUBLE));
+    ((T_DOUBLE *)result->DATA)[0] = degradation;
+    result->SIZE = 1;
+    result->TYPE = G_DOUBLE;
+    return result;
+}
+
+static G_ARRAY *objectiveMinimizeMemMonitoring(OPT_MAP *mapGrid, PARAM_GRID param) {
+    static T_DOUBLE avg1 = 0, avg2 = 0;
+    static T_DOUBLE num1 = 0, num2 = 0;
+
+    if (mapGrid == NULL || param == NULL) {
+        avg1 = 0, avg2 = 0;
+        num1 = 0, num2 = 0;
+    }
+
+
+    // Compile the program w/ new config (MemMonitoring and Attackers)
+    CONFIG *full_cfg = buildConfigFromParameterGrid(mapGrid, param);
+    
+    // Obtain results from running with full config
+    G_ARRAY garray_result_full = {.DATA = calloc(1, sizeof(RESULT)), .TYPE = G_RESULT, .SIZE = 1};
+    G_ARRAY garray_result_mm_iso = {.DATA = calloc(1, sizeof(RESULT)), .TYPE = G_RESULT, .SIZE = 1};
+    BUILD_PROJECT(full_cfg);
+    printParameterGrid(STDOUT_FILENO, mapGrid, param);
+    runBench(garray_result_full.SIZE, 1, (RESULT *[]) {garray_result_full.DATA});
+
+
+    // Obtain results from running w/ MemMonitoring but isolation
+    CONFIG *cfg_mm_iso = calloc(1, sizeof(CONFIG));
+    cfg_mm_iso->NUM = 2;
+    cfg_mm_iso->VICTIM_ID = full_cfg->VICTIM_ID;
+    GET_COMP_BY_ID(full_cfg, SYSTEM_COMP_ID, (const COMP **)cfg_mm_iso->COMPS);
+    GET_COMP_BY_ID(full_cfg, cfg_mm_iso->VICTIM_ID, (const COMP **)(cfg_mm_iso->COMPS)+1);
+    BUILD_PROJECT(cfg_mm_iso);
+    runBench(garray_result_mm_iso.SIZE, 1, (RESULT *[]) {garray_result_mm_iso.DATA});
+
+    T_DOUBLE *deg1 = calculateDegradationNormalized(&garray_result_mm_iso, &garray_result_full, avg1, num1);
+    avg1 = deg1[1];
+    num1++;
+
+    // This should always be true the first time except whenever it's ran for the first time
+    if (garray_result_iso == NULL) {
+        // Change configuration to only compile the isolated victim wo/ MemMonitoring
+        CONFIG *cfg_iso = cfg_mm_iso;
+
+        COMP *sys_comp;
+        if (GET_COMP_BY_ID(cfg_iso, SYSTEM_COMP_ID, (const COMP **)&sys_comp) == -1) {
+            fprintf(stderr, "Error: Could not obtain base configuration because system component is not present\n");
+            return NULL;
+        }
+
+        PROP *mon_prop;
+        if (GET_PROP_BY_NAME(sys_comp, "MEMBANDWIDTH", &mon_prop) != -1) {
+            assert(mon_prop->PTYPE == pBOOL);
+            mon_prop->iINIT = 0;
+        }
+
+        garray_result_iso = calloc(1, sizeof(G_ARRAY));
+        garray_result_iso->DATA = malloc(sizeof(RESULT) * NUM_ISO_RESULTS);
+        garray_result_iso->SIZE = NUM_ISO_RESULTS;
+        garray_result_iso->TYPE = G_RESULT;
+
+        BUILD_PROJECT(cfg_iso);
+        runBench(garray_result_iso->SIZE, 1, (RESULT *[]){garray_result_iso->DATA});
+        free(cfg_iso);
+    }
+    // Repeat the same calculations for the second metric (Influnce of MemMonitoring)
+    T_DOUBLE *deg2 = calculateDegradationNormalized(garray_result_iso, &garray_result_mm_iso, avg2, num2);
+    avg2 = deg2[1];
+    num2++;
+
+    
+    G_ARRAY *results = calloc(1, sizeof(G_ARRAY));
+    results->DATA = malloc(4*sizeof(T_DOUBLE));
+    results->SIZE = 4;
+    results->TYPE = G_DOUBLE;
+    ((T_DOUBLE *)results->DATA)[0] = deg1[0];
+    ((T_DOUBLE *)results->DATA)[1] = avg1;
+    ((T_DOUBLE *)results->DATA)[2] = deg2[0];
+    ((T_DOUBLE *)results->DATA)[3] = avg2;
+
+    // Clean allocations and return objective
+    for (size_t result_idx = 0; result_idx < garray_result_full.SIZE; result_idx++) {
+        RESULT *result = ((RESULT *) garray_result_full.DATA) + result_idx;
+        DESTROY_RESULTS(result);
+        result = ((RESULT *) garray_result_mm_iso.DATA) + result_idx;
+        DESTROY_RESULTS(result);
+    }
+
+    free(garray_result_full.DATA);
+    free(garray_result_mm_iso.DATA);
+    free(deg1);
+    free(deg2);
+
+    return results;
 }
 
 /* SEARCH ALGO FUNCTIONS */
 static PARAM_GRID randomSearch(OPT_MAP *mapGrid, PARAM_GRID param, size_t iterations, \
-                               T_DOUBLE (*objectiveFunc)(OPT_MAP *, PARAM_GRID), \
+                               G_ARRAY *(*objectiveFunc)(OPT_MAP *, PARAM_GRID), \
                                const char* output) {
 
     // Define variables to register max degradation and best cur_paramss
     PARAM_GRID cur_params = cloneParams(mapGrid, param);
-    T_DOUBLE best = objectiveFunc(mapGrid, cur_params);
+    G_ARRAY *result_array = objectiveFunc(mapGrid, param);
+    assert(result_array->TYPE == G_DOUBLE);
+    T_DOUBLE best = ((T_DOUBLE *)result_array->DATA)[0];
+    DESTROY_GENERIC(result_array);
+    free(result_array);
     PARAM_GRID best_params = cloneParams(mapGrid, cur_params);
 
-    G_ARRAY garray_result_deg = {.SIZE = 1, .TYPE = G_RESULT, .DATA = malloc(sizeof(RESULT))};
-    RESULT *deg_result = garray_result_deg.DATA;
-    INITIALIZE_RESULTS(T_DOUBLE, deg_result, iterations, "Optimization");
+    G_ARRAY garray_opt_result = {.SIZE = iterations, .TYPE = G_OPTRESULT, .DATA = malloc(sizeof(OPT_RESULT) * iterations)};
 
-    ((T_DOUBLE *) deg_result->ARRAY.DATA)[0] = best;
+    ((OPT_RESULT *) garray_opt_result.DATA)[0].DEG = best;
+    ((OPT_RESULT *) garray_opt_result.DATA)[0].GRID = cloneParams(mapGrid, best_params);
     // Optimization Loop
     for (size_t iter = 1; iter < iterations; iter++) {
         // Mutate cur_paramss
@@ -485,7 +617,11 @@ static PARAM_GRID randomSearch(OPT_MAP *mapGrid, PARAM_GRID param, size_t iterat
 
 
         // Obtain objective
-        T_DOUBLE new_objective = objectiveFunc(mapGrid, cur_params);
+        result_array = objectiveFunc(mapGrid, param);
+        assert(result_array->TYPE == G_DOUBLE);
+        T_DOUBLE new_objective = ((T_DOUBLE *)result_array->DATA)[0];
+        DESTROY_GENERIC(result_array);
+        free(result_array);
         printf("ITERATION: %ld\n", iter);
         // Compare and replace
         if (new_objective > best) {
@@ -494,7 +630,8 @@ static PARAM_GRID randomSearch(OPT_MAP *mapGrid, PARAM_GRID param, size_t iterat
             best = new_objective;
             //printf("Best: %lf\n", best);
         }
-        ((T_DOUBLE *) deg_result->ARRAY.DATA)[iter] = best;
+        ((OPT_RESULT *) garray_opt_result.DATA)[iter].DEG = best;
+        ((OPT_RESULT *) garray_opt_result.DATA)[iter].GRID = cloneParams(mapGrid, best_params);
         
     }
 
@@ -502,9 +639,8 @@ static PARAM_GRID randomSearch(OPT_MAP *mapGrid, PARAM_GRID param, size_t iterat
     strncpy(output_rs, output, 63-3);
     strcat(output_rs, "_rs");
     destroyParameterGrid(mapGrid, cur_params);
-    saveDataRESULTS(output_rs, &garray_result_deg);
-    DESTROY_RESULTS(deg_result);
-    free(garray_result_deg.DATA);
+    saveDataOptimizationResults(output_rs, &garray_opt_result, mapGrid);
+    DESTROY_GENERIC(&garray_opt_result);
 
     char output_rs_scatter[128] = "\0";
     strncpy(output_rs_scatter, output_rs, 64);
@@ -515,7 +651,7 @@ static PARAM_GRID randomSearch(OPT_MAP *mapGrid, PARAM_GRID param, size_t iterat
 }
 
 static PARAM_GRID randomSearchNR(OPT_MAP *mapGrid, PARAM_GRID param, size_t iterations, \
-                                 T_DOUBLE (*objectiveFunc)(OPT_MAP *, PARAM_GRID), \
+                                 G_ARRAY *(*objectiveFunc)(OPT_MAP *, PARAM_GRID), \
                                  const char *output) {
     /*
      * Since every iteration we get for sure a new configuration then it
@@ -532,12 +668,14 @@ static PARAM_GRID randomSearchNR(OPT_MAP *mapGrid, PARAM_GRID param, size_t iter
 
     // Define variables to register max degradation and best cur_paramss
     PARAM_GRID cur_params = cloneParams(mapGrid, param);
-    T_DOUBLE best = objectiveFunc(mapGrid, cur_params);
+    G_ARRAY *result_array = objectiveFunc(mapGrid, param);
+    assert(result_array->TYPE == G_DOUBLE);
+    T_DOUBLE best = ((T_DOUBLE *)result_array->DATA)[0];
+    DESTROY_GENERIC(result_array);
+    free(result_array);
     PARAM_GRID best_params = cloneParams(mapGrid, cur_params);
 
-    G_ARRAY garray_result_deg = {.SIZE = 1, .TYPE = G_RESULT, .DATA = malloc(sizeof(RESULT))};
-    RESULT *deg_result = garray_result_deg.DATA;
-    INITIALIZE_RESULTS(T_DOUBLE, deg_result, iterations_limiter, "Optimization");
+    G_ARRAY garray_opt_result = {.SIZE = iterations_limiter, .TYPE = G_OPTRESULT, .DATA = malloc(sizeof(OPT_RESULT) * iterations)};
 
     T_UCHAR (*hashes)[32] = calloc(iterations_limiter, sizeof(T_UCHAR[32]));
     T_CHAR param_buffer[1024] = "\0";
@@ -554,7 +692,9 @@ static PARAM_GRID randomSearchNR(OPT_MAP *mapGrid, PARAM_GRID param, size_t iter
     SHA256((const unsigned char *)param_buffer, strlen(param_buffer), hashes[0]);
 
 
-    ((T_DOUBLE *) deg_result->ARRAY.DATA)[0] = best;
+
+    ((OPT_RESULT *) garray_opt_result.DATA)[0].DEG = best;
+    ((OPT_RESULT *) garray_opt_result.DATA)[0].GRID = cloneParams(mapGrid, best_params);
     // Optimization Loop
     for (size_t iter = 1; iter < iterations_limiter; iter++) {
     
@@ -596,7 +736,11 @@ static PARAM_GRID randomSearchNR(OPT_MAP *mapGrid, PARAM_GRID param, size_t iter
 
 
         // Obtain objective
-        T_DOUBLE new_objective = objectiveFunc(mapGrid, cur_params);
+        result_array = objectiveFunc(mapGrid, param);
+        assert(result_array->TYPE == G_DOUBLE);
+        T_DOUBLE new_objective = ((T_DOUBLE *)result_array->DATA)[0];
+        DESTROY_GENERIC(result_array);
+        free(result_array);
         printf("ITERATION: %ld\n", iter);
         // Compare and replace
         if (new_objective > best) {
@@ -605,7 +749,8 @@ static PARAM_GRID randomSearchNR(OPT_MAP *mapGrid, PARAM_GRID param, size_t iter
             best = new_objective;
             //printf("Best: %lf\n", best);
         }
-        ((T_DOUBLE *) deg_result->ARRAY.DATA)[iter] = best;
+        ((OPT_RESULT *) garray_opt_result.DATA)[iter].DEG = best;
+        ((OPT_RESULT *) garray_opt_result.DATA)[iter].GRID = cloneParams(mapGrid, best_params);
         
     }
 
@@ -614,9 +759,145 @@ static PARAM_GRID randomSearchNR(OPT_MAP *mapGrid, PARAM_GRID param, size_t iter
     char output_rsnr[64] = "\0";
     strncpy(output_rsnr, output, 63-5);
     strcat(output_rsnr, "_rsnr");
-    saveDataRESULTS(output_rsnr, &garray_result_deg);
-    DESTROY_RESULTS(deg_result);
-    free(garray_result_deg.DATA);
+    saveDataOptimizationResults(output_rsnr, &garray_opt_result, mapGrid);
+    DESTROY_GENERIC(&garray_opt_result);
+    free(hashes);
+
+    char output_rsnr_scatter[128] = "\0";
+    strncpy(output_rsnr_scatter, output_rsnr, 64);
+    strcat(output_rsnr_scatter, "_scatter");
+    plotScatter(output_rsnr, output_rsnr_scatter);
+
+    return best_params;
+}
+
+static PARAM_GRID randomSearchNRWeighted(OPT_MAP *mapGrid, PARAM_GRID param, size_t iterations, \
+                                 G_ARRAY *(*objectiveFunc)(OPT_MAP *, PARAM_GRID), \
+                                 const char *output) {
+    /*
+     * Since every iteration we get for sure a new configuration then it
+     * makes sense to limit the number of iterations to the maximum different
+     * configurations one can have
+     */
+    size_t num_max_states = 1;
+    for (size_t row_idx = 0; row_idx < mapGrid->NUM_COMP; row_idx++) {
+        for (size_t cur_params_idx = 0; cur_params_idx < mapGrid->PROPS_P_ROW[row_idx]; cur_params_idx++) {
+            num_max_states *= (param[row_idx][cur_params_idx].max + 1);
+        }
+    }
+    size_t iterations_limiter = ( (iterations < num_max_states) ? iterations : num_max_states );
+
+
+    // Define variables to register max degradation and best cur_paramss
+    PARAM_GRID cur_params = cloneParams(mapGrid, param);
+    G_ARRAY *result_array = objectiveFunc(mapGrid, cur_params);
+    PARAM_GRID best_params = cloneParams(mapGrid, cur_params);
+
+    T_DOUBLE deg1 = ((T_DOUBLE *)result_array->DATA)[0], deg2 = ((T_DOUBLE *)result_array->DATA)[2];
+    T_DOUBLE avg1 = ((T_DOUBLE *)result_array->DATA)[1], avg2 = ((T_DOUBLE *)result_array->DATA)[3];
+    T_DOUBLE best = deg1 * WEIGHT1 + deg2 * WEIGHT2;
+    DESTROY_GENERIC(result_array);
+    free(result_array);
+
+    G_ARRAY garray_opt_result = {.SIZE = iterations_limiter, .TYPE = G_OPTRESULT, .DATA = malloc(sizeof(OPT_RESULT) * iterations)};
+
+    T_UCHAR (*hashes)[32] = calloc(iterations_limiter, sizeof(T_UCHAR[32]));
+    T_CHAR param_buffer[1024] = "\0";
+    T_CHAR num_buffer[16];
+    T_UCHAR new_hash[32];
+
+    // Save initial configuration's hash
+    for (size_t row_idx = 0; row_idx < mapGrid->NUM_COMP; row_idx++) {
+        for (size_t cur_params_idx = 0; cur_params_idx < mapGrid->PROPS_P_ROW[row_idx]; cur_params_idx++) {
+            itos(cur_params[row_idx][cur_params_idx].cur, num_buffer);
+            strcat(param_buffer, num_buffer);
+        }
+    }
+    SHA256((const unsigned char *)param_buffer, strlen(param_buffer), hashes[0]);
+
+
+    ((OPT_RESULT *) garray_opt_result.DATA)[0].DEG = best;
+    ((OPT_RESULT *) garray_opt_result.DATA)[0].GRID = cloneParams(mapGrid, best_params);
+    // Optimization Loop
+    for (size_t iter = 1; iter < iterations_limiter; iter++) {
+    
+        T_FLAG new_mutation = TRUE;
+
+        // Mutate cur_paramss
+        do {
+            param_buffer[0] = '\0';
+            for (size_t row_idx = 0; row_idx < mapGrid->NUM_COMP; row_idx++) {
+                for (size_t cur_params_idx = 0; cur_params_idx < mapGrid->PROPS_P_ROW[row_idx]; cur_params_idx++) {
+                    T_INT random = uniformRandom(0, cur_params[row_idx][cur_params_idx].max);
+                    //printf("%d\n", random);
+                    cur_params[row_idx][cur_params_idx].cur = random;
+                    itos(cur_params[row_idx][cur_params_idx].cur, num_buffer);
+                    strcat(param_buffer, num_buffer);
+                }
+            }
+            // Creates hash for the parameters and makes sure it's a new combination
+            SHA256((const unsigned char *)param_buffer, strlen(param_buffer), new_hash);
+
+            new_mutation = TRUE;
+            for (size_t hash_idx = 0; hash_idx < iter; hash_idx++) {
+                uint64_t *hash64_entry = (uint64_t *) hashes[hash_idx];
+                if (*hash64_entry == *(uint64_t *)new_hash && \
+                    *(hash64_entry + 1) == *((uint64_t *)new_hash + 1) && \
+                    *(hash64_entry + 2) == *((uint64_t *)new_hash + 2) && \
+                    *(hash64_entry + 3) == *((uint64_t *)new_hash + 3))
+                {
+                    new_mutation = FALSE;
+                    break;
+                }
+            }
+        } while (!new_mutation);
+
+        // Save new hash
+        uint64_t *hash64_entry = (uint64_t *) hashes[iter];
+        *hash64_entry = *(uint64_t *)new_hash;
+        *(hash64_entry + 1) = *((uint64_t *)new_hash + 1);
+        *(hash64_entry + 2) = *((uint64_t *)new_hash + 2);
+        *(hash64_entry + 3) = *((uint64_t *)new_hash + 3);
+
+
+        // Obtain objective
+        result_array = objectiveFunc(mapGrid, cur_params);
+        T_DOUBLE new_deg1 = ((T_DOUBLE *)result_array->DATA)[0], new_deg2 = ((T_DOUBLE *)result_array->DATA)[2];
+        T_DOUBLE new_avg1 = ((T_DOUBLE *)result_array->DATA)[1], new_avg2 = ((T_DOUBLE *)result_array->DATA)[3];
+        DESTROY_GENERIC(result_array);
+        free(result_array);
+
+        // Update best objective w/ new average
+        deg1 *= (avg1/new_avg1), deg2 *= (avg2/new_avg2);
+        best = new_deg1 * WEIGHT1 + new_deg2 * WEIGHT2;
+
+        // Calculate new obtained objective
+        T_DOUBLE new_objective = new_deg1 * WEIGHT1 + new_deg2 * WEIGHT2;
+
+        // Update averages
+        avg1 = new_avg1, avg2 = new_avg2;
+
+        printf("ITERATION: %ld\n", iter);
+        // Compare and replace
+        if (new_objective > best) {
+            destroyParameterGrid(mapGrid, best_params);
+            best_params = cloneParams(mapGrid, cur_params);
+            best = new_objective;
+            deg1 = new_deg1, deg2 = new_deg2;
+            //printf("Best: %lf\n", best);
+        }
+        ((OPT_RESULT *) garray_opt_result.DATA)[iter].DEG = best;
+        ((OPT_RESULT *) garray_opt_result.DATA)[iter].GRID = cloneParams(mapGrid, best_params);
+        
+    }
+
+    destroyParameterGrid(mapGrid, cur_params);
+
+    char output_rsnr[64] = "\0";
+    strncpy(output_rsnr, output, 63-5);
+    strcat(output_rsnr, "_rsnr");
+    saveDataOptimizationResults(output_rsnr, &garray_opt_result, mapGrid);
+    DESTROY_GENERIC(&garray_opt_result);
     free(hashes);
 
     char output_rsnr_scatter[128] = "\0";
@@ -628,22 +909,25 @@ static PARAM_GRID randomSearchNR(OPT_MAP *mapGrid, PARAM_GRID param, size_t iter
 }
 
 static PARAM_GRID simulatedAnnealing(OPT_MAP *mapGrid, PARAM_GRID param, size_t iterations, \
-                                     T_DOUBLE (*objectiveFunc)(OPT_MAP *, PARAM_GRID), \
+                                     G_ARRAY *(*objectiveFunc)(OPT_MAP *, PARAM_GRID), \
                                      const char *output) {
     // Define variables to register max degradation and best params
-    T_DOUBLE best = objectiveFunc(mapGrid, param);
+    G_ARRAY *result_array = objectiveFunc(mapGrid, param);
+    assert(result_array->TYPE == G_DOUBLE);
+    T_DOUBLE best = ((T_DOUBLE *)result_array->DATA)[0];
+    DESTROY_GENERIC(result_array);
+    free(result_array);
     PARAM_GRID best_params = cloneParams(mapGrid, param);
 
     T_DOUBLE cur = best;
     PARAM_GRID cur_params = cloneParams(mapGrid, param);
 
-    G_ARRAY garray_result_deg = {.SIZE = 1, .TYPE = G_RESULT, .DATA = malloc(sizeof(RESULT))};
-    RESULT *deg_result = garray_result_deg.DATA;
-    INITIALIZE_RESULTS(T_DOUBLE, deg_result, iterations, "Optimization");
+    G_ARRAY garray_opt_result = {.SIZE = iterations, .TYPE = G_OPTRESULT, .DATA = malloc(sizeof(OPT_RESULT) * iterations)};
 
     T_DOUBLE temperature = 1.0f;
 
-    ((T_DOUBLE *) deg_result->ARRAY.DATA)[0] = best;
+    ((OPT_RESULT *) garray_opt_result.DATA)[0].DEG = best;
+    ((OPT_RESULT *) garray_opt_result.DATA)[0].GRID = cloneParams(mapGrid, best_params);
     // Optimization Loop
     for (size_t iter = 1; iter < iterations; iter++) {
         PARAM_GRID temp_param = cloneParams(mapGrid, cur_params);
@@ -661,7 +945,11 @@ static PARAM_GRID simulatedAnnealing(OPT_MAP *mapGrid, PARAM_GRID param, size_t 
 
 
         // Obtain objective
-        temp_deg = objectiveFunc(mapGrid, temp_param);
+        result_array = objectiveFunc(mapGrid, temp_param);
+        assert(result_array->TYPE == G_DOUBLE);
+        temp_deg = ((T_DOUBLE *)result_array->DATA)[0];
+        DESTROY_GENERIC(result_array);
+        free(result_array);
         printf("ITERATION: %ld\n", iter);
         // Compare and replace
         T_DOUBLE dec1 = uniformRandom(1,100) * temperature / 100.0f;
@@ -685,16 +973,16 @@ static PARAM_GRID simulatedAnnealing(OPT_MAP *mapGrid, PARAM_GRID param, size_t 
         temperature *= 0.99f;
         //printf("Cur: %lf\n", cur);
         //printf("Temperature: %lf\n", temperature);
-        ((T_DOUBLE *) deg_result->ARRAY.DATA)[iter] = cur;
+        ((OPT_RESULT *) garray_opt_result.DATA)[iter].DEG = best;
+        ((OPT_RESULT *) garray_opt_result.DATA)[iter].GRID = cloneParams(mapGrid, best_params);
         
     }
 
     char output_sa[64] = "\0";
     strncpy(output_sa, output, 63-3);
     strcat(output_sa, "_rs");
-    saveDataRESULTS(output_sa, &garray_result_deg);
-    DESTROY_RESULTS(deg_result);
-    free(garray_result_deg.DATA);
+    saveDataOptimizationResults(output_sa, &garray_opt_result, mapGrid);
+    DESTROY_GENERIC(&garray_opt_result);
 
     char output_sa_scatter[128] = "\0";
     strncpy(output_sa_scatter, output_sa, 64);
@@ -704,8 +992,8 @@ static PARAM_GRID simulatedAnnealing(OPT_MAP *mapGrid, PARAM_GRID param, size_t 
     return best_params;
 }
 
-T_VOID optimizeConfig(PARAM_GRID (*optimizationFunc)(OPT_MAP *, PARAM_GRID, size_t, T_DOUBLE (*)(OPT_MAP *, PARAM_GRID), const char *), \
-                                    T_DOUBLE (*objectiveFunc)(OPT_MAP *, PARAM_GRID), \
+T_VOID optimizeConfig(PARAM_GRID (*optimizationFunc)(OPT_MAP *, PARAM_GRID, size_t, G_ARRAY *(*)(OPT_MAP *, PARAM_GRID), const char *), \
+                                    G_ARRAY *(*objectiveFunc)(OPT_MAP *, PARAM_GRID), \
                                     size_t iterations, const char *output) {
     if (iterations <= 0) {
         fprintf(stderr, "Error: Number of optimization iterations needs to be more than 0\n");
@@ -714,7 +1002,7 @@ T_VOID optimizeConfig(PARAM_GRID (*optimizationFunc)(OPT_MAP *, PARAM_GRID, size
     }
 
     OPT_MAP mapGrid;
-    mapConfigToGrid(&mapGrid);
+    mapConfigToGrid(&mapGrid, INPUT_CONFIG);
 
     PARAM_GRID parameter_grid = generateParameterGrid(&mapGrid);
 
@@ -729,4 +1017,14 @@ T_VOID optimizeConfig(PARAM_GRID (*optimizationFunc)(OPT_MAP *, PARAM_GRID, size
     destroyParameterGrid(&mapGrid, parameter_grid);
     destroyParameterGrid(&mapGrid, best_param);
     destroyMapGrid(&mapGrid);
+
+    if (garray_result_iso != NULL) {
+        for (size_t result_idx = 0; result_idx < garray_result_iso->SIZE; result_idx++) {
+            RESULT *result = ((RESULT *) garray_result_iso->DATA) + result_idx;
+            DESTROY_RESULTS(result);
+        }
+        free(garray_result_iso->DATA);
+    }
+    free(garray_result_iso);
+    garray_result_iso = NULL;
 }

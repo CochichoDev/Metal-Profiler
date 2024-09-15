@@ -17,13 +17,18 @@
 
 #define T32SCRIPT "launch_bench.cmm"
 
-
 #define MAX_ARCHS 256
 
 #define REP_EXP 20
 #define IGNORE_LIMIT 10
 
 #define SYSTEM_COMP_ID 0
+
+/**** OPTIMIZATION PARAMETERS ****/
+#define NUM_ISO_RESULTS 1
+#define WEIGHT1         7
+#define WEIGHT2         3
+/*********************************/
 
 #define USAGE_ERROR() \
     {                                                       \

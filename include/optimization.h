@@ -2,6 +2,7 @@
 #define OPTIMIZATION_H
 
 #include "api.h"
+#include "types.h"
 
 /************** TYPE DEFINITION ****************/
 typedef struct {
@@ -9,6 +10,7 @@ typedef struct {
     PROP        **PROPS[16];
     T_UCHAR     PROPS_P_ROW[16];
     T_UCHAR     NUM_COMP;
+    CONFIG      *CFG;
 } OPT_MAP;
 
 typedef struct {
@@ -19,11 +21,17 @@ typedef struct {
 typedef PARAM_ELEM *PARAM_ROW;
 typedef PARAM_ROW *PARAM_GRID;
 
+typedef struct {
+    T_DOUBLE    DEG;
+    PARAM_GRID  GRID;
+} OPT_RESULT;
+
 
 /************** FUNCTION DECLARATION ****************/
 T_VOID optimizationTUI();
-T_VOID optimizeConfig(PARAM_GRID (*optimizationFunc)(OPT_MAP *, PARAM_GRID, size_t, T_DOUBLE (*)(OPT_MAP *, PARAM_GRID), const char *), \
-                                    T_DOUBLE (*objectiveFunc)(OPT_MAP *, PARAM_GRID), \
+T_VOID printParameterGrid(T_INT descriptor, OPT_MAP *mapGrid, PARAM_GRID grid);
+T_VOID optimizeConfig(PARAM_GRID (*optimizationFunc)(OPT_MAP *, PARAM_GRID, size_t, G_ARRAY *(*)(OPT_MAP *, PARAM_GRID), const char *), \
+                                    G_ARRAY *(*objectiveFunc)(OPT_MAP *, PARAM_GRID), \
                                     size_t iterations, const char *output);
 
 #endif

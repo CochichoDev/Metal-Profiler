@@ -30,6 +30,7 @@ T_VOID __T_DOUBLE__calcMaxFromResults(RESULT *result_array, size_t num, T_DOUBLE
 /************** STANDARD GENERICS RELATED FUNCTIONS ****************/
 T_VOID calcMaxFromArray(G_ARRAY *input_array, size_t num_elem, G_ARRAY *max_array);
 T_ERROR calculateDegradation(G_ARRAY *garrays_std_iso, size_t size_iso, G_ARRAY *garrays_std_full, size_t size_result, G_ARRAY *garrays_double_deg);
+T_DOUBLE *calculateDegradationNormalized(G_ARRAY *garray_result_iso, G_ARRAY *garray_result_full, T_DOUBLE avg, size_t num);
 
 /************** METRICS RELATED FUNCTIONS ****************/
 T_VOID initMetricsFromArray(const G_ARRAY *input_array, const T_PSTR output_name, METRICS *output_metrics);
