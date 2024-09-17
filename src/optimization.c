@@ -342,6 +342,15 @@ T_VOID printParameterGrid(T_INT descriptor, OPT_MAP *mapGrid, PARAM_GRID grid) {
     }
 }
 
+T_VOID printParameterGridFILE(FILE *file, OPT_MAP *mapGrid, PARAM_GRID grid) {
+    for (size_t row_idx = 0; row_idx < mapGrid->NUM_COMP; row_idx++) {
+        for (size_t param_idx = 0; param_idx < mapGrid->PROPS_P_ROW[row_idx]; param_idx++) {
+            fprintf(file, "%12ld", grid[row_idx][param_idx].cur);
+        }
+        fprintf(file, "\n");
+    }
+}
+
 static PARAM_GRID cloneParams(OPT_MAP *mapGrid, PARAM_GRID param) {
     PARAM_GRID clone = malloc(sizeof(PARAM_ROW) * mapGrid->NUM_COMP);
 
@@ -404,7 +413,6 @@ static G_ARRAY *objectiveMaximizeInter(OPT_MAP *mapGrid, PARAM_GRID param) {
         garrays_std_deg[result_idx].SIZE = result->ARRAY.SIZE;
         garrays_std_deg[result_idx].TYPE = G_DOUBLE;
     }
-
 
     computeInterferenceDegradation(garrays_std_full, garray_result_full.SIZE, garrays_std_deg);
 
@@ -539,10 +547,10 @@ static G_ARRAY *objectiveMinimizeMemMonitoring(OPT_MAP *mapGrid, PARAM_GRID para
             return NULL;
         }
 
-        PROP *mon_prop;
-        if (GET_PROP_BY_NAME(sys_comp, "MEMBANDWIDTH", &mon_prop) != -1) {
-            assert(mon_prop->PTYPE == pBOOL);
-            mon_prop->iINIT = 0;
+        size_t mon_prop_idx;
+        if ((mon_prop_idx = GET_PROP_BY_NAME(sys_comp, "MEMBANDWIDTH", NULL)) != -1) {
+            assert(sys_comp->PBUFFER->PROPS[mon_prop_idx].PTYPE == pBOOL);
+            sys_comp->PBUFFER->PROPS[mon_prop_idx].iINIT = 0;
         }
 
         garray_result_iso = calloc(1, sizeof(G_ARRAY));
@@ -795,7 +803,7 @@ static PARAM_GRID randomSearchNRWeighted(OPT_MAP *mapGrid, PARAM_GRID param, siz
 
     T_DOUBLE deg1 = ((T_DOUBLE *)result_array->DATA)[0], deg2 = ((T_DOUBLE *)result_array->DATA)[2];
     T_DOUBLE avg1 = ((T_DOUBLE *)result_array->DATA)[1], avg2 = ((T_DOUBLE *)result_array->DATA)[3];
-    T_DOUBLE best = deg1 * WEIGHT1 + deg2 * WEIGHT2;
+    T_DOUBLE best = -(deg1 * WEIGHT1 + deg2 * WEIGHT2);
     DESTROY_GENERIC(result_array);
     free(result_array);
 
@@ -816,7 +824,7 @@ static PARAM_GRID randomSearchNRWeighted(OPT_MAP *mapGrid, PARAM_GRID param, siz
     SHA256((const unsigned char *)param_buffer, strlen(param_buffer), hashes[0]);
 
 
-    ((OPT_RESULT *) garray_opt_result.DATA)[0].DEG = best;
+    ((OPT_RESULT *) garray_opt_result.DATA)[0].DEG = -best;
     ((OPT_RESULT *) garray_opt_result.DATA)[0].GRID = cloneParams(mapGrid, best_params);
     // Optimization Loop
     for (size_t iter = 1; iter < iterations_limiter; iter++) {
@@ -869,10 +877,10 @@ static PARAM_GRID randomSearchNRWeighted(OPT_MAP *mapGrid, PARAM_GRID param, siz
 
         // Update best objective w/ new average
         deg1 *= (avg1/new_avg1), deg2 *= (avg2/new_avg2);
-        best = new_deg1 * WEIGHT1 + new_deg2 * WEIGHT2;
+        best = -(deg1 * WEIGHT1 + deg2 * WEIGHT2);
 
         // Calculate new obtained objective
-        T_DOUBLE new_objective = new_deg1 * WEIGHT1 + new_deg2 * WEIGHT2;
+        T_DOUBLE new_objective = -(new_deg1 * WEIGHT1 + new_deg2 * WEIGHT2);
 
         // Update averages
         avg1 = new_avg1, avg2 = new_avg2;
@@ -886,7 +894,7 @@ static PARAM_GRID randomSearchNRWeighted(OPT_MAP *mapGrid, PARAM_GRID param, siz
             deg1 = new_deg1, deg2 = new_deg2;
             //printf("Best: %lf\n", best);
         }
-        ((OPT_RESULT *) garray_opt_result.DATA)[iter].DEG = best;
+        ((OPT_RESULT *) garray_opt_result.DATA)[iter].DEG = -best;
         ((OPT_RESULT *) garray_opt_result.DATA)[iter].GRID = cloneParams(mapGrid, best_params);
         
     }
@@ -1010,9 +1018,9 @@ T_VOID optimizeConfig(PARAM_GRID (*optimizationFunc)(OPT_MAP *, PARAM_GRID, size
     
     PARAM_GRID best_param = optimizationFunc(&mapGrid, parameter_grid, iterations, objectiveFunc, output);
 
-    T_INT result_file = open("final_config.txt", O_WRONLY|O_CREAT);
-    printParameterGrid(result_file, &mapGrid, best_param);
-    close(result_file);
+    FILE *result_file = fopen("final_config.txt", "w");
+    printParameterGridFILE(result_file, &mapGrid, best_param);
+    fclose(result_file);
 
     destroyParameterGrid(&mapGrid, parameter_grid);
     destroyParameterGrid(&mapGrid, best_param);

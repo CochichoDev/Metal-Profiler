@@ -109,7 +109,7 @@ void CLOSE_TTY() {
 }
 
 /************** RESULT MANIPULATION ****************/
-void TTY_TO_RESULT(T_CHAR marker, RESULT *results) {
+void TTY_TO_RESULT(T_CHAR imarker, T_CHAR fmarker, RESULT *results) {
     assert(OUTPUT_LIST_SELECTED != NULL);
     assert(results != NULL);
 
@@ -123,25 +123,26 @@ void TTY_TO_RESULT(T_CHAR marker, RESULT *results) {
     T_UINT read_bytes = 0;
     for (uint32_t idx = 0, total = 0 ; stop == 0 ; ) {
         read_bytes = read(TTY.fd,buf,255); 
+        if (read_bytes < 1) continue;
         buf[read_bytes]='\0';          
         printf("%s", buf);
-        if (buf[0] == marker) {
+        if (buf[0] == fmarker) {
             stop=1;
         }
-        if (isdigit(buf[0])) {
+        if (read_bytes > 1 && buf[0] == imarker && isdigit(buf[1])) {
             if (idx >= results[total % numResults].ARRAY.SIZE)
                 goto CONTINUE;
             switch (results[total % numResults].ARRAY.TYPE) {
                 case G_INT:
-                    sscanf(buf, "%u", ((T_UINT *)results[total % numResults].ARRAY.DATA)+idx);
+                    sscanf(buf+1, "%u", ((T_UINT *)results[total % numResults].ARRAY.DATA)+idx);
                     //printf("%u\n", *(((T_UINT *)result->ARRAY.DATA)+idx));
                     break;
                 case G_UINT:
-                    sscanf(buf, "%u", ((T_UINT *)results[total % numResults].ARRAY.DATA)+idx);
+                    sscanf(buf+1, "%u", ((T_UINT *)results[total % numResults].ARRAY.DATA)+idx);
                     //printf("%u\n", *(((T_UINT *)result->ARRAY.DATA)+idx));
                     break;
                 case G_DOUBLE:
-                    sscanf(buf, "%lf", ((T_DOUBLE *)results[total % numResults].ARRAY.DATA)+idx);
+                    sscanf(buf+1, "%lf", ((T_DOUBLE *)results[total % numResults].ARRAY.DATA)+idx);
                 default:
                     break;
             } 

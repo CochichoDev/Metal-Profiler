@@ -198,9 +198,9 @@ T_DOUBLE *calculateDegradationNormalized(G_ARRAY *garray_result_iso, G_ARRAY *ga
     G_ARRAY garray_std_abs_max_deg = {.SIZE = 1, .TYPE = G_DOUBLE, .DATA = malloc(sizeof(T_DOUBLE))};
     calcMaxFromArray(&garray_std_max_deg, 1, &garray_std_abs_max_deg);
 
-    T_DOUBLE deg1 = -((T_DOUBLE *) garray_std_abs_max_deg.DATA)[0];
-    avg = avg * ((T_DOUBLE) num / num+1);
-    avg += (deg1 / num+1);
+    T_DOUBLE deg1 = ((T_DOUBLE *) garray_std_abs_max_deg.DATA)[0];
+    avg = avg * ((T_DOUBLE) num / (num+1));
+    avg += (deg1 / (num+1));
     
     deg1 /= avg;
     T_DOUBLE *result = malloc(2 * sizeof(T_DOUBLE));

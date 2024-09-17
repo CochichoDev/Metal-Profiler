@@ -56,6 +56,7 @@ T_ERROR saveDataOptimizationResults(const T_PSTR output, G_ARRAY *optimization_a
 size_t strProprietyIdxByPtr(T_PSTR *OPTS, T_PSTR prop);
 size_t strProprietyIdxByValue(T_PSTR *OPTS, T_PSTR prop);
 CONFIG *const cloneConfig(CONFIG *const cfg);
+T_FLAG isConfigAlwaysOptimizable(CONFIG *cfg);
 
 /************** MAKEFILE HANDLING FUNCTIONS ****************/
 T_ERROR CALL_MAKEFILES(CONFIG *config);

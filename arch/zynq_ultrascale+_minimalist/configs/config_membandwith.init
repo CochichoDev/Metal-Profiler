@@ -1,13 +1,13 @@
 #0
-CACHECOLORING:  0b          [M]
-MEMBANDWIDTH:   0b          [M]
-BUDGET:         2000        [O]
+CACHECOLORING:  1b          [M]
+MEMBANDWIDTH:   1b          [M]
+BUDGET:         10000       [O]
 PERIOD:         50          [O]
-REPLENISHMENT:  50          [O]
+REPLENISHMENT:  1000        [O]
 
 #1
 APP:            READ
-SIZE:           250000
+SIZE:           1500000
 STRIDE:         64
 LIMIT:          5000
 

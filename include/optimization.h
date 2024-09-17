@@ -1,6 +1,8 @@
 #ifndef OPTIMIZATION_H
 #define OPTIMIZATION_H
 
+#include <stdio.h>
+
 #include "api.h"
 #include "types.h"
 
@@ -30,6 +32,7 @@ typedef struct {
 /************** FUNCTION DECLARATION ****************/
 T_VOID optimizationTUI();
 T_VOID printParameterGrid(T_INT descriptor, OPT_MAP *mapGrid, PARAM_GRID grid);
+T_VOID printParameterGridFILE(FILE *file, OPT_MAP *mapGrid, PARAM_GRID grid);
 T_VOID optimizeConfig(PARAM_GRID (*optimizationFunc)(OPT_MAP *, PARAM_GRID, size_t, G_ARRAY *(*)(OPT_MAP *, PARAM_GRID), const char *), \
                                     G_ARRAY *(*objectiveFunc)(OPT_MAP *, PARAM_GRID), \
                                     size_t iterations, const char *output);

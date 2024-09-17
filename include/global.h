@@ -16,7 +16,10 @@
 #define ARCH_CONFIG "archs.txt"
 
 #define T32SCRIPT "launch_bench.cmm"
+#define XSCTSCRIPT "launch_bench.tcl"
 
+#define T32EXECUTABLE "/opt/t32/bin/pc_linux64/t32marm64-qt"
+#define XSCTEXECUTABLE "/tools/Xilinx/Vitis/2021.2/bin/xsct"
 #define MAX_ARCHS 256
 
 #define REP_EXP 20
@@ -26,8 +29,8 @@
 
 /**** OPTIMIZATION PARAMETERS ****/
 #define NUM_ISO_RESULTS 1
-#define WEIGHT1         7
-#define WEIGHT2         3
+#define WEIGHT1         8
+#define WEIGHT2         2
 /*********************************/
 
 #define USAGE_ERROR() \

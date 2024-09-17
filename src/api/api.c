@@ -117,6 +117,36 @@ pid_t RUN_PROCESS_IMAGE(T_INT *new_descr, const T_PSTR image_path, ...) {
     return child_process;
 }
 
+pid_t RUN_PROCESS_IMAGE_V(T_INT *new_descr, const T_PSTR image_path, T_PSTR args[]) {
+    pid_t child_process = fork();
+
+    /*
+     * In case the current process is the child
+     * change the process image to the one demanded
+     */
+    if (child_process == -1) { 
+        perror("Error: Could not fork the current process");
+        return -1;
+    }
+    if (!child_process) {
+        if (new_descr) {
+            close(STDIN_FILENO);
+            dup(new_descr[0]);
+            close(STDOUT_FILENO);
+            dup(new_descr[1]);
+            close(STDERR_FILENO);
+            dup(new_descr[2]);
+        }
+       
+        if(execv(image_path, (char**) args) == -1) {
+            perror("Error: Could not open the specified process image");
+            exit(-1);
+        }
+    }
+
+    return child_process;
+}
+
 void KILL_PROCESS(pid_t process) {
     kill(process, SIGTERM);
     if (kill<0) {

@@ -53,6 +53,7 @@ size_t GET_PROP_BY_NAME(const COMP *const in1, T_PSTR in2, T_VOID *out);
 
 
 pid_t RUN_PROCESS_IMAGE(T_INT *new_descr, const T_PSTR image_path, ...);
+pid_t RUN_PROCESS_IMAGE_V(T_INT *new_descr, const T_PSTR image_path, T_PSTR args[]);
 void KILL_PROCESS(pid_t process);
 
 /*

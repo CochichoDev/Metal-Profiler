@@ -313,7 +313,6 @@ T_ERROR saveDataRESULTBATCH(const T_PSTR output, G_ARRAY *result_array, size_t s
 T_ERROR saveDataOptimizationResults(const T_PSTR output, G_ARRAY *optimization_array, OPT_MAP *map) {
     assert(optimization_array->TYPE == G_OPTRESULT);
     FILE *output_file = fopen(output, "w");
-    int fd = fileno(output_file);
     if (!output_file)
         return -1;
     if (!optimization_array)
@@ -336,7 +335,7 @@ T_ERROR saveDataOptimizationResults(const T_PSTR output, G_ARRAY *optimization_a
     for (size_t r_idx = 0 ; r_idx < optimization_array->SIZE ; r_idx++) {
         fprintf(output_file, "%12ld", r_idx);
         fprintf(output_file, "%12lf", ((OPT_RESULT *)optimization_array->DATA)[r_idx].DEG);
-        printParameterGrid(fd, map, ((OPT_RESULT *)optimization_array->DATA)[r_idx].GRID);
+        printParameterGridFILE(output_file, map, ((OPT_RESULT *)optimization_array->DATA)[r_idx].GRID);
     }
     
     fclose(output_file);
@@ -383,6 +382,22 @@ CONFIG *const cloneConfig(CONFIG *const cfg) {
     }
 
     return clone;
+}
+
+/*
+ * This functions results in true if any optimizable
+ * propriety is not a marked as mitigation
+ */
+T_FLAG isConfigAlwaysOptimizable(CONFIG *cfg) {
+    COMP *comp = NULL;
+    for (size_t comp_idx = 0; comp_idx < cfg->NUM; comp_idx++) {
+        comp = cfg->COMPS[comp_idx];
+        for (size_t prop_idx = 0; prop_idx < comp->PBUFFER->NUM; prop_idx++) {
+            PROP *prop = &comp->PBUFFER->PROPS[prop_idx];
+            if (IS_OPTIMIZABLE(prop->FLAGS) && !IS_MITIGATION(prop->FLAGS)) return TRUE;
+        }
+    }
+    return FALSE;
 }
 
 /************** MAKEFILE HANDLING FUNCTIONS ****************/

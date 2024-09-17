@@ -82,11 +82,11 @@ int main(int argc, char *argv[]) {
     #ifdef MEMBANDWIDTH
         disable_irq();
     #endif
-        printf("%lu\n", read_cntpct_el0() - SC_TICKS);
-        printf("%lu\n", read_pmevcntr(0) - L1D_REFILLS);
-        printf("%lu\n", read_pmevcntr(1) - L1D_WB);
-        printf("%lu\n", read_pmevcntr(2) - L2_REFILLS);
-        printf("%lu\n", read_pmevcntr(3) - L2_WB);
+        printf("R%lu\n", read_cntpct_el0() - SC_TICKS);
+        printf("R%lu\n", read_pmevcntr(0) - L1D_REFILLS);
+        printf("R%lu\n", read_pmevcntr(1) - L1D_WB);
+        printf("R%lu\n", read_pmevcntr(2) - L2_REFILLS);
+        printf("R%lu\n", read_pmevcntr(3) - L2_WB);
         L1D_REFILLS = read_pmevcntr(0);
         L1D_WB      = read_pmevcntr(1);
         L2_REFILLS  = read_pmevcntr(2);

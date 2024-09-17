@@ -21,6 +21,6 @@ T_ERROR INIT_TTY(const char *path);
 T_VOID CLOSE_TTY();
 
 /************** RESULT MANIPULATION ****************/
-void TTY_TO_RESULT(T_CHAR marker, RESULT *results);
+void TTY_TO_RESULT(T_CHAR imarker, T_CHAR fmarker, RESULT *results);
 
 #endif
