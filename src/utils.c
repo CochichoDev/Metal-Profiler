@@ -434,7 +434,7 @@ JOIN:
 }
 
 T_ERROR CALL_MAKEFILES(CONFIG *config) {
-    pid_t make_bsp, make_fsbl, make_loader;
+    pid_t make_bsp, make_bsp1, make_fsbl, make_loader;
     pid_t *make_cores = alloca(sizeof(pid_t)*SELECTED_ARCH.desc.NUM_CORES);
     bzero(make_cores, sizeof(pid_t)*SELECTED_ARCH.desc.NUM_CORES);
 
@@ -457,6 +457,13 @@ T_ERROR CALL_MAKEFILES(CONFIG *config) {
     strcpy(path, SELECTED_ARCH.path);
     strcat(path, "/project");
 
+    char bsp1_path[512];
+    strcpy(bsp1_path, path);
+    strcat(bsp1_path, "/bsp1");
+    puts(bsp1_path);
+    puts(BSP_QUERY);
+    make_bsp1 = RUN_PROCESS_IMAGE(NULL, "/bin/make", "make", "-C", bsp1_path, "clean", "all", BSP_QUERY, NULL);
+
     char bsp_path[512];
     strcpy(bsp_path, path);
     strcat(bsp_path, "/bsp");
@@ -464,6 +471,7 @@ T_ERROR CALL_MAKEFILES(CONFIG *config) {
     puts(BSP_QUERY);
     make_bsp = RUN_PROCESS_IMAGE(NULL, "/bin/make", "make", "-C", bsp_path, "clean", "all", BSP_QUERY, NULL);
     waitpid(make_bsp, NULL, 0);
+    waitpid(make_bsp1, NULL, 0);
 
     char fsbl_path[512];
     strcpy(fsbl_path, path);

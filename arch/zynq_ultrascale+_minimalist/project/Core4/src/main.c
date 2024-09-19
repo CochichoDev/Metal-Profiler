@@ -42,22 +42,22 @@ extern char __text_start, __text_end;
 int main(int argc, char *argv[]) {
     register volatile uint8_t *target = &__buffer_start;
 
-    //set_outstanding_prefetching(0x00U);
+    // Biggest resolution before unstable
+    write_timestampref_div(0x02u);
+    enable_cntc();
+
+    set_outstanding_prefetching(0x00U);
     no_allocate_threshold_L1(0b11);
     no_allocate_threshold_L2(0b11);
-
-#ifdef CACHECOLORING
-    //Xil_SetTlbAttributesRange(&__text_start, &__text_end, NORM_NONCACHE);
-#endif
 
 #ifdef MEMBANDWIDTH
     initPMU();
     init_irq();
 
     time_handler(PERIOD);
-    enable_irq();
 
     reset_pmc_events();
+    enable_irq();
 #endif
 
     for (HEADER) {

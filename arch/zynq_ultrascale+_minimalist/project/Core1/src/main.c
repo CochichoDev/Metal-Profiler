@@ -40,12 +40,11 @@ register uint64_t L2_WB __asm__("x24");
 
 
 int main(int argc, char *argv[]) {
-    //set_outstanding_prefetching(0x00U);
+    set_outstanding_prefetching(0x00U);
     register volatile uint8_t *target = &__buffer_start;
 
     // Biggest resolution before unstable
     write_timestampref_div(0x02u);
-
     enable_cntc();
 
     initPMU();
@@ -53,9 +52,9 @@ int main(int argc, char *argv[]) {
     init_irq();
 
     time_handler(PERIOD);
-    enable_irq();
 
     reset_pmc_events();
+    enable_irq();
 #endif
 
 

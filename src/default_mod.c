@@ -40,7 +40,7 @@ void default_BUILD_PROJECT(CONFIG *config) {
 }
 
 void default_INIT_BENCH() {
-    /*
+    
     puts("Trace32 INFO");
     pid_t T32_PID = INIT_T32("/opt/t32/bin/pc_linux64/t32marm64-qt");
     if (T32_PID == -1) {
@@ -50,6 +50,20 @@ void default_INIT_BENCH() {
     puts("*****************************************************");
     puts("Info: Trace32 launched");
     puts("*****************************************************");
+    
+    /*
+    char script_query[256];
+    strcpy(script_query, SELECTED_ARCH.path);
+    strcat(script_query, "/project/"XSCTSCRIPT);
+
+    puts("*****************************************************");
+    puts("Info: XSCT launched");
+    puts("*****************************************************");
+    T_INT status = INIT_XSCT(script_query);
+    if (status != 0) {
+        fprintf(stderr, "Error: Could not initialize XSCT (status: %d)\n", status);
+        exit(-1);
+    }
     */
 
     INIT_TTY(TTY_PORT);
@@ -61,8 +75,8 @@ void default_INIT_BENCH() {
 void default_RUN_BENCH(RESULT *results) {
     char script_query[256];
     strcpy(script_query, SELECTED_ARCH.path);
-    //strcat(script_query, "/project/"T32SCRIPT);
-    strcat(script_query, "/project/"XSCTSCRIPT);
+    strcat(script_query, "/project/"T32SCRIPT);
+    //strcat(script_query, "/project/"XSCTSCRIPT);
 
     T_FLAG *core_state = alloca(sizeof(T_FLAG) * SELECTED_ARCH.desc.NUM_CORES);
 
@@ -70,16 +84,16 @@ void default_RUN_BENCH(RESULT *results) {
         core_state[idx-1] = (GET_COMP_BY_ID(CUR_CFG, idx, NULL) != -1) ? 1 : 0;
     }
     
-    //EX_T32_SCRIPT(script_query, SELECTED_ARCH.desc.NUM_CORES, core_state);
-    EX_XSCT_SCRIPT(script_query, SELECTED_ARCH.desc.NUM_CORES, core_state);
-    
+    EX_T32_SCRIPT(script_query, SELECTED_ARCH.desc.NUM_CORES, core_state);
+    //EX_XSCT_SCRIPT(script_query, SELECTED_ARCH.desc.NUM_CORES, core_state);
     TTY_TO_RESULT('R','F', results);
+    
 }
 
 void default_EXIT_BENCH() {
     CLOSE_TTY();
-    //CLOSE_T32();
-    CLOSE_XSCT();
+    CLOSE_T32();
+    //CLOSE_XSCT();
 
     //puts("Info: Trace32 closed");
     puts("Info: XSCT closed");

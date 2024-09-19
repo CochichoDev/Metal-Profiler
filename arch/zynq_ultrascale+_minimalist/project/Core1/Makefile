@@ -5,8 +5,8 @@ AFLAGS ?=
 CC=aarch64-none-elf-gcc
 
 SRCDIR=./src/
-INCLUDEDIR=./include/ ./ ../bsp/include/ /usr/aarch64-none-elf/include/
-LIBDIR=../bsp/bin/
+INCLUDEDIR=./include/ ./ ../bsp1/include/ /usr/aarch64-none-elf/include/
+LIBDIR=../bsp1/bin/
 RELEASEDIR=./bin/
 
 INCLUDEPATH=$(foreach inc, $(INCLUDEDIR), -I$(inc))

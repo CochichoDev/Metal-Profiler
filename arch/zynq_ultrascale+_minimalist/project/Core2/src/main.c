@@ -43,7 +43,11 @@ extern uint8_t __buffer_start;
 int main(int argc, char *argv[]) {
     register volatile uint8_t *target = &__buffer_start;
 
-    //set_outstanding_prefetching(0x00U);
+    // Biggest resolution before unstable
+    write_timestampref_div(0x02u);
+    enable_cntc();
+
+    set_outstanding_prefetching(0x00U);
     no_allocate_threshold_L1(0b11);
     no_allocate_threshold_L2(0b11);
 
@@ -52,9 +56,9 @@ int main(int argc, char *argv[]) {
     init_irq();
 
     time_handler(PERIOD);
-    enable_irq();
 
     reset_pmc_events();
+    enable_irq();
 #endif
 
     for (HEADER) {
