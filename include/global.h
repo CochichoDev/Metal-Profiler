@@ -5,9 +5,6 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#include "tty.h"
-#include "results.h"
-#include "types.h"
 #include "state.h"
 
 #define TTY_PORT    "/dev/ttyUSB0"
@@ -29,8 +26,8 @@
 
 /**** OPTIMIZATION PARAMETERS ****/
 #define NUM_ISO_RESULTS 1
-#define WEIGHT1         8
-#define WEIGHT2         2
+#define WEIGHT1         5
+#define WEIGHT2         5
 /*********************************/
 
 #define USAGE_ERROR() \

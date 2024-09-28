@@ -1,0 +1,24 @@
+#0
+MEMBANDWIDTH: 0b
+CACHECOLORING: 0b
+
+#1
+ITERATIONS: 5
+MEM_METHOD: MEM_STATIC
+TOTAL_DATA_SIZE: 250000
+
+#2
+APP:            WRITE
+SIZE:           1500000
+STRIDE:         64
+
+#3
+APP:            WRITE
+SIZE:           1500000
+STRIDE:         64
+
+#4
+APP:            WRITE
+SIZE:           1500000
+STRIDE:         64
+

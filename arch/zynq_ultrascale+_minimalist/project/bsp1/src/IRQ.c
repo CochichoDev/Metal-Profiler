@@ -7,31 +7,49 @@
 #include "timer.h"
 
 static void mem_monitor() {
-    static int64_t avail = INIT_BUDGET;
-    static const int64_t threshold = 0;
+    static volatile int64_t avail = BUDGET;
+    static volatile const int64_t threshold = 0;
 
+    static int64_t last_l1d_mshr = 0;
+    static int64_t last_l1d_wb = 0;
+    /*
     static int64_t last_l2_mshr = 0;
     static int64_t last_l2_wb = 0;
+    */
 
-    register int64_t l2_mshr_new = read_pmevcntr(2);
-    register int64_t l2_wb_new = read_pmevcntr(3);
+    volatile register int64_t l1d_mshr_new = read_pmevcntr(0);
+    volatile register int64_t l1d_wb_new = read_pmevcntr(1);
+    /*
+    volatile register int64_t l2_mshr_new = read_pmevcntr(2);
+    volatile register int64_t l2_wb_new = read_pmevcntr(3);
+    */
 
+    /*
     avail-=(l2_mshr_new - last_l2_mshr);
     avail-=(l2_wb_new - last_l2_wb);
-    avail+=REPLENISHMENT;
+    */
+    avail-=(l1d_mshr_new - last_l1d_mshr);
+    avail-=(l1d_wb_new - last_l1d_wb);
+    avail+= REPLENISHMENT;
     
+    if (avail > BUDGET) avail = BUDGET;
+
+    /*
     last_l2_mshr = l2_mshr_new;
     last_l2_wb = l2_wb_new;
+    */
+    last_l1d_mshr = l1d_mshr_new;
+    last_l1d_wb = l1d_wb_new;
 
-    //printf("#0 -> L2_MSHR: %lld\n", l2_mshr);
-
-    //printf("IDLE %d\n", IDLE);
+    //printf("BUDGET : %ld\n", avail);
 
     while (avail < threshold) {
         time_handler(PERIOD);
         __asm__ __volatile__("wfi");
         disable_cntp();
+        //printf("IDLE\n");
         avail+=REPLENISHMENT;
+        //printf("BUDGET : %ld\n", avail);
     }
 
     //gicd_clear_pending(PTIMER_ID); TRY THIS

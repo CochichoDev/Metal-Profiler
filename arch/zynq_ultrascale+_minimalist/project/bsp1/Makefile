@@ -3,9 +3,9 @@ ARCHIVER=aarch64-none-elf-ar
 CC=$(COMPILER)
 AR=$(ARCHIVER)
 CP=cp
-LIB=libxil.a
+LIB=libbsp.a
 
-CPFLAGS = -c -nostdlib -nostartfiles -march=armv8-a $(CFLAGS)
+CPFLAGS = -c -O1 -nostdlib -nostartfiles -march=armv8-a $(CFLAGS)
 
 SRCDIR=./src/
 RELEASEDIR=./bin/

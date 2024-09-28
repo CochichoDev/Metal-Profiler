@@ -2,13 +2,24 @@
 
 #define LINE_SIZE 64
 
-#if defined(WRITE)
+#if !defined(APP)
+#error "APP needs to be defined"
+#endif
+
+#define WRITE 1
+#define WRITEX6 2
+#define WRITEX16 3
+#define WRITENEON 4
+#define READ 5
+#define READNEON 6
+
+#if APP == WRITE
 #define ACCESS_METHOD(TARGET)   \
-    *(volatile uint8_t *)(TARGET) = 0x00U;
-#elif defined(READ)             
+    *(volatile uint8_t *)(TARGET) = 0x00U
+#elif APP == READ
 #define ACCESS_METHOD(TARGET)   \
     *(volatile uint8_t *)(TARGET)
-#elif defined(WRITEX6)          
+#elif APP == WRITEX6
 #define ACCESS_METHOD(TARGET)   \
     __asm__("                   \
         strb    w0, [%0]        \n\
@@ -27,7 +38,7 @@
         :"r"(TARGET),           \
          "i"(LINE_SIZE)         \
         :"x0")           
-#elif defined(WRITEX16)          
+#elif APP == WRITEX16
 #define ACCESS_METHOD(TARGET)   \
     __asm__("                   \
         strb    w0, [%0], #%1   \n\
@@ -51,10 +62,18 @@
         :"r"(TARGET),           \
          "i"(LINE_SIZE)         \
         :"x0")           
-#elif defined(WRITENEON)          
+#elif APP == WRITENEON
 #define ACCESS_METHOD(TARGET)   \
     __asm__("                   \
         st4     {V0.2D, V1.2D, V2.2D, V3.2D}, [%0]        \
+            "                   \
+        :                       \ 
+        :"r"(TARGET)            \
+        :)           
+#elif APP == READNEON
+#define ACCESS_METHOD(TARGET)   \
+    __asm__("                   \
+        ld4     [%0], {V0.2D, V1.2D, V2.2D, V3.2D}         \
             "                   \
         :                       \ 
         :"r"(TARGET)            \
@@ -69,7 +88,7 @@
 #if defined(ENEMY)
 #define HEADER ; ;
 #elif defined(VICTIM)
-#define HEADER register uint32_t j = 0 ; j < LIMIT ; j++
+#define HEADER register uint32_t j = 0 ; j < ITERATIONS ; j++
 #else
 #error "Specify the application type"
 #endif

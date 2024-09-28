@@ -1,3 +1,4 @@
 zynq_ultrascale+
 dummy_arch
 zynq_ultrascale+_minimalist
+zynq_ultrascale+_coremark

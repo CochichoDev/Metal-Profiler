@@ -8,6 +8,17 @@
 
 #include <sys/types.h>
 
+#define TTY_PORT    "/dev/ttyUSB0"
+
+#define ARCHS_PATH "arch/"
+#define ARCH_CONFIG "archs.txt"
+
+#define T32SCRIPT "launch_bench.cmm"
+#define XSCTSCRIPT "launch_bench.tcl"
+
+#define T32EXECUTABLE "/opt/t32/bin/pc_linux64/t32marm64-qt"
+#define XSCTEXECUTABLE "/tools/Xilinx/Vitis/2021.2/bin/xsct"
+
 #define FALSE   0
 #define TRUE    1
 
@@ -103,6 +114,14 @@ typedef struct {
     size_t      NUM;
 } CONFIG;
 
+typedef struct {
+    T_STR       NAME;
+    G_ARRAY     ARRAY;
+} RESULT;
+
+#define REGISTER_OUTPUT(T, size, name) \
+    __##T##_registerOutput(size, name)
+
 /*****************FUNCTION DECLARATION*****************/
 /*
  * GET_COMP_BY_ID : Finds the component that the input index corresponds to
@@ -130,6 +149,8 @@ size_t GET_PROP_BY_NAME(const COMP *const in1, AMB_PSTR in2, AMB_VOID *out);
 pid_t RUN_PROCESS_IMAGE(AMB_INT *new_descr, const AMB_PSTR image_path, ...);
 void KILL_PROCESS(pid_t process);
 
+AMB_ERROR CALL_MAKEFILES(CONFIG *config);
+
 /*
  * #############################
  * INTERNAL FUNCTION DECLARATION
@@ -138,5 +159,18 @@ void KILL_PROCESS(pid_t process);
 
 AMB_VOID __T_UINT_registerOutput(size_t size, char *name);
 AMB_VOID __T_DOUBLE_registerOutput(size_t size, char *name);
+
+AMB_VOID UNREGISTER_OUTPUT(RESULT *results);
+
+
+/*****************TTY FUNCTION DECLARATION*****************/
+AMB_ERROR INIT_TTY(const char *path);
+AMB_VOID CLOSE_TTY();
+void TTY_TO_RESULT(AMB_CHAR imarker, AMB_CHAR fmarker, RESULT *results);
+
+/*****************XSCT FUNCTION DECLARATION*****************/
+AMB_INT INIT_XSCT(char *scriptname);
+AMB_INT EX_XSCT_SCRIPT(const char *scriptname, size_t num_cores, AMB_FLAG core_state[]);
+AMB_VOID CLOSE_XSCT();
 
 #endif

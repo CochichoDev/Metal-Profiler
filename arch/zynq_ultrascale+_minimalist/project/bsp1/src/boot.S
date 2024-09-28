@@ -31,14 +31,7 @@
 .set vector_base,	_vector_table
 .set rvbar_base,	0xFD5C0040
 
-#if defined (versal)
-.set counterfreq,       XPAR_CPU_CORTEXA72_0_TIMESTAMP_CLK_FREQ
-#else
 .set counterfreq,	XPAR_CPU_CORTEXA53_0_TIMESTAMP_CLK_FREQ
-#endif
-
-.set MODE_EL1, 0x5
-.set DAIF_BIT,	0x1C0
 
 .section .boot,"ax"
 
@@ -113,9 +106,6 @@ OKToRun:
 	mrs	x0, currentEL
 	cmp	x0, #0xC
 	beq	InitEL3
-
-	cmp	x0, #0x4
-	beq	InitEL1
 
 	b 	error			// go to error if current exception level is neither EL3 nor EL1
 InitEL3:
@@ -272,105 +262,6 @@ InitEL3:
     blr     x3
 
 	b 	 _startup		//jump to start
-.else
-	b 	error			// present exception level and selected exception level mismatch
-.endif
-
-InitEL1:
-.if (EL1_NONSECURE == 1)
-	/*Set vector table base address*/
-	ldr	x1, =vector_base
-	msr	VBAR_EL1,x1
-
-	/* Trap floating point access only in case of standalone BSP */
-#ifdef FREERTOS_BSP
-        mrs     x0, CPACR_EL1
-        orr     x0, x0, #(0x3 << 20)
-        msr     CPACR_EL1, x0
-#else
-	mrs	x0, CPACR_EL1
-	bic	x0, x0, #(0x3 << 20)
-	msr	CPACR_EL1, x0
-#endif
-	isb
-
-	/*
-	 * Clear FPUStatus variable to make sure that it contains current
-	 * status of FPU i.e. disabled. In case of a warm restart execution
-	 * when bss sections are not cleared, it may contain previously updated
-	 * value which does not hold true now.
-	 */
-#ifndef FREERTOS_BSP
-	 ldr x0,=FPUStatus
-	 str xzr, [x0]
-#endif
-	/*Define stack pointer for current exception level*/
-	ldr	 x2,=EL1_stack
-	mov	 sp,x2
-
-	/* Disable MMU first */
-	mov	x1,#0x0
-	msr     SCTLR_EL1, x1
-	isb
-
-	TLBI    VMALLE1
-
-	ic      IALLU                  	//; Invalidate I cache to PoU
-	bl 	invalidate_dcaches
-	dsb	 sy
-	isb
-
-	ldr      x1, =L0Table 		//; Get address of level 0 for TTBR0_EL1
-	msr      TTBR0_EL1, x1		//; Set TTBR0_EL1
-
-	/**********************************************
-	* Set up memory attributes
-	* This equates to:
-	* 0 = b01000100 = Normal, Inner/Outer Non-Cacheable
-	* 1 = b11111111 = Normal, Inner/Outer WB/WA/RA
-	* 2 = b00000000 = Device-nGnRnE
-	* 3 = b00000100 = Device-nGnRE
-	* 4 = b10111011 = Normal, Inner/Outer WT/WA/RA
-	**********************************************/
-	ldr      x1, =0x000000BB0400FF44
-	msr      MAIR_EL1, x1
-
-        #if defined (versal)
-        /**********************************************
-        * Set up TCR_EL1
-	* Physical Address Size PS =  100 -> 44bits 16TB
-	* Granual Size TG0 = 00 -> 4KB
-        * size offset of the memory region T0SZ = 20 -> (region size 2^(64-20) = 2^44)
-        ***************************************************/
-        ldr     x1,=0x485800514
-        #else
-        /**********************************************
-        * Set up TCR_EL1
-        * Physical Address Size PS =  010 -> 44bits 16TB
-        * Granual Size TG0 = 00 -> 4KB
-        * size offset of the memory region T0SZ = 24 -> (region size 2^(64-24) = 2^40)
-        ***************************************************/
-        ldr     x1,=0x285800518
-        #endif
-        msr     TCR_EL1, x1
-        isb
-	/* Enable SError Exception for asynchronous abort */
-	mrs 	x1,DAIF
-        bic	x1,x1,#(0x1<<8)
-        msr	DAIF,x1
-
-	//; Enable MMU
-	mov	x1,#0x0
-	orr     x1, x1, #(1 << 18)    // ; Set WFE non trapping
-	orr     x1, x1, #(1 << 17)    // ; Set WFI non trapping
-	orr     x1, x1, #(1 << 5)    // ; Set CP15 barrier enabled
-	orr     x1, x1, #(1 << 12)    // ; Set I bit
-	orr     x1, x1, #(1 << 2)    // ; Set C bit
-	orr     x1, x1, #(1 << 0)    // ; Set M bit
-	msr     SCTLR_EL1, x1
-	isb
-
-	bl 	 _startup		//jump to start
 .else
 	b 	error			// present exception level and selected exception level mismatch
 .endif

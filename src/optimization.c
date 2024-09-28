@@ -347,7 +347,6 @@ T_VOID printParameterGridFILE(FILE *file, OPT_MAP *mapGrid, PARAM_GRID grid) {
         for (size_t param_idx = 0; param_idx < mapGrid->PROPS_P_ROW[row_idx]; param_idx++) {
             fprintf(file, "%12ld", grid[row_idx][param_idx].cur);
         }
-        fprintf(file, "\n");
     }
 }
 
@@ -625,7 +624,7 @@ static PARAM_GRID randomSearch(OPT_MAP *mapGrid, PARAM_GRID param, size_t iterat
 
 
         // Obtain objective
-        result_array = objectiveFunc(mapGrid, param);
+        result_array = objectiveFunc(mapGrid, cur_params);
         assert(result_array->TYPE == G_DOUBLE);
         T_DOUBLE new_objective = ((T_DOUBLE *)result_array->DATA)[0];
         DESTROY_GENERIC(result_array);
@@ -744,7 +743,7 @@ static PARAM_GRID randomSearchNR(OPT_MAP *mapGrid, PARAM_GRID param, size_t iter
 
 
         // Obtain objective
-        result_array = objectiveFunc(mapGrid, param);
+        result_array = objectiveFunc(mapGrid, cur_params);
         assert(result_array->TYPE == G_DOUBLE);
         T_DOUBLE new_objective = ((T_DOUBLE *)result_array->DATA)[0];
         DESTROY_GENERIC(result_array);

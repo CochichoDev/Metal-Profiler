@@ -18,8 +18,8 @@
 #if !defined(STRIDE)
 #define STRIDE 64
 #endif
-#if !defined(LIMIT)
-#define LIMIT 50
+#if !defined(ITERATIONS)
+#define ITERATIONS 50
 #endif
 
 #define VICTIM
@@ -40,23 +40,10 @@ register uint64_t L2_WB __asm__("x24");
 
 
 int main(int argc, char *argv[]) {
+    no_allocate_threshold_L1(0b11);
+    no_allocate_threshold_L2(0b11);
     set_outstanding_prefetching(0x00U);
     register volatile uint8_t *target = &__buffer_start;
-
-    // Biggest resolution before unstable
-    write_timestampref_div(0x02u);
-    enable_cntc();
-
-    initPMU();
-#ifdef MEMBANDWIDTH
-    init_irq();
-
-    time_handler(PERIOD);
-
-    reset_pmc_events();
-    enable_irq();
-#endif
-
 
     //INIT();
     /*
@@ -78,9 +65,7 @@ int main(int argc, char *argv[]) {
         {
             ACCESS_METHOD(target+i);
         }
-    #ifdef MEMBANDWIDTH
         disable_irq();
-    #endif
         printf("R%lu\n", read_cntpct_el0() - SC_TICKS);
         printf("R%lu\n", read_pmevcntr(0) - L1D_REFILLS);
         printf("R%lu\n", read_pmevcntr(1) - L1D_WB);
@@ -91,15 +76,8 @@ int main(int argc, char *argv[]) {
         L2_REFILLS  = read_pmevcntr(2);
         L2_WB       = read_pmevcntr(3);
         SC_TICKS    = read_cntpct_el0();
-    #ifdef MEMBANDWIDTH
         enable_irq();
-    #endif
     }
     printf("FIN\n");
-
-#ifdef MEMBANDWIDTH
-    disable_cntp();
-    stop_irq();
-#endif
 }
 

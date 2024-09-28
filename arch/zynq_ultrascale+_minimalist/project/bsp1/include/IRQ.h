@@ -1,8 +1,8 @@
 #ifndef IRQ_H
 #define IRQ_H
 
-#if !defined(INIT_BUDGET)
-#define INIT_BUDGET 1e4
+#if !defined(BUDGET)
+#define BUDGET 1e4
 #endif
 #if !defined(PERIOD)
 #define PERIOD 10

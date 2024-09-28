@@ -365,9 +365,12 @@ T_VOID loadConfig(T_UINT config_option) {
                 if (!strcmp(m_prop->NAME, comp->PBUFFER->PROPS[prop_idx].NAME)) break;
 
             // If the propriety was not defined and it's needed throw an error
-            if (prop_idx == comp->PBUFFER->NUM && IS_NEDDED(m_prop->FLAGS)) {
-                fprintf(stderr, "Error: Propriety %s was not defined\n", m_prop->NAME);
-                goto ERROR;
+            if (prop_idx == comp->PBUFFER->NUM) {
+                if (IS_NEDDED(m_prop->FLAGS)) {
+                    fprintf(stderr, "Error: Propriety %s was not defined\n", m_prop->NAME);
+                    goto ERROR;
+                }
+                continue;
             }
 
             PROP *prop = comp->PBUFFER->PROPS + prop_idx;

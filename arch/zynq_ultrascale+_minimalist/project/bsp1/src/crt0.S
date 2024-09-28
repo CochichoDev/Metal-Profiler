@@ -47,7 +47,7 @@ _startup:
 	mov	x0, #0
 	mov	x1, #0
 
-	bl	main			/* Jump to main C code */
+	bl	boot2			/* Jump to second bootloader code */
 
 	bl	exit
 

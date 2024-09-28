@@ -336,6 +336,7 @@ T_ERROR saveDataOptimizationResults(const T_PSTR output, G_ARRAY *optimization_a
         fprintf(output_file, "%12ld", r_idx);
         fprintf(output_file, "%12lf", ((OPT_RESULT *)optimization_array->DATA)[r_idx].DEG);
         printParameterGridFILE(output_file, map, ((OPT_RESULT *)optimization_array->DATA)[r_idx].GRID);
+        fprintf(output_file, "\n");
     }
     
     fclose(output_file);
@@ -415,8 +416,7 @@ static T_VOID catPropDefine(T_PSTR str, PROP *prop) {
             break;
         case pSTR:
             sprintf(arg, "%s", prop->sINIT);
-            strcat(buf, arg);
-            goto JOIN;
+            break;
         case pBOOL:
             if (!prop->iINIT) return;
             strcat(buf, prop->NAME);
