@@ -15,6 +15,7 @@
 #include "calc.h"
 #include "types.h"
 #include "arch.h"
+#include "global.h"
 
 
 /************** RESULT RELATED FUNCTIONS ****************/
@@ -106,24 +107,28 @@ T_VOID calcMaxFromArray(G_ARRAY *input_array, size_t num_elem, G_ARRAY *max_arra
  */
 T_ERROR calculateDegradation(G_ARRAY *garrays_std_iso, size_t size_iso, G_ARRAY *garrays_std_full, size_t size_result, G_ARRAY *garrays_double_deg) {
     G_ARRAY *iso_max = NULL;
-    iso_max = malloc(sizeof(G_ARRAY));
-    switch (garrays_std_iso->TYPE) {
-        case G_INT:
-        case G_UINT:
-            iso_max->DATA = malloc(sizeof(T_UINT) * size_iso);
-            iso_max->SIZE = size_iso;
-            iso_max->TYPE = G_UINT;
-            break;
-        case G_DOUBLE:
-            iso_max->DATA = malloc(sizeof(T_DOUBLE) * size_iso);
-            iso_max->SIZE = size_iso;
-            iso_max->TYPE = G_DOUBLE;
-            break;
-        default:
-            break;
-    }
+    if (size_iso > 0) {
+        iso_max = malloc(sizeof(G_ARRAY));
+        switch (garrays_std_iso->TYPE) {
+            case G_INT:
+            case G_UINT:
+                iso_max->DATA = malloc(sizeof(T_UINT) * size_iso);
+                iso_max->SIZE = size_iso;
+                iso_max->TYPE = G_UINT;
+                break;
+            case G_DOUBLE:
+                iso_max->DATA = malloc(sizeof(T_DOUBLE) * size_iso);
+                iso_max->SIZE = size_iso;
+                iso_max->TYPE = G_DOUBLE;
+                break;
+            default:
+                break;
+        }
 
-    calcMaxFromArray(garrays_std_iso, size_iso, iso_max);
+        calcMaxFromArray(garrays_std_iso, size_iso, iso_max);
+    } else {
+        iso_max = garrays_std_iso;
+    }
 
     
     METRICS iso_metrics;
@@ -191,29 +196,43 @@ T_DOUBLE *calculateDegradationNormalized(G_ARRAY *garray_result_iso, G_ARRAY *ga
 
     calculateDegradation(garrays_std_iso, garray_result_iso->SIZE, garrays_std_full, garray_result_full->SIZE, garrays_std_deg);
 
-    // Find the maximum of the vector of degradation -> OBJECTIVE
     G_ARRAY garray_std_max_deg = {.SIZE = garray_result_full->SIZE, .TYPE = G_DOUBLE, .DATA = calloc(garray_result_full->SIZE, sizeof(T_DOUBLE))};    
-    calcMaxFromArray(garrays_std_deg, garray_result_full->SIZE, &garray_std_max_deg);
+    METRICS deg_metrics;
+    // Find the maximum of the vector of degradation -> OBJECTIVE
+    if (garray_result_full->SIZE > 1) {
+        calcMaxFromArray(garrays_std_deg, garray_result_full->SIZE, &garray_std_max_deg);
+        initMetricsFromArray(&garray_std_max_deg, "deg_metrics", &deg_metrics);
+    } else {
+        initMetricsFromArray(garrays_std_deg, "deg_metrics", &deg_metrics);
+    }
 
-    G_ARRAY garray_std_abs_max_deg = {.SIZE = 1, .TYPE = G_DOUBLE, .DATA = malloc(sizeof(T_DOUBLE))};
-    calcMaxFromArray(&garray_std_max_deg, 1, &garray_std_abs_max_deg);
+    T_DOUBLE *result = NULL;
 
-    T_DOUBLE deg1 = ((T_DOUBLE *) garray_std_abs_max_deg.DATA)[0];
-    avg = avg * ((T_DOUBLE) num / (num+1));
-    avg += (deg1 / (num+1));
+    // Guarantee that standard deviation does not depass 100%
+    T_DOUBLE std_dev = (((T_DOUBLE *)deg_metrics.MAX.DATA)[0] - ((T_DOUBLE *)deg_metrics.MIN.DATA)[0]) / ((T_DOUBLE *)deg_metrics.MEDIAN.DATA)[0];
+
+    T_DOUBLE deg1 = ((T_DOUBLE *) deg_metrics.MAX.DATA)[0];
+    if (std_dev >= STD_DEV_MAX) {
+        deg1 = avg;
+    } else {
+        deg1 = ((T_DOUBLE *) deg_metrics.MAX.DATA)[0];
+        avg = avg * ((T_DOUBLE) num / (num+1));
+        avg += (deg1 / (num+1));
+    }
     
     deg1 /= avg;
-    T_DOUBLE *result = malloc(2 * sizeof(T_DOUBLE));
+    result = malloc(2 * sizeof(T_DOUBLE));
     result[0] = deg1;
     result[1] = avg;
 
     for (size_t result_idx = 0; result_idx < garray_result_full->SIZE; result_idx++) 
         free(garrays_std_deg[result_idx].DATA);
+
+    destroyMetrics(&deg_metrics);
     free(garrays_std_iso);
     free(garrays_std_full);
     free(garrays_std_deg);
     free(garray_std_max_deg.DATA);
-    free(garray_std_abs_max_deg.DATA);
 
     return result;
 }

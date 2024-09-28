@@ -64,15 +64,29 @@ int64_t cliParseNum(const char *str) {
 }
 
 double parseFloat(char *str) {
+    T_FLAG decimal_part = FALSE;
     while (!isdigit(*str)) {
         if (*str == '\n') return 0;
         str++;
     }
 
-    int64_t num = 0;
-    while (isdigit(str)) {
-        num *= 10;
-        num += *str - 0x30;
+    double num = 0;
+    double multiplier = 1;
+    while (isgraph(*str)) {
+        if (*str == '.') {
+            decimal_part = TRUE;
+        } else if (isdigit(*str)) {
+            if (decimal_part) {
+                multiplier *= 0.1f;
+                num += ((*str - '0') * multiplier);
+            } else {
+                num *= 10;
+                num += *str - '0';
+            }
+        } else {
+            fprintf(stderr, "Error: Could not parse float, unrecognized character %c\n", *str);
+            return num;
+        }
         str++;
     }
 
@@ -439,7 +453,8 @@ T_ERROR CALL_MAKEFILES(CONFIG *config) {
     bzero(make_cores, sizeof(pid_t)*SELECTED_ARCH.desc.NUM_CORES);
 
     const COMP *victim_comp;
-    if (GET_COMP_BY_ID(config, config->VICTIM_ID, &victim_comp) == -1) {
+    size_t victim_idx;
+    if ((victim_idx = GET_COMP_BY_ID(config, config->VICTIM_ID, &victim_comp)) == -1) {
         fprintf(stderr, "Error: Zynq Ultrascale+ received a config without the victim component\n");
         return -1;
     }
@@ -451,6 +466,7 @@ T_ERROR CALL_MAKEFILES(CONFIG *config) {
             catPropDefine(FLAGS_BSP, sys_comp->PBUFFER->PROPS + prop_idx);
         }
     }
+
     strcat(BSP_QUERY, FLAGS_BSP);
 
     char path[512];
@@ -494,6 +510,9 @@ T_ERROR CALL_MAKEFILES(CONFIG *config) {
 
             for (size_t prop_idx = 0 ; prop_idx < core_ptr->PBUFFER->NUM ; prop_idx++) {
                 catPropDefine(FLAGS, core_ptr->PBUFFER->PROPS + prop_idx);
+            }
+            if (i == victim_idx) {
+                strcat(FLAGS, "-DVICTIM");
             }
             puts(FLAGS);
 

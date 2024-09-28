@@ -175,27 +175,93 @@ void init_irq() {
 
     gicd_config(PTIMER_ID, GIC_GICD_ICFGR_EDGE);
     gicd_config(VTIMER_ID, GIC_GICD_ICFGR_EDGE);
+//#ifdef CORE1
     gicd_config(PM1_ID, GIC_GICD_ICFGR_EDGE);
+//#endif
+//#ifdef CORE2
+    gicd_config(PM2_ID, GIC_GICD_ICFGR_EDGE);
+//#endif
+//#ifdef CORE3
+    gicd_config(PM3_ID, GIC_GICD_ICFGR_EDGE);
+//#endif
+//#ifdef CORE4
+    gicd_config(PM4_ID, GIC_GICD_ICFGR_EDGE);
+//#endif
     // Set Virtual timer ITQ with highest priority
     gicd_set_priority(PTIMER_ID, 0);
     gicd_set_priority(VTIMER_ID, 0);
+//#ifdef CORE1
     gicd_set_priority(PM1_ID, 0);
+//#endif
+//#ifdef CORE2
+    gicd_set_priority(PM2_ID, 0);
+//#endif
+//#ifdef CORE3
+    gicd_set_priority(PM3_ID, 0);
+//endif
+//ifdef CORE4
+    gicd_set_priority(PM4_ID, 0);
+//#endif
     // Since VTIMER is a PPI it doesn't really matter the target
     gicd_set_target(PTIMER_ID, 0x1U);
     gicd_set_target(VTIMER_ID, 0x1U);
+//#ifdef CORE1
     gicd_set_target(PM1_ID, 0x1U);
+//endif
+//ifdef CORE2
+    gicd_set_target(PM2_ID, 0x2U);
+//endif
+//ifdef CORE3
+    gicd_set_target(PM3_ID, 0x4U);
+//endif
+//ifdef CORE4
+    gicd_set_target(PM4_ID, 0x8U);
+//#endif
 
     gicd_clear_pending(PTIMER_ID);
     gicd_clear_pending(VTIMER_ID);
+//#ifdef CORE1
     gicd_clear_pending(PM1_ID);
+//endif
+//ifdef CORE2
+    gicd_clear_pending(PM2_ID);
+//endif
+//ifdef CORE3
+    gicd_clear_pending(PM3_ID);
+//#endif
+//#ifdef CORE4
+    gicd_clear_pending(PM4_ID);
+//#endif
 
     gicd_enable_int(VTIMER_ID);
     gicd_enable_int(PTIMER_ID);
+//#ifdef CORE1
     gicd_enable_int(PM1_ID);
+//#endif
+//#ifdef CORE2
+    gicd_enable_int(PM2_ID);
+//#endif
+//#ifdef CORE3
+    gicd_enable_int(PM3_ID);
+//#endif
+//#ifdef CORE4
+    gicd_enable_int(PM4_ID);
+//#endif
 }
 
 void stop_irq() {
     disable_gicd();
     gicd_disable_int(PTIMER_ID);
+//#ifdef CORE1
     gicd_disable_int(PM1_ID);
+//#endif
+//#ifdef CORE2
+    gicd_disable_int(PM2_ID);
+//#endif
+//#ifdef CORE3
+    gicd_disable_int(PM3_ID);
+//#endif
+//#ifdef CORE4
+    gicd_disable_int(PM4_ID);
+//#endif
 }

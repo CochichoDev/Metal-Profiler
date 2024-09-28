@@ -85,12 +85,10 @@
 /*
  *  PREPROCESSOR LOGIC
  */
-#if defined(ENEMY)
-#define HEADER ; ;
-#elif defined(VICTIM)
+#if defined(VICTIM)
 #define HEADER register uint32_t j = 0 ; j < ITERATIONS ; j++
 #else
-#error "Specify the application type"
+#define HEADER ; ;
 #endif
 
 #define INIT()      \ 

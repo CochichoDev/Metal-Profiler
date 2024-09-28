@@ -12,7 +12,7 @@ void boot2() {
     time_handler(PERIOD);
     reset_pmc_events();
     set_pmc_int(4U);
-    set_pmevcntr_threshold(4U, THRESHOLD);
+    set_pmevcntr_threshold(4U, BUDGET * THRESHOLD);
     asm volatile ("msr DAIFClr, 0x2");
 #endif
     asm volatile("bl main");

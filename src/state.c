@@ -683,7 +683,7 @@ static CONFIG *parseConfig(FILE *fd) {
         return NULL;
     }
 
-    config->VICTIM_ID = victim_id;
+    config->VICTIM_ID = MODULE_CONFIG->VICTIM_ID;
 
     return config;
 }

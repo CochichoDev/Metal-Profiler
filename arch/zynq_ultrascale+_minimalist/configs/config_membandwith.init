@@ -1,12 +1,29 @@
 #0
-CACHECOLORING:  0b          [M]
+CACHECOLORING:  1b          [M]
 MEMBANDWIDTH:   1b          [M]
-BUDGET:         10000       [O]
-PERIOD:         1000        [O]
-REPLENISHMENT:  100         [O]
-THRESHOLD:      100         [O]
+BUDGET:         15500       [O]
+PERIOD:         800         [O]
+THRESHOLD:      0.09f       [O]
 
 #1
+APP:            READ
+SIZE:           250000
+STRIDE:         64
+ITERATIONS:     1000
+
+#2
+APP:            READ
+SIZE:           250000
+STRIDE:         64
+ITERATIONS:     1000
+
+#3
+APP:            READ
+SIZE:           250000
+STRIDE:         64
+ITERATIONS:     1000
+
+#4
 APP:            READ
 SIZE:           250000
 STRIDE:         64

@@ -28,19 +28,33 @@ static void mem_blocked() {
 }
 
 static void mem_monitor() {
+    /* NEW VERSION DOES NOT DISCOUNT THE LAST READ AND WRITE
+     * THAT'S THE JOB OF THE OVERFLOW
     L1D_MSHR_NEW = read_pmevcntr(0);
     L1D_WB_NEW = read_pmevcntr(1);
+    */
 
+    /* NEW VERSION DOES NOT HAVE UPDATE ON TIMER
     AVAIL-=(L1D_MSHR_NEW - LAST_L1D_MSHR);
     AVAIL-=(L1D_WB_NEW - LAST_L1D_WB);
+    */
 
-    AVAIL+= REPLENISHMENT;
+    AVAIL = BUDGET;
+    //AVAIL+= REPLENISHMENT;
+    /* NEW VERSION DOES NOT ADD REPLENISHMENT
     if (AVAIL > BUDGET) AVAIL = BUDGET;
+    */
+
+#ifdef DEBUG
+    printf("BUDGET: %lld\n", AVAIL);
+#endif
 
     LAST_L1D_MSHR = L1D_MSHR_NEW;
     LAST_L1D_WB = L1D_WB_NEW;
 
+    /* NEW VERSION THERE IS NO NEED TO BLOCK ON CLOCK TICK
     if (AVAIL < 0) mem_blocked();
+    */
     
     time_handler(PERIOD);
 }
@@ -55,7 +69,7 @@ static void mem_overflow() {
     LAST_L1D_MSHR = L1D_MSHR_NEW;
     LAST_L1D_WB = L1D_WB_NEW;
 
-    if (AVAIL < 0) {
+    if (AVAIL <= 0) {
     #ifdef DEBUG
         printf("IDLE OVERFLOW\n");
     #endif
@@ -63,7 +77,7 @@ static void mem_overflow() {
     }
 
     clean_overflow_status(4U);
-    set_pmevcntr_threshold(4U, THRESHOLD);
+    set_pmevcntr_threshold(4U, BUDGET * THRESHOLD);
 }
 
 void irq_handler() {

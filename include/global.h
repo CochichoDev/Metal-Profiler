@@ -26,8 +26,10 @@
 
 /**** OPTIMIZATION PARAMETERS ****/
 #define NUM_ISO_RESULTS 1
-#define WEIGHT1         5
-#define WEIGHT2         5
+#define WEIGHT1         7
+#define WEIGHT2         3
+// FOR 2 WEIGHT OPTIMIZATION
+#define STD_DEV_MAX     0.5f
 /*********************************/
 
 #define USAGE_ERROR() \

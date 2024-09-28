@@ -538,7 +538,7 @@ static G_ARRAY *objectiveMinimizeMemMonitoring(OPT_MAP *mapGrid, PARAM_GRID para
     // This should always be true the first time except whenever it's ran for the first time
     if (garray_result_iso == NULL) {
         // Change configuration to only compile the isolated victim wo/ MemMonitoring
-        CONFIG *cfg_iso = cfg_mm_iso;
+        CONFIG *cfg_iso = cloneConfig(cfg_mm_iso);
 
         COMP *sys_comp;
         if (GET_COMP_BY_ID(cfg_iso, SYSTEM_COMP_ID, (const COMP **)&sys_comp) == -1) {
@@ -559,8 +559,9 @@ static G_ARRAY *objectiveMinimizeMemMonitoring(OPT_MAP *mapGrid, PARAM_GRID para
 
         BUILD_PROJECT(cfg_iso);
         runBench(garray_result_iso->SIZE, 1, (RESULT *[]){garray_result_iso->DATA});
-        free(cfg_iso);
+        destroyConfig(cfg_iso);
     }
+    free(cfg_mm_iso);
     // Repeat the same calculations for the second metric (Influnce of MemMonitoring)
     T_DOUBLE *deg2 = calculateDegradationNormalized(garray_result_iso, &garray_result_mm_iso, avg2, num2);
     avg2 = deg2[1];
