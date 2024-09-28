@@ -174,15 +174,28 @@ void init_irq() {
     initGICC();
 
     gicd_config(PTIMER_ID, GIC_GICD_ICFGR_EDGE);
+    gicd_config(VTIMER_ID, GIC_GICD_ICFGR_EDGE);
+    gicd_config(PM1_ID, GIC_GICD_ICFGR_EDGE);
     // Set Virtual timer ITQ with highest priority
     gicd_set_priority(PTIMER_ID, 0);
+    gicd_set_priority(VTIMER_ID, 0);
+    gicd_set_priority(PM1_ID, 0);
     // Since VTIMER is a PPI it doesn't really matter the target
     gicd_set_target(PTIMER_ID, 0x1U);
+    gicd_set_target(VTIMER_ID, 0x1U);
+    gicd_set_target(PM1_ID, 0x1U);
+
     gicd_clear_pending(PTIMER_ID);
+    gicd_clear_pending(VTIMER_ID);
+    gicd_clear_pending(PM1_ID);
+
+    gicd_enable_int(VTIMER_ID);
     gicd_enable_int(PTIMER_ID);
+    gicd_enable_int(PM1_ID);
 }
 
 void stop_irq() {
     disable_gicd();
     gicd_disable_int(PTIMER_ID);
+    gicd_disable_int(PM1_ID);
 }

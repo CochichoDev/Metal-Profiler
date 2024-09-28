@@ -15,6 +15,10 @@ typedef int32_t irq_no;			/* IRQ no */
 /* ADDED BY DIOGO COCHICHO */
 #define VTIMER_ID           (27)
 #define PTIMER_ID           (30)
+#define PM1_ID              (175)
+#define PM2_ID              (176)
+#define PM3_ID              (177)
+#define PM4_ID              (178)
 #define GIC_BASE            (0xF9010000)
 #define DAIF_IRQ_BIT        (0x1U<<1)
 

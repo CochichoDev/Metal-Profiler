@@ -32,7 +32,6 @@
 
 #define IOPLLFRQ            (1500000000)
 
-
 /*********** VIRTUAL TIMER ************/
 static __attribute__((always_inline)) void write_cntv_tval_el0(uint64_t cntv_tval_value) {
     __asm__ __volatile__(
@@ -91,11 +90,29 @@ static __attribute__((always_inline)) uint32_t read_cntfreq_el0() {
 }
 
 
+static __attribute__((always_inline)) void vtime_handler(uint64_t us) {
+    disable_cntv();
+
+    // Next time it will interrupt
+    // Divided the frequency by 2 cause of the divisor
+    write_cntv_tval_el0((int32_t) (((double)us/1000000.0f) * (double)(IOPLLFRQ)/2));
+
+    enable_cntv();
+}
+
 /*********** PHYSICAL TIMER ************/
 static __attribute__((always_inline)) void write_cntp_tval_el0(uint64_t cntp_tval_value) {
     __asm__ __volatile__(
                             "MSR    CNTP_TVAL_EL0,      %0" 
                         : : "r" (cntp_tval_value) : "memory" );
+}
+
+static __attribute__((always_inline)) uint64_t read_cntp_tval_el0() {
+    uint64_t cntp_tval_value;
+    __asm__ __volatile__(
+                            "MRS    %0,      CNTP_TVAL_EL0" 
+                        : "=r" (cntp_tval_value) : : "memory" );
+    return cntp_tval_value;
 }
 
 static __attribute__((always_inline)) void disable_cntp() {

@@ -201,7 +201,6 @@ restorecontext:
 
 IRQInterruptHandler:
 
-    msr     DAIFSet, #0x2
 	saveregister
     //savefloatregister
 /* Save the status of SPSR, ELR and CPTR to stack */
@@ -210,6 +209,7 @@ IRQInterruptHandler:
 	mrs	x2, SPSR_EL3
 	stp	x0, x1, [sp,#-0x10]!
 	str	x2, [sp,#-0x10]!
+    //msr     DAIFSet, #0x2
 
 /* Trap floating point access */
 	mrs	x1,CPTR_EL3
@@ -227,6 +227,7 @@ IRQInterruptHandler:
 	ands	x0, x0, #(0x1<<10)
 	bne	RestorePrevState
 
+    //msr DAIFClr, #0x2
 	restorefloatregister
 
 /* Restore the status of SPSR, ELR and CPTR from stack */
@@ -237,7 +238,6 @@ RestorePrevState:
 	msr	ELR_EL3, x1
 	msr	SPSR_EL3, x2
 	restoreregister
-    msr DAIFClr, #0x2
 	exception_return
 
 FIQInterruptHandler:

@@ -45,6 +45,8 @@ int main(int argc, char *argv[]) {
     set_outstanding_prefetching(0x00U);
     register volatile uint8_t *target = &__buffer_start;
 
+    
+
     //INIT();
     /*
      * This initialization of SC_TICKS is needed since from it is intended to
@@ -71,6 +73,7 @@ int main(int argc, char *argv[]) {
         printf("R%lu\n", read_pmevcntr(1) - L1D_WB);
         printf("R%lu\n", read_pmevcntr(2) - L2_REFILLS);
         printf("R%lu\n", read_pmevcntr(3) - L2_WB);
+        asm volatile("dsb sy");
         L1D_REFILLS = read_pmevcntr(0);
         L1D_WB      = read_pmevcntr(1);
         L2_REFILLS  = read_pmevcntr(2);

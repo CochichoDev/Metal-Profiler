@@ -1,17 +1,40 @@
 #include "PMU.h"
 #include <stdint.h>
 
+static uint64_t SC_TICKS = 0;
+static uint64_t L1D_REFILLS = 0;
+static uint64_t L1D_WB = 0;
+static uint64_t L2_REFILLS = 0;
+static uint64_t L2_WB = 0;
+
+static uint64_t SC_TICKS_REF = 0;
+static uint64_t L1D_REFILLS_REF = 0;
+static uint64_t L1D_WB_REF = 0;
+static uint64_t L2_REFILLS_REF = 0;
+static uint64_t L2_WB_REF = 0;
+
 void initPMU() {
     enable_pmc();
     cfg_pmevcntr(0u, L1D_CACHE_REFILL);
     cfg_pmevcntr(1u, L1D_CACHE_WB);
     cfg_pmevcntr(2u, L2_CACHE_REFILL);
     cfg_pmevcntr(3u, L2_CACHE_WB);
+    cfg_pmevcntr(4u, L1D_CACHE_REFILL);
+    cfg_pmevcntr(5u, L1D_CACHE_WB);
     enable_pmevcntr(0u);
     enable_pmevcntr(1u);
     enable_pmevcntr(2u);
     enable_pmevcntr(3u);
+    enable_pmevcntr(4u);
+    enable_pmevcntr(5u);
     reset_pmc_events();
+
+    /*
+    L1D_REFILLS_REF = read_pmevcntr(0);
+    L1D_WB_REF = read_pmevcntr(1);
+    L2_REFILLS_REF = read_pmevcntr(2);
+    L2_WB_REF = read_pmevcntr(3);
+    */
 }
 
 void reset_pmc_event(uint8_t n) {
@@ -102,3 +125,34 @@ void cfg_pmevcntr(uint8_t n, uint16_t eventType) {
                         : : "r" (pmxevtyper_value) : "memory");
 }
 
+inline uint64_t read_l1d_refills() { return L1D_REFILLS; }
+inline uint64_t read_l1d_wb() { return L1D_WB; }
+inline uint64_t read_l2_refills() { return L2_REFILLS; }
+inline uint64_t read_l2_wb() { return L2_WB; }
+
+inline void write_l1d_refills(uint64_t value) { L1D_REFILLS = value; }
+inline void write_l1d_wb(uint64_t value) { L1D_WB = value; }
+inline void write_l2_refills(uint64_t value) { L2_REFILLS = value; }
+inline void write_l2_wb(uint64_t value) { L2_WB = value; }
+
+inline void update_pmc_ref() {
+    L1D_REFILLS_REF = read_pmevcntr(0);
+    L1D_WB_REF = read_pmevcntr(1);
+    L2_REFILLS_REF = read_pmevcntr(2);
+    L2_WB_REF = read_pmevcntr(3);
+}
+
+inline void update_pmc_counters() {
+    write_l1d_refills((read_overflow_status(0)) ? 
+                      ( read_pmevcntr(0) + ~(0x0UL) - L1D_REFILLS_REF + L1D_REFILLS ) : 
+                      ( read_pmevcntr(0) - L1D_REFILLS_REF + L1D_REFILLS) );
+    write_l1d_wb((read_overflow_status(1)) ? 
+                      ( read_pmevcntr(1) + ~(0x0UL) - L1D_WB_REF + L1D_WB ) : 
+                      ( read_pmevcntr(1) - L1D_WB_REF + L1D_WB) );
+    write_l2_refills((read_overflow_status(2)) ? 
+                      ( read_pmevcntr(2) + ~(0x0UL) - L2_REFILLS_REF + L2_REFILLS ) : 
+                      ( read_pmevcntr(2) - L2_REFILLS_REF + L2_REFILLS) );
+    write_l2_wb((read_overflow_status(3)) ? 
+                      ( read_pmevcntr(3) + ~(0x0UL) - L2_WB_REF + L2_WB ) : 
+                      ( read_pmevcntr(3) - L2_WB_REF + L2_WB) );
+}
