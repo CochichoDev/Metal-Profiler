@@ -10,4 +10,5 @@ modifications.txt
 Results
 RemoteSystemsTempFiles
 *libbsp.a
+*libxil.a
 *dump.txt
