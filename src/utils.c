@@ -512,8 +512,26 @@ T_ERROR CALL_MAKEFILES(CONFIG *config) {
                 catPropDefine(FLAGS, core_ptr->PBUFFER->PROPS + prop_idx);
             }
             if (i == victim_idx) {
-                strcat(FLAGS, "-DVICTIM");
+                strcat(FLAGS, "-DVICTIM ");
             }
+
+            // Add information about cache size (important for default bench)
+            char cache_str[32], num_buf[32];
+            for (size_t cache_idx = 0; cache_idx < SELECTED_ARCH.desc.CACHE_LVL; cache_idx++) {
+                sprintf(cache_str, "-DL%ld=", cache_idx+1);
+                itos(SELECTED_ARCH.desc.CACHES[cache_idx].SIZE/SELECTED_ARCH.desc.CACHES[cache_idx].SHARED_NUM, num_buf);
+                strcat(cache_str, num_buf);
+                strcat(cache_str, " ");
+                strcat(FLAGS, cache_str);
+            }
+            strcat(FLAGS, "-DDDR=");
+            itos(SELECTED_ARCH.desc.CACHES[SELECTED_ARCH.desc.CACHE_LVL-1].SIZE << 1, num_buf);
+            strcat(FLAGS, num_buf);
+
+        #ifdef TARGET_SIZE_DIVISOR
+            strcat(FLAGS, " -DDIV="STR_VALUE(TARGET_SIZE_DIVISOR));
+        #endif
+
             puts(FLAGS);
 
             char core_path[512];

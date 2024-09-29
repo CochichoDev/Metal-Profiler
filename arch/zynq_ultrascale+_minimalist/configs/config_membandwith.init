@@ -7,24 +7,24 @@ THRESHOLD:      0.09f       [O]
 
 #1
 APP:            READ
-SIZE:           250000
+SIZE:           L2
 STRIDE:         64
 ITERATIONS:     1000
 
 #2
 APP:            READ
-SIZE:           250000
+SIZE:           DDR
 STRIDE:         64
 ITERATIONS:     1000
 
 #3
 APP:            READ
-SIZE:           250000
+SIZE:           DDR
 STRIDE:         64
 ITERATIONS:     1000
 
 #4
 APP:            READ
-SIZE:           250000
+SIZE:           DDR
 STRIDE:         64
 ITERATIONS:     1000

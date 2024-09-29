@@ -89,7 +89,6 @@ void default_RUN_BENCH(RESULT *results) {
     //EX_T32_SCRIPT(script_query, SELECTED_ARCH.desc.NUM_CORES, core_state);
     EX_XSCT_SCRIPT(script_query, SELECTED_ARCH.desc.NUM_CORES, core_state);
     TTY_TO_RESULT('R','F', results);
-    
 }
 
 void default_EXIT_BENCH() {

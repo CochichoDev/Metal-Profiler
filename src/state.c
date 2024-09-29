@@ -280,6 +280,7 @@ T_VOID selectArch(size_t choice) {
 #ifdef DEBUG
     printf("Map parsed\n");
 #endif
+    fclose(mem_map);
 
     char module_path[512];
     strcpy(module_path, SELECTED_ARCH.path);
@@ -537,6 +538,16 @@ T_ERROR cleanState() {
     if (MODULE_HANDLE) {
         dlclose(MODULE_HANDLE);
         MODULE_HANDLE = NULL;
+    }
+
+    if (SELECTED_ARCH.desc.CACHES != NULL) {
+        free(SELECTED_ARCH.desc.CACHES);
+    }
+    if (SELECTED_ARCH.map.num_lvls > 0) {
+        free(SELECTED_ARCH.map.lvls);
+    }
+    if (SELECTED_ARCH.map.num_entries > 0) {
+        free(SELECTED_ARCH.map.entries);
     }
 
     return 0;

@@ -9,4 +9,5 @@ loadapp.cmm
 modifications.txt
 Results
 RemoteSystemsTempFiles
-*libxil.a
+*libbsp.a
+*dump.txt

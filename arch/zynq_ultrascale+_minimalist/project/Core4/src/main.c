@@ -65,9 +65,12 @@ int main(int argc, char *argv[]) {
 #endif
     for (HEADER) 
     {
-        for (register int i = 0 ; i < SIZE ; i += STRIDE) 
+        for (register int j = 0 ; j < DDR/SIZE ; ++j)
         {
-            ACCESS_METHOD(target+i);
+            for (register int i = 0 ; i < (SIZE * DIV) ; i += STRIDE) 
+            {
+                ACCESS_METHOD(target+i);
+            }
         }
 #ifdef VICTIM
         disable_irq();

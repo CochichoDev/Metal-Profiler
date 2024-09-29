@@ -16,14 +16,17 @@
 #define XSCTSCRIPT "launch_bench.tcl"
 
 #define T32EXECUTABLE "/opt/t32/bin/pc_linux64/t32marm64-qt"
-#define XSCTEXECUTABLE "/tools/Xilinx/Vitis/2021.2/bin/xsct"
+//#define XSCTEXECUTABLE "/tools/Xilinx/Vitis/2021.2/bin/xsct"
+#define XSCTEXECUTABLE "/home/cochicho/Vivado_Lab/2024.1/bin/xsdb"
 #define MAX_ARCHS 256
-
-#define REP_EXP 20
-#define IGNORE_LIMIT 10
 
 #define SYSTEM_COMP_ID 0
 
+/**** DEGRADATION PARAMETERS ****/
+#define IGNORE_LIMIT 10
+#define TARGET_SIZE_DIVISOR 0.9
+
+/********************************/
 /**** OPTIMIZATION PARAMETERS ****/
 #define NUM_ISO_RESULTS 1
 #define WEIGHT1         7
@@ -32,6 +35,8 @@
 #define STD_DEV_MAX     0.5f
 /*********************************/
 
+#define STR(s) #s
+#define STR_VALUE(s) STR(s)
 #define USAGE_ERROR() \
     {                                                       \
     perror("Usage: ./autometalbench -i INPUT -o OUTPUT");   \

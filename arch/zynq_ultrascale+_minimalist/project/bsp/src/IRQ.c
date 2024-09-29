@@ -15,46 +15,15 @@ static int64_t LAST_L1D_WB = 0;
 
 static int64_t AVAIL = BUDGET;
 
-static void mem_blocked() {
-    while (AVAIL < 0) {
-        vtime_handler(PERIOD);
-        __asm__ __volatile__("wfi");
-        disable_cntv();
-    #ifdef DEBUG
-        printf("IDLE\n");
-    #endif
-        AVAIL+=REPLENISHMENT;
-    }
-}
-
 static void mem_monitor() {
-    /* NEW VERSION DOES NOT DISCOUNT THE LAST READ AND WRITE
-     * THAT'S THE JOB OF THE OVERFLOW
-    L1D_MSHR_NEW = read_pmevcntr(0);
-    L1D_WB_NEW = read_pmevcntr(1);
-    */
-
-    /* NEW VERSION DOES NOT HAVE UPDATE ON TIMER
-    AVAIL-=(L1D_MSHR_NEW - LAST_L1D_MSHR);
-    AVAIL-=(L1D_WB_NEW - LAST_L1D_WB);
-    */
+    LAST_L1D_MSHR = read_pmevcntr(0);
+    LAST_L1D_WB = read_pmevcntr(1);
 
     AVAIL = BUDGET;
-    //AVAIL+= REPLENISHMENT;
-    /* NEW VERSION DOES NOT ADD REPLENISHMENT
-    if (AVAIL > BUDGET) AVAIL = BUDGET;
-    */
 
 #ifdef DEBUG
     printf("BUDGET: %lld\n", AVAIL);
 #endif
-
-    LAST_L1D_MSHR = L1D_MSHR_NEW;
-    LAST_L1D_WB = L1D_WB_NEW;
-
-    /* NEW VERSION THERE IS NO NEED TO BLOCK ON CLOCK TICK
-    if (AVAIL < 0) mem_blocked();
-    */
     
     time_handler(PERIOD);
 }

@@ -220,6 +220,7 @@ T_VOID optimizationTUI() {
     exit_tui(term_attr);
     free(data_multi);
     free(data_exit);
+    free(data_okay);
 
     close(replaced_stdout);
     dup(old_stdout);
