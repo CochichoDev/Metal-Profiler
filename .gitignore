@@ -4,4 +4,5 @@ compile_commands.json
 todo.txt
 .cache
 .clangd
-
+Results/*
+lib/libAMBapi.so

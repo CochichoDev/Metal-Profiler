@@ -17,6 +17,9 @@
 #include "utils.h"
 #include "cli.h"
 #include "state.h"
+#include "uart.h"
+
+#include "elf_reader.h"
 
 #define DEVICE "/dev/ttyUSB0"
 
@@ -32,6 +35,10 @@
     }
 
 int main(int32_t argc, char **argv) {
+    init_uart(-1);
+    open_elf("./bin/test.elf", 1);
+    close_uart();
+    /*
     loadAvailableArchs();
 
     TERM term;
@@ -41,7 +48,7 @@ int main(int32_t argc, char **argv) {
     }
 
     cliStart(&term);
-
+    */
 
     return 0;
 }
