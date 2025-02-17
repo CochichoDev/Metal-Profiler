@@ -9,80 +9,122 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <ctype.h>
-#include <errno.h>
 
-#include "utils.h"
-#include "cli.h"
-#include "state.h"
-#include "optimization.h"
 #include "bench.h"
+#include "common.h"
+#include "cli.h"
 #include "mmu_gen.h"
+#include "state.h"
+#include "utils.h"
+
+/*
+ * CONSTANT DEFINITION
+ */
+#define tESC        "\x1B" 
+#define tCLEAR      tESC"[2J"
+#define tCLEARLINE  tESC"[2K"
+#define tHOME       tESC"[H"
+#define tHOMELINE   tESC"[0G"
+#define tLINEUP     tESC"[1A"
+
+#define WELCOME_MSG     "########################################\n     \
+                        \rWELCOME TO AUTOMETALBENCH\n                   \
+                        \rWrite \"help\" to see available commands\n      \
+                        \r########################################\n"
+
+#define LINE_TRAIL      "\r>>> "
+
+/*
+ * TYPE DECLARATION
+ */
+typedef enum {
+    ACTION_NONE,
+    ACTION_ANALYZE,
+    ACTION_CLEAR,
+    ACTION_DEPLOY,
+    ACTION_EXECUTE,
+    ACTION_EXIT,
+    ACTION_GENERATE,
+    ACTION_HELP,
+    ACTION_LIST,
+    ACTION_LOAD,
+    ACTION_OPTIMIZE,
+    ACTION_SET,
+    ACTION_ERROR
+} ACTION;
+
+typedef enum {
+    G_NONE,
+    G_MMU,
+    G_LINKER,
+    G_ERROR
+} GENERATE_ACTION;
+
+typedef enum {
+    L_NONE,
+    L_CONFIG,
+    L_OUTPUT,
+    L_ERROR
+} LIST_ACTION;
+
+typedef enum {
+    O_NONE,
+    O_RS,
+    O_SA,
+    O_ERROR
+} OPTIMIZE_ACTION;
+
+typedef enum {
+    S_NONE,
+    S_ARCH,
+    S_OUTPUT,
+    S_ERROR
+} SET_ACTION;
+
+typedef enum {
+    H_NONE,
+    H_OUTPUT,
+    H_ERROR
+} HELP_ACTION;
 
 /************** CLI STATIC FUNCTION DECLARATION ****************/
-static ACTION parseAction(TERM *term);
-static GENERATE_ACTION parseGenerateArg(TERM *term);
-static LIST_ACTION parseListArg(TERM *term);
-static OPTIMIZE_ACTION parseOptimizeArg(TERM *term);
-static SET_ACTION parseSetArg(TERM *term);
-static HELP_ACTION parseHelpArg(TERM *term);
-static uint8_t matchKey(TERM *term, const char *key);
-static uint8_t ignoreLine(TERM *term);
-static void getWord(TERM *term, T_PSTR output, size_t max_size);
+static ACTION parseAction();
+static GENERATE_ACTION parseGenerateArg();
+static LIST_ACTION parseListArg();
+static OPTIMIZE_ACTION parseOptimizeArg();
+static SET_ACTION parseSetArg();
+static HELP_ACTION parseHelpArg();
+static u8 matchKey(const char *key);
+static u8 ignoreLine();
+static void getWord(T_PSTR output, size_t max_size);
 
+/************** CLI STATE DECLARATION ****************/
+static char lastChar = 0;
 
 /************** CLI WINDOW FUNCTIONS ****************/
 /*
  * cliClear: Cleans the output descriptor
- * Parameters: 
- *      term : Reference to the terminal
  * Return values:
  *      0 : Successful clear
  */
-uint8_t cliClear(TERM *term) {
-    write(term->out_descr, tCLEAR, strlen(tCLEAR)+1);
-    write(term->out_descr, tHOME, strlen(tHOME)+1);
-    return 0;
-}
-
-/*
- * cliInit: Initializes the terminal structure
- * Parameters: 
- *      term : Reference to the terminal structure to be initialized
- *      in : Descriptor of the input
- *      out : Descriptor of the output
- * Return values:
- *      0 : Successful initialization
- *      1 : Invalid term reference
- *      2 : Invalid descriptors
- */
-uint8_t cliInit(TERM *term, int in, int out) {
-    if (!term)
-        return 1;
-
-    if (fcntl(in, F_GETFL) == -1 || errno == EBADF) 
-        return 2;
-    if (fcntl(out, F_GETFL) == -1 || errno == EBADF)
-        return 2;
-
-    term->in_descr = in;
-    term->out_descr = out;
+err cliClear() {
+    write(STDOUT_FILENO, tCLEAR, strlen(tCLEAR)+1);
+    write(STDOUT_FILENO, tHOME, strlen(tHOME)+1);
     return 0;
 }
 
 /*
  * cliStart: Starts the tui mode
- * Parameters: 
- *      term : Reference to the terminal structure to be initialized
  * Return values:
  *      0 : Successful initialization
  */
-uint8_t cliStart(TERM *term) {
-    if (cliClear(term))
+err cliStart() {
+    if (cliClear())
         goto lERROR;
 
-    if (write(term->out_descr, WELCOME_MSG, strlen(WELCOME_MSG)+1) != strlen(WELCOME_MSG)+1) goto lERROR;
+    if (dprintf(STDOUT_FILENO, WELCOME_MSG) != strlen(WELCOME_MSG)) goto lERROR;
 
-    while (!cliGetInput(term));
+    while (!cliGetInput());
     return 0;
 
     lERROR:
@@ -98,8 +140,8 @@ uint8_t cliStart(TERM *term) {
  *      0 : Successful exiting
  *      1 : Error exiting terminal
  */
-uint8_t cliClose(TERM *term) {
-    if (cliClear(term))
+err cliClose() {
+    if (cliClear())
         return 1;
     return 0;
 }
@@ -113,32 +155,36 @@ uint8_t cliClose(TERM *term) {
  *      0 : Successful execution
  *      1 : Encountered some error with input
  */
-uint8_t cliGetInput(TERM *term) {
+err cliGetInput() {
     listState();
-    if (write(term->out_descr, LINE_TRAIL, strlen(LINE_TRAIL)+1) != strlen(LINE_TRAIL)+1) return 1;
+    if (dprintf(STDOUT_FILENO, LINE_TRAIL) != strlen(LINE_TRAIL)) return 1;
     char buffer[128] = {0};
     // Additional buffers essential for parsing more actions
     char name[64] = {0};
     char graph[32] = {0};
     char data[32] = {0};
-    switch (parseAction(term)) {
-        case CLEAR:
-            cliClear(term);
-        case NONE:
+    switch (parseAction()) {
+        case ACTION_CLEAR:
+            cliClear();
+        case ACTION_NONE:
             break;
-        case ANALYZE:
+        case ACTION_ANALYZE:
             analysisTUI();
             break;
-        case EXECUTE:
-            getWord(term, buffer, 128);
+        case ACTION_DEPLOY:
+            getWord(buffer, 128);
+            deployFirmware(buffer);
+            break;
+        case ACTION_EXECUTE:
+            getWord(buffer, 128);
             runExecution(cliParseNum(buffer), ".");
             break;
-        case EXIT:
-            cliClose(term);
+        case ACTION_EXIT:
+            cliClose();
             cleanState();
             return 1;
-        case GENERATE:
-            switch (parseGenerateArg(term)) {
+        case ACTION_GENERATE:
+            switch (parseGenerateArg()) {
                 case G_MMU:
                     genMMU(&SELECTED_ARCH);
                     break;
@@ -151,8 +197,8 @@ uint8_t cliGetInput(TERM *term) {
                     break;
             }
             break;
-        case HELP:
-            switch(parseHelpArg(term)) {
+        case ACTION_HELP:
+            switch(parseHelpArg()) {
                 case H_OUTPUT:
                     listOutputTypes();
                     break;
@@ -162,10 +208,10 @@ uint8_t cliGetInput(TERM *term) {
                     break;
             }
             break;
-        case LIST:
-            switch (parseListArg(term)) {
+        case ACTION_LIST:
+            switch (parseListArg()) {
                 case L_CONFIG:
-                    printConfig(term);
+                    printConfig();
                     break;
                 case L_OUTPUT:
                     listSelectedOutputOptions();
@@ -173,22 +219,22 @@ uint8_t cliGetInput(TERM *term) {
                 case L_ERROR:
                     return 1;
                 case L_NONE:
-                    listArchs(term);
+                    listArchs();
                     break;
             }
             break;
-        case LOAD:
-            getWord(term, buffer, 128);
+        case ACTION_LOAD:
+            getWord(buffer, 128);
             loadConfig(cliParseNum(buffer));
             break;
-        case OPTIMIZE:
-            switch (parseOptimizeArg(term)) {
+        case ACTION_OPTIMIZE:
+            switch (parseOptimizeArg()) {
                 case O_RS:
-                    getWord(term, buffer, 128);
+                    getWord(buffer, 128);
                     //optimizeConfig(randomSearchNR, cliParseNum(buffer));
                     break;
                 case O_SA:
-                    getWord(term, buffer, 128);
+                    getWord(buffer, 128);
                     //optimizeConfig(simulatedAnnealing, cliParseNum(buffer));
                     break;
                 case O_ERROR:
@@ -198,22 +244,22 @@ uint8_t cliGetInput(TERM *term) {
                     break;
             }
             break;
-        case SET:
-            switch (parseSetArg(term)) {
+        case ACTION_SET:
+            switch (parseSetArg()) {
                 case S_ARCH:
-                    getWord(term, buffer, 128);
+                    getWord(buffer, 128);
                     selectArch(cliParseNum(buffer));
                     listConfigs();
                     break;
                 case S_OUTPUT:
                     // Get the type of graph
-                    getWord(term, graph, 32);
+                    getWord(graph, 32);
                     strToUpper(graph);
                     // Get the type of data
-                    getWord(term, data, 32);
+                    getWord(data, 32);
                     strToUpper(data);
                     // Get the name
-                    getWord(term, name, 64);
+                    getWord(name, 64);
                     //addOutputOption(graph, data, name);
                     break;
                 case S_ERROR:
@@ -223,18 +269,17 @@ uint8_t cliGetInput(TERM *term) {
                     break;
             }
             break;
-        case ERROR:
+        case ACTION_ERROR:
             return 1;
         default:
             break;
     }
 
-    ignoreLine(term);
+    ignoreLine();
     bzero(buffer, 128);
 
     return 0;
 }
-
 
 void cliPrintProgress(size_t cur, size_t max) {
     write(STDOUT_FILENO, tLINEUP, strlen(tLINEUP)+1);
@@ -260,67 +305,72 @@ void cliPrintProgress(size_t cur, size_t max) {
  *      ERROR : The input is not recognized
  *      EXIT : The programs stops execution
  */
-static ACTION parseAction(TERM *term) {
-    if (read(STDIN_FILENO, &term->lastchar, 1) <= 0) goto lERROR;
-    if (isalpha(term->lastchar))
-        term->lastchar &= 0xDF;         // Capitalize letter
+static ACTION parseAction() {
+    if (read(STDIN_FILENO, &lastChar, 1) <= 0) goto lERROR;
+    if (isalpha(lastChar))
+        lastChar &= 0xDF;         // Capitalize letter
     
-    switch (term->lastchar) {
+    switch (lastChar) {
         case 'A':
             // Match for A+NALYZE
-            if (matchKey(term, "NALYZE")) return ANALYZE;
+            if (matchKey("NALYZE")) return ACTION_ANALYZE;
             goto lNACTION;
         case 'C':
             // Match for C+LEAR
-            if (matchKey(term, "LEAR")) return CLEAR;
+            if (matchKey("LEAR")) return ACTION_CLEAR;
             goto lNACTION;
+        case 'D':
+            // Match for D+EPLOY
+            if (matchKey("EPLOY")) return ACTION_DEPLOY;
+            goto lNACTION;
+            
         case 'E':
             // Match for E+XIT
-            if (matchKey(term, "XIT")) return EXIT;
+            if (matchKey("XIT")) return ACTION_EXIT;
 
             // Already matched EX
-            switch (term->lastchar) {
+            switch (lastChar) {
                 // Match for EXE+CUTE
                 case 'E':
-                    if (matchKey(term, "CUTE")) return EXECUTE;
+                    if (matchKey("CUTE")) return ACTION_EXECUTE;
                 default:
                     goto lNACTION;
             }
             goto lNACTION;
         case 'G':
             // Match for G+ENERATE
-            if (matchKey(term, "ENERATE")) return GENERATE;
+            if (matchKey("ENERATE")) return ACTION_GENERATE;
             goto lNACTION;
         case 'H':
             // Match for H+ELP
-            if (matchKey(term, "ELP")) return HELP;
+            if (matchKey("ELP")) return ACTION_HELP;
             goto lNACTION;
         case 'L':
-            if (matchKey(term, "OAD")) return LOAD;
+            if (matchKey("OAD")) return ACTION_LOAD;
             
-            switch (term->lastchar) {
+            switch (lastChar) {
                 case 'I':
                     // Match for LI+ST
-                    if (matchKey(term, "ST")) return LIST;
+                    if (matchKey("ST")) return ACTION_LIST;
                 default:
                     goto lNACTION;
             }
             goto lNACTION;
         case 'O':
             // Match for O+PTIMIZE
-            if (matchKey(term, "PTIMIZE")) return OPTIMIZE;
+            if (matchKey("PTIMIZE")) return ACTION_OPTIMIZE;
             goto lNACTION;
         case 'S':
-            if (matchKey(term, "ET")) return SET;
+            if (matchKey("ET")) return ACTION_SET;
             goto lNACTION;
         case ' ':
         case '\0':
         case '\t':
             // Recursive call to ignore the blank character
-            return parseAction(term);
+            return parseAction();
             break;
         case '\n':
-            return NONE;
+            return ACTION_NONE;
         default:
             goto lNACTION;
     }
@@ -329,34 +379,34 @@ static ACTION parseAction(TERM *term) {
 
     lERROR:
         perror("Error: Problem reading input\n");
-        return ERROR;
+        return ACTION_ERROR;
     lNACTION:
-        fprintf(stdout, "Action not recognized\n");
-        return NONE;
+        dprintf(STDOUT_FILENO, "Action not recognized\n");
+        return ACTION_NONE;
 }
 
-static GENERATE_ACTION parseGenerateArg(TERM *term) {
-    while (!isnotblank(term->lastchar)) {
-        if (term->lastchar == '\n') return G_NONE;
-        if (read(term->in_descr, &term->lastchar, 1) <= 0) goto lERROR;
+static GENERATE_ACTION parseGenerateArg() {
+    while (!isnotblank(lastChar)) {
+        if (lastChar == '\n') return G_NONE;
+        if (read(STDIN_FILENO, &lastChar, 1) <= 0) goto lERROR;
     }
-    if (isalpha(term->lastchar))
-        term->lastchar &= 0xDF;         // Capitalize letter
+    if (isalpha(lastChar))
+        lastChar &= 0xDF;         // Capitalize letter
     
-    switch (term->lastchar) {
+    switch (lastChar) {
         case 'L':
             // Match for L+INKER
-            if (matchKey(term, "INKER")) return G_LINKER;
+            if (matchKey("INKER")) return G_LINKER;
             goto lNACTION;
         case 'M':
             // Match for M+MU
-            if (matchKey(term, "MU")) return G_MMU;
+            if (matchKey("MU")) return G_MMU;
             goto lNACTION;
         case ' ':
         case '\0':
         case '\t':
             // Recursive call to ignore the blank character
-            return parseGenerateArg(term);
+            return parseGenerateArg();
             break;
         case '\n':
             return G_NONE;
@@ -381,29 +431,29 @@ static GENERATE_ACTION parseGenerateArg(TERM *term) {
  *      ERROR : The input is not recognized
  *      EXIT : The programs stops execution
  */
-static LIST_ACTION parseListArg(TERM *term) {
-    while (!isnotblank(term->lastchar)) {
-        if (term->lastchar == '\n') return L_NONE;
-        if (read(term->in_descr, &term->lastchar, 1) <= 0) goto lERROR;
+static LIST_ACTION parseListArg() {
+    while (!isnotblank(lastChar)) {
+        if (lastChar == '\n') return L_NONE;
+        if (read(STDIN_FILENO, &lastChar, 1) <= 0) goto lERROR;
     }
 
-    if (isalpha(term->lastchar))
-        term->lastchar &= 0xDF;         // Capitalize letter
+    if (isalpha(lastChar))
+        lastChar &= 0xDF;         // Capitalize letter
     
-    switch (term->lastchar) {
+    switch (lastChar) {
         case 'C':
             // Match for C+ONFIG
-            if (matchKey(term, "ONFIG")) return L_CONFIG;
+            if (matchKey("ONFIG")) return L_CONFIG;
             goto lNACTION;
         case 'O':
             // Match for O+UTPUT
-            if (matchKey(term, "UTPUT")) return L_OUTPUT;
+            if (matchKey("UTPUT")) return L_OUTPUT;
             goto lNACTION;
         case ' ':
         case '\0':
         case '\t':
             // Recursive call to ignore the blank character
-            return parseListArg(term);
+            return parseListArg();
             break;
         case '\n':
             return L_NONE;
@@ -421,29 +471,29 @@ static LIST_ACTION parseListArg(TERM *term) {
         return L_NONE;
 }
 
-static OPTIMIZE_ACTION parseOptimizeArg(TERM *term) {
-    while (!isnotblank(term->lastchar)) {
-        if (term->lastchar == '\n') return O_NONE;
-        if (read(term->in_descr, &term->lastchar, 1) <= 0) goto lERROR;
+static OPTIMIZE_ACTION parseOptimizeArg() {
+    while (!isnotblank(lastChar)) {
+        if (lastChar == '\n') return O_NONE;
+        if (read(STDIN_FILENO, &lastChar, 1) <= 0) goto lERROR;
     }
 
-    if (isalpha(term->lastchar))
-        term->lastchar &= 0xDF;         // Capitalize letter
+    if (isalpha(lastChar))
+        lastChar &= 0xDF;         // Capitalize letter
     
-    switch (term->lastchar) {
+    switch (lastChar) {
         case 'R':
             // Match for R+S
-            if (matchKey(term, "S")) return O_RS;
+            if (matchKey("S")) return O_RS;
             goto lNACTION;
         case 'S':
             // Match for S+A
-            if (matchKey(term, "A")) return O_SA;
+            if (matchKey("A")) return O_SA;
             goto lNACTION;
         case ' ':
         case '\0':
         case '\t':
             // Recursive call to ignore the blank character
-            return parseOptimizeArg(term);
+            return parseOptimizeArg();
             break;
         case '\n':
             return O_NONE;;
@@ -468,28 +518,28 @@ static OPTIMIZE_ACTION parseOptimizeArg(TERM *term) {
  *      ERROR : The input is not recognized
  *      EXIT : The programs stops execution
  */
-static SET_ACTION parseSetArg(TERM *term) {
-    while (!isnotblank(term->lastchar)) {
-        if (term->lastchar == '\n') return S_NONE;
-        if (read(term->in_descr, &term->lastchar, 1) <= 0) goto lERROR;
+static SET_ACTION parseSetArg() {
+    while (!isnotblank(lastChar)) {
+        if (lastChar == '\n') return S_NONE;
+        if (read(STDIN_FILENO, &lastChar, 1) <= 0) goto lERROR;
     }
-    if (isalpha(term->lastchar))
-        term->lastchar &= 0xDF;         // Capitalize letter
+    if (isalpha(lastChar))
+        lastChar &= 0xDF;         // Capitalize letter
     
-    switch (term->lastchar) {
+    switch (lastChar) {
         case 'A':
             // Match for A+RCH
-            if (matchKey(term, "RCH")) return S_ARCH;
+            if (matchKey("RCH")) return S_ARCH;
             goto lNACTION;
         case 'O':
             // Match for O+UTPUT
-            if (matchKey(term, "UTPUT")) return S_OUTPUT;
+            if (matchKey("UTPUT")) return S_OUTPUT;
             goto lNACTION;
         case ' ':
         case '\0':
         case '\t':
             // Recursive call to ignore the blank character
-            return parseSetArg(term);
+            return parseSetArg();
             break;
         case '\n':
             return S_NONE;
@@ -514,24 +564,24 @@ static SET_ACTION parseSetArg(TERM *term) {
  *      ERROR : The input is not recognized
  *      EXIT : The programs stops execution
  */
-static HELP_ACTION parseHelpArg(TERM *term) {
-    while (!isnotblank(term->lastchar)) {
-        if (term->lastchar == '\n') return H_NONE;
-        if (read(term->in_descr, &term->lastchar, 1) <= 0) goto lERROR;
+static HELP_ACTION parseHelpArg() {
+    while (!isnotblank(lastChar)) {
+        if (lastChar == '\n') return H_NONE;
+        if (read(STDIN_FILENO, &lastChar, 1) <= 0) goto lERROR;
     }
-    if (isalpha(term->lastchar))
-        term->lastchar &= 0xDF;         // Capitalize letter
+    if (isalpha(lastChar))
+        lastChar &= 0xDF;         // Capitalize letter
     
-    switch (term->lastchar) {
+    switch (lastChar) {
         case 'O':
             // Match for O+UTPUT
-            if (matchKey(term, "UTPUT")) return H_OUTPUT;
+            if (matchKey("UTPUT")) return H_OUTPUT;
             goto lNACTION;
         case ' ':
         case '\0':
         case '\t':
             // Recursive call to ignore the blank character
-            return parseHelpArg(term);
+            return parseHelpArg();
             break;
         case '\n':
             return H_NONE;
@@ -560,10 +610,10 @@ static HELP_ACTION parseHelpArg(TERM *term) {
  *      1 : The key is matched
  *      0 : The key is different from the input
  */
-static uint8_t matchKey(TERM *term, const char *key) {
-    if (read(term->in_descr, &term->lastchar, 1)) {
+static u8 matchKey(const char *key) {
+    if (read(STDIN_FILENO, &lastChar, 1)) {
         if (*key == '\0') {
-            switch (term->lastchar) {
+            switch (lastChar) {
                 case ' ':
                 case '\0':
                 case '\t':
@@ -573,16 +623,16 @@ static uint8_t matchKey(TERM *term, const char *key) {
                     return 0;
             }
         }
-        if (term->lastchar == '\n') return 0;
-        term->lastchar &= 0xDF;
-        if (term->lastchar== *key) return matchKey(term, key+1);
+        if (lastChar == '\n') return 0;
+        lastChar &= 0xDF;
+        if (lastChar == *key) return matchKey(key+1);
     }
     return 0;
 }
 
-static uint8_t ignoreLine(TERM *term) {
-    while(term->lastchar != '\n') {
-        if (read(term->in_descr, &term->lastchar, 1) <= 0)
+static u8 ignoreLine() {
+    while(lastChar != '\n') {
+        if (read(STDIN_FILENO, &lastChar, 1) <= 0)
             goto lERROR;
     }
     return 0;
@@ -592,36 +642,35 @@ lERROR:
     return 1;
 }
 
-static void getWord(TERM *term, T_PSTR output, size_t max_size) {
-    while(!isnotblank(term->lastchar)) {
-        if (term->lastchar == '\n') return;
-        read(term->in_descr, &term->lastchar, 1);
+static void getWord(T_PSTR output, size_t max_size) {
+    while(!isnotblank(lastChar)) {
+        if (lastChar == '\n') return;
+        read(STDIN_FILENO, &lastChar, 1);
     }
     // Buffer cursor positioned at the first character
     // If the first character is '"' than scan until next '"'
     T_PSTR char_ptr = output;
-    if(term->lastchar == '"') {
+    if(lastChar == '"') {
         do {
-            read(term->in_descr, &term->lastchar, 1);
-            if (term->lastchar == '\n' || term->lastchar == '"') break;
-            *char_ptr++ = term->lastchar;
+            read(STDIN_FILENO, &lastChar, 1);
+            if (lastChar == '\n' || lastChar == '"') break;
+            *char_ptr++ = lastChar;
         } while (char_ptr - output < max_size);
     } else {
         while (char_ptr - output < max_size) {
-            switch (term->lastchar) {
+            switch (lastChar) {
                 case '\0':
                 case '\n':
                 case ' ':
                 case '\t':
                     goto END;
                 default:
-                    *char_ptr++ = term->lastchar;
+                    *char_ptr++ = lastChar;
             }
-            read(term->in_descr, &term->lastchar, 1);
+            read(STDIN_FILENO, &lastChar, 1);
         }
     }
 
     END:
         *char_ptr = '\0';
 }
-

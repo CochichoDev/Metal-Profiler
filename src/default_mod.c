@@ -14,6 +14,10 @@
 
 static CONFIG *CUR_CFG;
 
+void default_DEPLOY(const char *dest) {
+    
+}
+
 void default_BUILD_PROJECT(CONFIG *config) {
     CUR_CFG = config;
     puts("Makefile INFO");

@@ -10,15 +10,21 @@
 #include "global.h"
 #include "types.h"
 #include "optimization.h"
+#include "common.h"
 
 #include <alloca.h>
 #include <assert.h>
-#include <stdlib.h>
 #include <ctype.h>
+#include <dirent.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <wchar.h>
+#include <sys/sendfile.h>
 #include <sys/wait.h>
+#include <unistd.h>
+#include <wchar.h>
 
 
 
@@ -46,7 +52,7 @@ size_t itos(int num, char *str) {
     return size;
 }
 
-int64_t cliParseNum(const char *str) {
+s64 cliParseNum(const char *str) {
     if (str == NULL || *str == '\0') return 0;
     while (!isdigit(*str)) {
         if (*str == '\n' || *str == '\0') return 0;
@@ -94,7 +100,7 @@ double parseFloat(char *str) {
 }
 
 /************** STRING HANDLING FUNCTIONS ****************/
-T_VOID strToUpper(T_PSTR str) {
+void strToUpper(char *str) {
     while (*str != '\0') {
         if (isnotblank(*str)) {
             *str = *str & 0xDF;         // Capitalize letter
@@ -103,7 +109,7 @@ T_VOID strToUpper(T_PSTR str) {
     }
 }
 
-T_PSTR getNameFromPath(T_PSTR path) {
+char *getNameFromPath(char *path) {
     // Get the name of the executable
     T_PSTR slash_marker = path;
     T_PSTR after_slash = path;
@@ -116,7 +122,7 @@ T_PSTR getNameFromPath(T_PSTR path) {
     return after_slash;
 }
 
-T_PSTR replaceChar(T_PSTR string, T_CHAR init, T_CHAR replace) {
+char *replaceChar(char *string, char init, char replace) {
     assert(string != NULL);
     T_PSTR ptr = string;
     while (*ptr != '\0') {
@@ -127,7 +133,7 @@ T_PSTR replaceChar(T_PSTR string, T_CHAR init, T_CHAR replace) {
 }
 
 /************** FILE HANDLING FUNCTIONS ****************/
-T_UINT numColumnInFile(FILE *file) {
+u32 numColumnInFile(FILE *file) {
     if (!file)
         return 0;
 
@@ -155,7 +161,7 @@ END:
     return num_columns;
 }
 
-T_VOID saveDataMETRICS(const T_PSTR output, G_ARRAY *metrics_array) {
+void saveDataMETRICS(char *const output, G_ARRAY *metrics_array) {
     if (!metrics_array || !metrics_array->DATA) {
         fprintf(stderr, "Error: saveDataMETRICS called with NULL metrics_array data\n");
         return;
@@ -216,7 +222,7 @@ T_VOID saveDataMETRICS(const T_PSTR output, G_ARRAY *metrics_array) {
     fclose(output_file);
 }
 
-T_VOID saveDataRESULTS(const T_PSTR output, G_ARRAY *result_array) {
+void saveDataRESULTS(char *const output, G_ARRAY *result_array) {
     RESULT *result_data = result_array->DATA;
     FILE *output_file = fopen(output, "w");
     if (!output_file) {
@@ -269,7 +275,7 @@ T_VOID saveDataRESULTS(const T_PSTR output, G_ARRAY *result_array) {
  *                          This allows to later plot multiple different scenarios
  *                          with different configurations.
  */
-T_ERROR saveDataRESULTBATCH(const T_PSTR output, G_ARRAY *result_array, size_t size_result_array) {
+err saveDataRESULTBATCH(char *const output, G_ARRAY *result_array, size_t size_result_array) {
     FILE *output_file = fopen(output, "w");
     if (!output_file)
         return -1;
@@ -324,7 +330,7 @@ T_ERROR saveDataRESULTBATCH(const T_PSTR output, G_ARRAY *result_array, size_t s
     return 0;
 }
 
-T_ERROR saveDataOptimizationResults(const T_PSTR output, G_ARRAY *optimization_array, OPT_MAP *map) {
+err saveDataOptimizationResults(char *const output, G_ARRAY *optimization_array, OPT_MAP *map) {
     assert(optimization_array->TYPE == G_OPTRESULT);
     FILE *output_file = fopen(output, "w");
     if (!output_file)
@@ -357,8 +363,57 @@ T_ERROR saveDataOptimizationResults(const T_PSTR output, G_ARRAY *optimization_a
     return 0;
 }
 
+/* 
+ * cp_dir2dir: Copy all files from specified directory to destination path 
+ */
+err cp_dir2dir(const char *src, const char *dest) {
+    DIR *srcDir;
+    s32 dirFD, destFD;
+
+    if (!(srcDir = opendir(src))) {
+        perror("Could not open source directory");
+        return -1;
+    }
+    dirFD = dirfd(srcDir);
+
+    if ((destFD = open(dest, O_DIRECTORY)) == -1) {
+        perror("Could not open destination directory");
+        return -1;
+    }
+
+    s32 srcFile, destFile;
+
+    struct dirent *entry;
+    while ((entry = readdir(srcDir))) {
+        if (entry->d_type == DT_DIR) continue;      /* Ignore directories */
+
+        if ((srcFile = openat(dirFD, entry->d_name, O_RDONLY)) == -1) {
+            dprintf(STDOUT_FILENO, "Could not open source file: %s\tError:  %d\n", entry->d_name, errno);
+            return -1;
+        }
+        if ((destFile = openat(destFD, entry->d_name, O_CREAT | O_RDWR)) == -1) {
+            dprintf(STDOUT_FILENO, "Could not create destination file: %s\tError:  %d\n", entry->d_name, errno);
+            return -1;
+        }
+
+        /* Since sendfiles requires a size it will transfer an unknown amount of 1kB blocks */
+        while(1) {
+            size_t bytes;
+            if ((bytes = sendfile(destFile, srcFile, NULL, 1024)) < 1024) {
+                if (bytes == -1) {
+                    dprintf(STDOUT_FILENO, "Failed to copy %s\tError:  %d\n", entry->d_name, errno);
+                    return -1;
+                }
+                break;
+            }
+        }
+    }
+
+    return 0;
+}
+
 /************** CONFIG HANDLING FUNCTIONS ****************/
-size_t strProprietyIdxByPtr(T_PSTR *OPTS, T_PSTR prop) {
+size_t strProprietyIdxByPtr(char **OPTS, char *prop) {
     size_t idx = 0;
     for ( ; OPTS[idx] != NULL; idx++) {
         if (prop == OPTS[idx]) break;
@@ -366,7 +421,7 @@ size_t strProprietyIdxByPtr(T_PSTR *OPTS, T_PSTR prop) {
     return idx;
 }
 
-size_t strProprietyIdxByValue(T_PSTR *OPTS, T_PSTR prop) {
+size_t strProprietyIdxByValue(char **OPTS, char *prop) {
     size_t idx = 0;
     while (OPTS[idx] != NULL) {
         if (!strcmp(prop, OPTS[idx])) break;
@@ -403,7 +458,7 @@ CONFIG *const cloneConfig(CONFIG *const cfg) {
  * This functions results in true if any optimizable
  * propriety is not a marked as mitigation
  */
-T_FLAG isConfigAlwaysOptimizable(CONFIG *cfg) {
+s8 isConfigAlwaysOptimizable(CONFIG *cfg) {
     COMP *comp = NULL;
     for (size_t comp_idx = 0; comp_idx < cfg->NUM; comp_idx++) {
         comp = cfg->COMPS[comp_idx];
@@ -416,7 +471,7 @@ T_FLAG isConfigAlwaysOptimizable(CONFIG *cfg) {
 }
 
 /************** MAKEFILE HANDLING FUNCTIONS ****************/
-static T_VOID catPropDefine(T_PSTR str, PROP *prop) {
+static void catPropDefine(char *str, PROP *prop) {
     char buf[128];
     strcpy(buf, "-D");
     char arg[64];
@@ -447,7 +502,7 @@ JOIN:
 
 }
 
-T_ERROR CALL_MAKEFILES(CONFIG *config) {
+err CALL_MAKEFILES(CONFIG *config) {
     pid_t make_bsp, make_bsp1, make_fsbl, make_loader;
     pid_t *make_cores = alloca(sizeof(pid_t)*SELECTED_ARCH.desc.NUM_CORES);
     bzero(make_cores, sizeof(pid_t)*SELECTED_ARCH.desc.NUM_CORES);

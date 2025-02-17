@@ -46,7 +46,7 @@ T_ERROR listConfigs() {
     return 0;
 }
 
-T_VOID printConfig() {
+void printConfig() {
     if (SELECTED_ARCH.name[0] == '\0') {
         fprintf(stderr, "Error: No architecture has been selected\n");
         return;
@@ -162,7 +162,7 @@ END:
     return 0;
 }
 
-T_VOID listOutputTypes() {
+void listOutputTypes() {
     fprintf(stdout, "GRAPH OPTIONS:\n");
     for (size_t idx = 0 ; idx < NUM_OUTPUT_GRAPHS ; idx++ ) {
         fprintf(stdout, "\t%s\n", OUTPUT_GRAPH_OPTIONS[idx]);
@@ -173,7 +173,7 @@ T_VOID listOutputTypes() {
     }
 }
 
-T_VOID listSelectedOutputOptions() {
+void listSelectedOutputOptions() {
     if (!OUTPUT_LIST_SELECTED) {
         fprintf(stdout, "Info: No selected outputs\n");
         return;
@@ -191,8 +191,6 @@ T_VOID listSelectedOutputOptions() {
         idx++;
     } while (iter != NULL);
 }
-
-
 
 /************** ADDING/MODIFYING STATE FUNCTIONS ****************/
 void loadAvailableArchs() {
@@ -254,7 +252,7 @@ void loadAvailableConfigs() {
     fclose(configs);
 }
 
-T_VOID selectArch(size_t choice) {
+void selectArch(size_t choice) {
     if (choice < 0 || 
         choice >= AVAIL_ARCHS.num) 
     {
@@ -292,20 +290,29 @@ T_VOID selectArch(size_t choice) {
     if (!(MODULE_CONFIG = (CONFIG *) dlsym(MODULE_HANDLE, "ARCH_CONFIG")))
         fprintf(stderr, "Error: Could not access CONFIG variable (%s)\n", dlerror());
 
-    if (!(BUILD_PROJECT = (T_VOID (*)(CONFIG *)) dlsym(MODULE_HANDLE, "BUILD_PROJECT"))) {
-        fprintf(stderr, "Error: Could not access BUILD_PROJECT function (%s)\n", dlerror());
+    if (!(DEPLOY = (void (*)(const char *)) dlsym(MODULE_HANDLE, "DEPLOY"))) {
+        fprintf(stderr, "Info: Could not detect DEPLOY function (%s)\n\
+                            Opting for default functionality\n", dlerror());
+        DEPLOY = default_DEPLOY;
+    }
+    if (!(BUILD_PROJECT = (void (*)(CONFIG *)) dlsym(MODULE_HANDLE, "BUILD_PROJECT"))) {
+        fprintf(stderr, "Info: Could not detect BUILD_PROJECT function (%s)\n\
+                            Opting for default functionality\n", dlerror());
         BUILD_PROJECT = default_BUILD_PROJECT;
     }
-    if (!(INIT_BENCH = (T_VOID (*)(void)) dlsym(MODULE_HANDLE, "INIT_BENCH"))) {
-        fprintf(stderr, "Error: Could not access INIT_BENCH function (%s)\n", dlerror());
+    if (!(INIT_BENCH = (void (*)(void)) dlsym(MODULE_HANDLE, "INIT_BENCH"))) {
+        fprintf(stderr, "Info: Could not detect INIT_BENCH function (%s)\n\
+                            Opting for default functionality\n", dlerror());
         INIT_BENCH = default_INIT_BENCH;
     }
-    if (!(RUN_BENCH = (T_VOID (*)(RESULT *)) dlsym(MODULE_HANDLE, "RUN_BENCH"))) {
-        fprintf(stderr, "Error: Could not access RUN_BENCH  function (%s)\n", dlerror());
+    if (!(RUN_BENCH = (void (*)(RESULT *)) dlsym(MODULE_HANDLE, "RUN_BENCH"))) {
+        fprintf(stderr, "Info: Could not detect RUN_BENCH function (%s)\n\
+                            Opting for default functionality\n", dlerror());
         RUN_BENCH = default_RUN_BENCH;
     }
-    if (!(EXIT_BENCH = (T_VOID (*)(void)) dlsym(MODULE_HANDLE, "EXIT_BENCH"))) {
-        fprintf(stderr, "Error: Could not access EXIT_BENCH   function (%s)\n", dlerror());
+    if (!(EXIT_BENCH = (void (*)(void)) dlsym(MODULE_HANDLE, "EXIT_BENCH"))) {
+        fprintf(stderr, "Info: Could not detect EXIT_BENCH function (%s)\n\
+                            Opting for default functionality\n", dlerror());
         EXIT_BENCH = default_EXIT_BENCH;
     }
 
@@ -317,7 +324,7 @@ T_VOID selectArch(size_t choice) {
  * This function calls BUILD_PROJECT of the module with a CONFIG argument that does not necessarily have
  * all the proprieties in the same order as specified by the module (some uneeded by be missing)
  */
-T_VOID loadConfig(T_UINT config_option) {
+void loadConfig(T_UINT config_option) {
     if (SELECTED_ARCH.name[0] == '\0') {
         fprintf(stderr, "Error: No config has been selected\n");
         return;
@@ -510,7 +517,7 @@ T_ERROR deleteOutputOption(T_PSTR name) {
     return -1;
 }
 
-T_VOID destroyConfig(CONFIG *cfg) {
+void destroyConfig(CONFIG *cfg) {
     if (cfg) {
         for (size_t comp_idx = 0; comp_idx < cfg->NUM; comp_idx++) {
             COMP *comp = *(cfg->COMPS + comp_idx);
@@ -809,7 +816,7 @@ static T_ULONG parseXULong(const char *init, const char *end, const size_t num_l
     return num;
 }
 
-static T_VOID parseXULLong(T_ULLONG num, const char *init, const char *end, const size_t num_line) {
+static void parseXULLong(T_ULLONG num, const char *init, const char *end, const size_t num_line) {
     assert(num != NULL && init != NULL && end != NULL);
     bzero(num, sizeof(T_ULLONG)*sizeof(T_ULONG));
 
@@ -868,7 +875,7 @@ static ARCH_DESC *parseArch(FILE *fd, ARCH_DESC *desc) {
         T_FLAG      CORE_PROP;
         T_FLAG      CACHE_PROP;
         T_USHORT    CACHE_NUM;
-        T_VOID     *TARGET;
+        void     *TARGET;
     } param_s;
 
     param_s flags = {.CORE_PROP = FALSE, .CACHE_PROP = FALSE, .CACHE_NUM = 0};

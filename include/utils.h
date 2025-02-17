@@ -8,7 +8,7 @@
 
 
 /************** MACRO DEFINITION ****************/
-#define isnotblank(c) ((c) > 0x21 && (c) < 0x7E)
+#define isnotblank(c) ((c) >= 0x21 && (c) <= 0x7E)
 
 /*
  * GET_FIRST_CHAR(ptr) : Get the first any character ocurrence it finds, pointed by ptr

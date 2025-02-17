@@ -58,9 +58,10 @@ extern T_VOID       *MODULE_HANDLE;
 extern CONFIG       *MODULE_CONFIG;
 extern CONFIG       *INPUT_CONFIG;
 
-extern T_VOID       (*BUILD_PROJECT)(CONFIG *);
-extern T_VOID       (*INIT_BENCH)(T_VOID);
-extern T_VOID       (*RUN_BENCH)(RESULT *);
-extern T_VOID       (*EXIT_BENCH)(T_VOID);
+extern void     (*DEPLOY)(const char *);
+extern void     (*BUILD_PROJECT)(CONFIG *);
+extern void     (*INIT_BENCH)(void);
+extern void     (*RUN_BENCH)(RESULT *);
+extern void     (*EXIT_BENCH)(T_VOID);
 #endif
 

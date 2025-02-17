@@ -4,6 +4,7 @@
 #include "types.h"
 #include "results.h"
 
+void default_DEPLOY(const char *dest);
 void default_BUILD_PROJECT(CONFIG *config);
 void default_INIT_BENCH();
 void default_RUN_BENCH(RESULT *results);

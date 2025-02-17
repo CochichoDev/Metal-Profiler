@@ -35,20 +35,14 @@
     }
 
 int main(int32_t argc, char **argv) {
+    /*
     init_uart(-1);
     open_elf("./bin/test.elf", 1);
     close_uart();
-    /*
+    */
     loadAvailableArchs();
 
-    TERM term;
-    if (cliInit(&term, STDIN_FILENO, STDOUT_FILENO)) {
-        fprintf(stderr, "Error: CLI couldn't be initialized\n");
-        return -1;
-    }
-
-    cliStart(&term);
-    */
+    cliStart();
 
     return 0;
 }

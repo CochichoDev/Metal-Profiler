@@ -9,8 +9,6 @@
 
 static s32 uart_fd = -1;
 
-
-
 static err scan_tty_ports() {
     DIR *dev = opendir("/dev");
     struct dirent *entry;
