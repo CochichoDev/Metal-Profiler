@@ -5,3 +5,5 @@
 void init_uart(s8 port_number);
 void close_uart();
 void uart_send_byte(u8 byte);
+
+void deployFirmware(const char *path);

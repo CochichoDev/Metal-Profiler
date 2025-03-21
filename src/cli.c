@@ -11,8 +11,11 @@
 #include <ctype.h>
 
 #include "bench.h"
+#include "build.h"
+#include "comm.h"
 #include "common.h"
 #include "cli.h"
+#include "default_mod.h"
 #include "mmu_gen.h"
 #include "state.h"
 #include "utils.h"
@@ -173,11 +176,16 @@ err cliGetInput() {
             break;
         case ACTION_DEPLOY:
             getWord(buffer, 128);
-            deployFirmware(buffer);
+            DEPLOY_FILES(buffer);
             break;
         case ACTION_EXECUTE:
+            /*
             getWord(buffer, 128);
             runExecution(cliParseNum(buffer), ".");
+            */
+            default_INIT_BENCH();
+            default_RUN_BENCH(NULL);
+            default_EXIT_BENCH();
             break;
         case ACTION_EXIT:
             cliClose();

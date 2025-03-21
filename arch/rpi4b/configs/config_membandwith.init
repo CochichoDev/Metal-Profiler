@@ -1,6 +1,6 @@
 #0
-CACHECOLORING:  1b          [M]
-MEMBANDWIDTH:   1b          [M]
+CACHECOLORING:  0b          [M]
+MEMBANDWIDTH:   0b          [M]
 BUDGET:         15500       [O]
 PERIOD:         800         [O]
 THRESHOLD:      0.09f       [O]

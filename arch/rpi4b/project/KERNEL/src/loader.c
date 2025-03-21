@@ -1,14 +1,19 @@
-#include <ctype.h>
+#define __arch64__
 
 #include "common.h"
 #include "loader.h"
 #include "uart.h"
+#include "utils.h"
+#include "ctype.h"
 
 #define DEBUG
 
+
+extern u64 proc_hang;
 extern u64 rst_addr;
 
 static u8 state = RUN;
+
 
 static char *get_next_space(char *str) {
     while (*str != ' ' && *str != '\n') ++str;
@@ -16,7 +21,14 @@ static char *get_next_space(char *str) {
 }
 
 static char *get_next_char(char *str) {
-    while ((!isalpha(*str)) && *str != '\n') ++str;
+    uart_str("TEST1.1"); uart_nl();
+    while ((!isalpha(*str)) && *str != '\n') {
+        uart_str("The character "); uart_int(*str);
+        if (isalpha(*str)) uart_str(" is alpha");
+        else uart_str( "is not alpha");
+        uart_nl();
+        ++str;
+    }
     return str;
 }
 
@@ -24,8 +36,6 @@ static char *get_next_digit(char *str) {
     while ((!isdigit(*str)) && *str != '\n') ++str;
     return str;
 }
-
-#define __arch64__
 
 void loader_load_section() {
     /* Protocol 
@@ -123,7 +133,10 @@ void loader_scan_action() {
         uart_str("> ");
         ptr1 = input;
         get_uart_input(input, 64);
+        uart_str("TEST1"); uart_nl();
+        uart_str(ptr1); uart_nl();
         ptr1 = get_next_char(ptr1);
+        uart_str("TEST2");
     
         if (!strncmp(ptr1, "LOAD", 4)) {
             u8 num_sections = loader_handle_entry(&rst_addr);
@@ -133,6 +146,11 @@ void loader_scan_action() {
 
         } else if (!strncmp(ptr1, "RUN", 3)) {
             __asm__ __volatile__("sev");
+
+            // Check if core #0 has been charged with an application
+            if (rst_addr != proc_hang) {
+                ((void (*)()) rst_addr)();
+            }
 
         } else if (!strncmp(ptr1, "INFO", 4)) {
             uart_str("INFO"); uart_nl();
@@ -145,7 +163,9 @@ void loader_scan_action() {
             uart_str("EXITING...\n\r");
             state = STOP;
         } else {
+            uart_str("TEST3");
             uart_str("UNRECOGNIZED ACTION\n\r");
+            uart_str("TEST4");
 
         }
     }

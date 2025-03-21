@@ -15,7 +15,7 @@ ARCH:=arch
 LIBS:=dl crypto pthread m TUI
 CFLAGS:=
 CPPFLAGS:=$(foreach inc, $(INCLUDE), -I$(inc)) -fno-stack-protector 
-LFLAGS:=-L$(LIB) $(foreach lib,$(LIBS),-l$(lib)) -Wl,--no-as-needed -lAMBapi
+LFLAGS:=-L$(LIB) $(foreach lib,$(LIBS),-l$(lib)) -Wl,--no-as-needed -lAMBapi -lcjson
 
 TARGET:=$(BIN)/autometalbench
 TARGET_API:=$(BIN)/libAMBapi.so

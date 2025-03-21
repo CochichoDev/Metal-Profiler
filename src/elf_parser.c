@@ -115,17 +115,21 @@ err open_elf(const char *path, u8 core_num) {
     printf("File correctly identified as ELF\n");
 #endif
 
+    err rvalue = 0;
+
     if (header[4] == 1) {
 #ifdef DEBUG
         printf("Corresponding ELF is 32 bit class\n");
 #endif
-        return process_elf_32(fd, core_num);
+        rvalue = process_elf_32(fd, core_num);
+    } else {
+#ifdef DEBUG
+        printf("Corresponding ELF is 64 bit class\n");
+#endif
+        rvalue = process_elf_64(fd, core_num);
     }
 
-#ifdef DEBUG
-    printf("Corresponding ELF is 64 bit class\n");
-#endif
-    return process_elf_64(fd, core_num);
+    return rvalue;
 }
 
 

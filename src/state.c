@@ -864,7 +864,6 @@ static void parseXULLong(T_ULLONG num, const char *init, const char *end, const 
     }
 }
 
-
 static ARCH_DESC *parseArch(FILE *fd, ARCH_DESC *desc) {
     if (desc->CACHES != NULL)
         free(desc->CACHES);

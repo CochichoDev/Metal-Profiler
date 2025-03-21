@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "types.h"
 #include "results.h"
@@ -11,6 +12,8 @@
 #include "xsct_i.h"
 #include "global.h"
 #include "utils.h"
+#include "uart.h"
+#include "elf_reader.h"
 
 static CONFIG *CUR_CFG;
 
@@ -76,13 +79,14 @@ void default_INIT_BENCH() {
     puts("*****************************************************");
     puts("Info: TTY launched");
     puts("*****************************************************");
+    init_uart(-1);
 }
 
 void default_RUN_BENCH(RESULT *results) {
     char script_query[256];
     strcpy(script_query, SELECTED_ARCH.path);
     //strcat(script_query, "/project/"T32SCRIPT);
-    strcat(script_query, "/project/"XSCTSCRIPT);
+    //strcat(script_query, "/project/"XSCTSCRIPT);
 
     T_FLAG *core_state = alloca(sizeof(T_FLAG) * SELECTED_ARCH.desc.NUM_CORES);
 
@@ -91,15 +95,37 @@ void default_RUN_BENCH(RESULT *results) {
     }
     
     //EX_T32_SCRIPT(script_query, SELECTED_ARCH.desc.NUM_CORES, core_state);
-    EX_XSCT_SCRIPT(script_query, SELECTED_ARCH.desc.NUM_CORES, core_state);
-    TTY_TO_RESULT('R','F', results);
+    //EX_XSCT_SCRIPT(script_query, SELECTED_ARCH.desc.NUM_CORES, core_state);
+
+    char *run_cmd = "RUN";
+    char *info_cmd = "INFO";
+    char *load_cmd = "LOAD";
+    for (size_t i = 0; i < strlen(load_cmd); i++)
+        uart_send_byte(load_cmd[i]);
+    uart_send_byte('\r');
+
+    strcat(script_query, "/project/build/Core1/bin/Core1.elf");
+
+    open_elf(script_query, 0);
+
+    for (size_t i = 0; i < strlen(info_cmd); i++)
+        uart_send_byte(info_cmd[i]);
+    uart_send_byte('\r');
+
+    sleep(1);
+    for (size_t i = 0; i < strlen(run_cmd); i++)
+        uart_send_byte(run_cmd[i]);
+    uart_send_byte('\r');
+
+    //TTY_TO_RESULT('R','F', results);
 }
 
 void default_EXIT_BENCH() {
     CLOSE_TTY();
+    close_uart();
     //CLOSE_T32();
-    CLOSE_XSCT();
+    //CLOSE_XSCT();
 
     //puts("Info: Trace32 closed");
-    puts("Info: XSCT closed");
+    //puts("Info: XSCT closed");
 }

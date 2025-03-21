@@ -8,4 +8,3 @@ rst_addr:
     .quad   proc_hang
     .quad   proc_hang
     .quad   proc_hang
-

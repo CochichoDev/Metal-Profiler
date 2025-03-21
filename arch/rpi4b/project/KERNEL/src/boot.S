@@ -65,7 +65,7 @@ _start:
     cmp x1, x0
     beq bss_end
 bss_loop:
-    str xzr, [x0], #64
+    str xzr, [x0], #8
     cmp x0, x1
     bne bss_loop
     

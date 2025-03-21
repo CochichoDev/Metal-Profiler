@@ -1,14 +1,12 @@
 RM := rm
-CC := aarch64-none-elf-gcc
-LD := aarch64-none-elf-ld
-OBJCOPY := aarch64-none-elf-objcopy
 
-AFLAGS := -c -Wall -MMD
+CFLAGS := -c -Wall -MMD 
 CPFLAGS := -c -MMD -O0 -Wall -nostdlib
+ASFLAGS := -c -Wall -MMD
 
 SRCDIR=src/
-INCLUDEDIR=./include/ ./ ../bsp/include/ /usr/aarch64-none-elf/include/
-LIBDIR=../bsp/bin/
+INCLUDEDIR=./include/ ./ ../build/bsp/include/ /usr/aarch64-none-elf/include/
+LIBDIR=../build/bsp/bin/
 RELEASEDIR=./bin/
 
 INCLUDEPATH=$(foreach inc, $(INCLUDEDIR), -I$(inc))
@@ -37,7 +35,7 @@ $(RELEASEDIR)%.o: $(SRCDIR)%.c
 
 $(RELEASEDIR)%.o: $(SRCDIR)%.S
 	@echo 'Building file: $<'
-	@$(CC) -Wall -O0 -c $(AFLAGS) $(INCLUDEPATH) -o $@ $<
+	@$(CC) -Wall -O0 -c $(ASFLAGS) $(INCLUDEPATH) -o $@ $<
 	@echo 'Finished building: $<'
 
 

@@ -1,0 +1,68 @@
+{
+    "CC": "aarch64-none-elf-gcc",
+    "LD": "aarch64-none-elf-ld",
+    "AR": "aarch64-none-elf-ar",
+    "OBJCOPY": "aarch64-linux-gnu-objcopy",
+    "BUILD": [
+            [
+                {
+                    "path": "build/bsp",
+                    "id": [
+                        0
+                    ]
+                }
+            ],
+            [
+                {
+                    "path": "KERNEL",
+                    "id": []
+                },
+                {
+                    "path": "build/Core1",
+                    "id": [
+                        0,
+                        1
+                    ]
+                },
+                {
+                    "path": "build/Core2",
+                    "id": [
+                        0,
+                        2
+                    ]
+                },
+                {
+                    "path": "build/Core3",
+                    "id": [
+                        0,
+                        3
+                    ]
+                },
+                {
+                    "path": "build/Core4",
+                    "id": [
+                        0,
+                        4
+                    ]
+                }
+            ]
+        ],
+    "DEPLOY": [
+        {
+            "src": "deploy/firmware/config.txt",
+            "dest": "config.txt"
+        },
+        {
+            "src": "deploy/firmware/fixup4.dat",
+            "dest": "fixup4.dat"
+        },
+        {
+            "src": "deploy/firmware/start4.elf",
+            "dest": "start4.elf"
+        },
+        {
+            "src": "KERNEL/bin/kernel8.img",
+            "dest": "kernel8.img"
+        }
+    ]
+}
