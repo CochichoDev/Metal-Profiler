@@ -179,13 +179,8 @@ err cliGetInput() {
             DEPLOY_FILES(buffer);
             break;
         case ACTION_EXECUTE:
-            /*
             getWord(buffer, 128);
             runExecution(cliParseNum(buffer), ".");
-            */
-            default_INIT_BENCH();
-            default_RUN_BENCH(NULL);
-            default_EXIT_BENCH();
             break;
         case ACTION_EXIT:
             cliClose();

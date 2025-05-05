@@ -1,14 +1,15 @@
 #include "IRQ.h"
 #include "timer.h"
 #include "PMU.h"
+#include "uart.h"
 
 int main(void);
 
 void boot2() {
     // Biggest resolution before unstable
-    //enable_cntc();
+    enable_cntp();
     initPMU();
-#ifdef BANDLIMIT
+#ifdef MEMBANDWIDTH
     init_irq();
     time_handler(PERIOD);
     reset_pmc_events();
@@ -17,8 +18,8 @@ void boot2() {
     asm volatile ("msr DAIFClr, 0x2");
 #endif
     main();
-    //disable_cntp();
-#ifdef BANDLIMIT
+    disable_cntp();
+#ifdef MEMBANDWIDTH
     stop_irq();
 #endif
 }

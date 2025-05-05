@@ -9,21 +9,23 @@
 
 #include <stdint.h>
 
+#include "common.h"
+
 
 typedef int32_t irq_no;			/* IRQ no */
 
 /* ADDED BY DIOGO COCHICHO */
 #define VTIMER_ID           (27)
 #define PTIMER_ID           (30)
-#define PM1_ID              (175)
-#define PM2_ID              (176)
-#define PM3_ID              (177)
-#define PM4_ID              (178)
-#define GIC_BASE            (0xF9010000)
+#define PM1_ID              (48)
+#define PM2_ID              (49)
+#define PM3_ID              (50)
+#define PM4_ID              (51)
+#define GIC_BASE            ((APBASE) + 0x40000U)
 #define DAIF_IRQ_BIT        (0x1U<<1)
 
-#define GIC_GICD_BASE		(GIC_BASE)  /* GICD MMIO base address */
-#define GIC_GICC_BASE		(GIC_BASE + 0x10000) /* GICC MMIO base address */
+#define GIC_GICD_BASE		((GIC_BASE) + 0x1000U)  /* GICD MMIO base address */
+#define GIC_GICC_BASE		((GIC_BASE) + 0x2000U) /* GICC MMIO base address */
 
 #define GIC_GICD_INT_PER_REG			(32)	/* 32 interrupts per reg */
 #define GIC_GICD_IPRIORITY_PER_REG		(4)		/* 4 priority per reg */

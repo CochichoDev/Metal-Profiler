@@ -12,4 +12,4 @@ typedef uint64_t    u64;
 #define PBASE       (0xFC000000U)
 
 #define STDOUT      UART4
-#define BAUDRATE    230400
+#define BAUDRATE    115200

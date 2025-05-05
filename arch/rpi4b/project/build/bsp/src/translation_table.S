@@ -9,14 +9,16 @@
 .set DEVICE,	        0x409 | (1 << 53)| (1 << 54)
 .set MEM2,	            0x407 | (3 << 8)
 
-.global MMUTableL0.0
-.global MMUTableL1.0
+.globl MMUTableL0.0
 
 .section .mmu_tbl0, "a"
 
 MMUTableL0.0:
 .set SECT, MMUTableL1.0
+.rept 0x1
 .8byte SECT + NEXT_PAGE_ATTR
+.set SECT, SECT + 0x1000
+.endr
 
 .section .mmu_tbl1, "a"
 
@@ -27,17 +29,90 @@ MMUTableL1.0:
 .set SECT, SECT + 0x1000
 .endr
 
+MMUTableL1.1:
+.set SECT, 0x100000000
+.rept 0x1c
+.8byte SECT + DEVICE
+.set SECT, SECT + 0x40000000
+.endr
+
 .section .mmu_tbl2, "a"
 
 MMUTableL2.0:
-.set SECT, 0x0
-.rept 0x7E0
+.set SECT, MMUTableL3.0
+.rept 0xb
+.8byte SECT + NEXT_PAGE_ATTR
+.set SECT, SECT + 0x1000
+.endr
+
+MMUTableL2.1:
+.set SECT, 0x1600000
+.rept 0x7d5
 .8byte SECT + MEMORY
 .set SECT, SECT + 0x200000
 .endr
 
-.set SECT, 0xFC000000
+MMUTableL2.2:
+.set SECT, 0xfc000000
 .rept 0x20
 .8byte SECT + DEVICE
 .set SECT, SECT + 0x200000
 .endr
+
+.section .mmu_tbl3, "a"
+
+MMUTableL3.0:
+.set SECT, 0x0
+.rept 0x21
+.8byte SECT + MEM2
+.set SECT, SECT + 0x1000
+.endr
+
+MMUTableL3.1:
+#ifdef CACHECOLORING
+
+.set SECT, 0x30000 + 0x0
+.rept 0x15d
+.rept 0x4
+.8byte SECT + MEM2
+.set SECT, SECT + 0x1000
+.endr
+.set SECT, SECT + 0xc000
+.endr
+
+.set SECT, 0x30000 + 0x4000
+.rept 0x15d
+.rept 0x4
+.8byte SECT + MEM2
+.set SECT, SECT + 0x1000
+.endr
+.set SECT, SECT + 0xc000
+.endr
+
+.set SECT, 0x30000 + 0x8000
+.rept 0x15d
+.rept 0x4
+.8byte SECT + MEM2
+.set SECT, SECT + 0x1000
+.endr
+.set SECT, SECT + 0xc000
+.endr
+
+.set SECT, 0x30000 + 0xc000
+.rept 0x15d
+.rept 0x4
+.8byte SECT + MEM2
+.set SECT, SECT + 0x1000
+.endr
+.set SECT, SECT + 0xc000
+.endr
+
+#else
+.set SECT, 0x30000
+.rept 0x15d0
+.8byte SECT + MEM2
+.set SECT, SECT + 0x1000
+.endr
+
+#endif
+

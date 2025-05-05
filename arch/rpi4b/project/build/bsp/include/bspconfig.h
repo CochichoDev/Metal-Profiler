@@ -4,3 +4,4 @@
 #define EL1_NONSECURE 0
 #define HYP_GUEST 0
 
+#define A72

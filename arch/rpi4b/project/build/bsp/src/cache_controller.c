@@ -1,12 +1,20 @@
 #include "cache_controller.h"
 
+#ifdef A72
+void disable_no_allocate() {
+	register uint64_t value = 0;
+
+	__asm__ __volatile__("MRS %0, S3_1_C15_C2_0" : "=r"(value));
+	__asm__ __volatile__("MSR S3_1_C15_C2_0, %0" : : "r" ((value & CPUACTLR_MASK) | CPUACTLR_NO_ALLOCATE_DISABLE));
+}
+
 void no_allocate_threshold_L1(uint32_t mode) {
 	register uint64_t value = 0;
 
 	__asm__ __volatile__("MRS %0, S3_1_C15_C2_0" : "=r"(value));
 	__asm__ __volatile__("MSR S3_1_C15_C2_0, %0" : : "r" ((value & CPUACTLR_MASK) | (mode << 25)));
 }
-
+#else
 /* no_allocate_threshold_*
  *
  * Description: Changes the configuration on the no allocate functionality of BIU regarding L2 Cache
@@ -21,16 +29,33 @@ void no_allocate_threshold_L1(uint32_t mode) {
  * Returns:		Nothing
  *
  */
+void no_allocate_threshold_L1(uint32_t mode) {
+	register uint64_t value = 0;
+
+	__asm__ __volatile__("MRS %0, S3_1_C15_C2_0" : "=r"(value));
+	__asm__ __volatile__("MSR S3_1_C15_C2_0, %0" : : "r" ((value & CPUACTLR_MASK) | (mode << 25)));
+}
+
 void no_allocate_threshold_L2(uint32_t mode) {
 	register uint64_t value = 0;
 
 	__asm__ __volatile__("MRS %0, S3_1_C15_C2_0" : "=r"(value));
 	__asm__ __volatile__("MSR S3_1_C15_C2_0, %0" : : "r" ((value & CPUACTLR_MASK2) | (mode << 27)));
 }
+#endif
 
+#ifdef A72
+void disable_outstanding_prefetching() {
+	register uint64_t value = 0;
+
+	__asm__ __volatile__("MRS %0, S3_1_C15_C2_0" : "=r"(value));
+	__asm__ __volatile__("MSR S3_1_C15_C2_0, %0" : : "r" ((value & CPUACTLR_PREFETCH_MASK) | CPUACTLR_PREFETCH_DISABLE));
+}
+#else
 void set_outstanding_prefetching(uint8_t L1PCTL) {
 	register uint64_t value = 0;
 
 	__asm__ __volatile__("MRS %0, S3_1_C15_C2_0" : "=r"(value));
 	__asm__ __volatile__("MSR S3_1_C15_C2_0, %0" : : "r" ((value & CPUACTLR_PREFETCH_MASK) | ((L1PCTL & 0x7U) << 13)));
 }
+#endif

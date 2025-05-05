@@ -11,15 +11,19 @@ size_t itos(s64 num, char *str) {
 
     char buf[32];
     size_t idx = 0;
+    char n_flag = 0;
 
     if (num < 0) {
-        buf[idx++] = '-';
+        n_flag = 1;
+        num *= -1;
     }
 
     while (num) {
         buf[idx++] = num % 10 + 0x30;
         num /= 10;
     }
+    if (n_flag)
+        buf[idx++] = '-';
 
     size_t size = idx;
         

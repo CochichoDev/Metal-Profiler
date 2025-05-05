@@ -1,3 +1,4 @@
+#include "cache_controller.h"
 #include "gpio.h"
 #include "uart.h"
 #include "definitions.h"
@@ -15,6 +16,8 @@ register uint64_t L2_WB __asm__("x24");
 #endif
 
 int main(void) {
+    disable_no_allocate();
+    disable_outstanding_prefetching();
     register volatile uint8_t *target = &__buffer_start;
 
 #ifdef VICTIM
@@ -23,8 +26,9 @@ int main(void) {
     L1D_WB      = read_pmevcntr(1);
     L2_REFILLS  = read_pmevcntr(2);
     L2_WB       = read_pmevcntr(3);
-#endif
 
+    uart_str("$"); uart_nl();
+#endif
     for (HEADER) 
     {
         for (register int j = 0 ; j < DDR/SIZE ; ++j)

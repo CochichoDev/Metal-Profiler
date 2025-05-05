@@ -189,7 +189,7 @@ storefloat:
 	savefloatregister
     b restorecontext
 synchronoushandler:
-	bl	sync_handler
+	bl	exit
 restorecontext:
 	restoreregister
 	exception_return
@@ -241,6 +241,7 @@ FIQInterruptHandler:
 
     // TODO: If some FIQ interruption handler needed change!
 	//bl	FIQInterrupt
+    bl      exit
 
 	restoreregister
 

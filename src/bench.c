@@ -166,10 +166,12 @@ T_VOID runExecution (size_t iter, const char *name) {
         fprintf(stdout, "Error: No config has been selected\n");
         return;
     }
+
     if (!OUTPUT_LIST_SELECTED) {
         fprintf(stderr, "Error: No output selected\n");
         return;
     }
+
     // Count number of outputs
     size_t numberResults = 0;
     for (OUTPUT_LIST *out_ptr = OUTPUT_LIST_SELECTED; out_ptr != NULL; out_ptr = out_ptr->NEXT, ++numberResults); 
@@ -380,7 +382,7 @@ static T_VOID processResults(const char *name, G_ARRAY *garray_result_input, siz
 
 T_VOID computeInterferenceDegradation(G_ARRAY *garrays_std_input, size_t num_garrays, G_ARRAY *garrays_std_deg) {
     // Change configuration to only compile the isolated victim
-    CONFIG *cfg_iso = calloc(1, sizeof(CONFIG));
+    CONFIG *cfg_iso = cloneConfig(INPUT_CONFIG);
     cfg_iso->NUM = 2;
     cfg_iso->VICTIM_ID = INPUT_CONFIG->VICTIM_ID;
     GET_COMP_BY_ID(INPUT_CONFIG, SYSTEM_COMP_ID, (const COMP **)cfg_iso->COMPS);

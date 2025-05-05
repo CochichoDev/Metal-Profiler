@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "cJSON.h"
@@ -10,11 +11,13 @@
 #include "common.h"
 #include "utils.h"
 
-#define DEBUG
+//#define DEBUG
 
 struct build_inst {
     char path[128];
+    char bin[128];
     u8 *params;
+    s8 core;
     size_t params_size;
 };
 
@@ -101,7 +104,7 @@ JOIN:
 
 }
 
-static void destroyBuildConf() {
+void destroyBuildConf() {
     struct build_cmd *build_ptr = build_conf.bhead;
     while (build_ptr != NULL) {
         build_conf.bhead = build_ptr->next;
@@ -207,6 +210,20 @@ static err parseBuildConfig(const char *path) {
                         #ifdef DEBUG
                         printf("path: %s\n", bcmd_ptr->inst[bcmd_ptr->inst_size].path);
                         #endif
+                    }
+                    const cJSON *binpath = cJSON_GetObjectItem(build_inst, "bin"); 
+                    if (cJSON_IsString(binpath)) {
+                        strcpy(bcmd_ptr->inst[bcmd_ptr->inst_size].bin, binpath->valuestring);
+                        #ifdef DEBUG
+                        printf("bin: %s\n", bcmd_ptr->inst[bcmd_ptr->inst_size].bin);
+                        #endif
+                    }
+                    const cJSON *core = cJSON_GetObjectItem(build_inst, "core");
+                    if (cJSON_IsNumber(core)) {
+                        bcmd_ptr->inst[bcmd_ptr->inst_size].core = core->valueint;
+                        printf("core: %d\n", bcmd_ptr->inst[bcmd_ptr->inst_size].core);
+                    } else {
+                        bcmd_ptr->inst[bcmd_ptr->inst_size].core = -1;
                     }
                     const cJSON *id_array = cJSON_GetObjectItem(build_inst, "id"); 
                     if (cJSON_IsArray(id_array)) {
@@ -322,7 +339,7 @@ static err callMakefileVA(const char **arg, ...) {
  *              2 - Arguments to be used on the variable CFLAGS
  */
 static err callMakefile(const char (*arg)[2][256], size_t num) {
-    pid_t *pids = malloc(num * sizeof(pid_t));
+    pid_t *pids = calloc(num, sizeof(pid_t));
 
     char compiler[64], loader[64], archiver[64], objcopy[64];
     sprintf(compiler, "CC=%s", build_conf.cc);
@@ -330,6 +347,8 @@ static err callMakefile(const char (*arg)[2][256], size_t num) {
     sprintf(archiver, "AR=%s", build_conf.ar);
     sprintf(objcopy, "OBJCOPY=%s", build_conf.objcopy);
     for (size_t i = 0; i < num; i++) {
+        /* Check if the build path is null -> Should not compile */
+        if (arg[i][0][0] == 0) continue;
         char query[512];
         strcpy(query, "AFLAGS=");
         puts(arg[i][1]);
@@ -389,10 +408,15 @@ err CALL_MAKEFILES(CONFIG *config) {
                 if (build_ptr->inst[inst].params[id_i] == config->VICTIM_ID) {
                     strcat(make_args[inst][1], "-DVICTIM ");
                 }
+                /* IMPORTANT */
+                /* If the proprieties of a needed id are not defined then don't compile -> Erase the build path */
                 if (GET_COMP_BY_ID(config, build_ptr->inst[inst].params[id_i], &comp) != -1) {
                     for (size_t prop_i = 0; prop_i < comp->PBUFFER->NUM; prop_i++) {
                         catPropDefine(make_args[inst][1], comp->PBUFFER->PROPS + prop_i);
                     }
+                } else {
+                    make_args[inst][0][0] = 0;
+                    break;
                 }
             }
 
@@ -409,8 +433,6 @@ err CALL_MAKEFILES(CONFIG *config) {
         free(make_args);
         build_ptr = build_ptr->next;
     }
-
-    destroyBuildConf();
     return 0;
 }
 
@@ -440,6 +462,74 @@ err DEPLOY_FILES(const char *dest) {
         deploy_ptr = deploy_ptr->next;
     }
 
-    destroyBuildConf();
+    return 0;
+}
+
+/*
+ * Arg: Selected config
+ *      Array to be changed (Needs to have the size of all cores
+ * Return: Length of array (Equal to number of available cores) or 0 in case of error
+ */
+size_t activeCores(CONFIG *config, s8 *core_state) {
+    if (!core_state) return 0;
+
+    size_t length = 0;
+
+    for (size_t i = 0; i < SELECTED_ARCH.desc.NUM_CORES; i++) {
+        core_state[i] = -1;
+    }
+
+    struct build_cmd *cmd = build_conf.bhead;
+    while (cmd != NULL) {
+        for (size_t i = 0; i < cmd->inst_size; i++) {
+            if (cmd->inst[i].core == -1) continue;
+            #ifdef DEBUG
+            printf("Core %d configured\n", cmd->inst[i].core);
+            #endif
+            length++;
+            core_state[cmd->inst[i].core] = 1;
+
+            for (size_t j = 0; j < cmd->inst[i].params_size; j++) {
+                if (GET_COMP_BY_ID(config, cmd->inst[i].params[j], NULL) == -1) {
+                    core_state[cmd->inst[i].core] = 0;
+                    break;
+                }
+            }
+        }
+        cmd = cmd->next;
+    }
+    return length;
+}
+
+/*
+ * Arg: Core ID (if -1 then asking for the bsp executable if there is one)
+ *      Char Array to be changed with the path (should be long enough)
+ * Return: Length of the path string
+ */
+size_t getBinPath(s8 core_id, char *path) {
+    if (!path) return 0;
+    strcpy(path, SELECTED_ARCH.path);
+    strcat(path, "/project/");
+
+    struct build_cmd *cmd = build_conf.bhead;
+
+    while (cmd != NULL) {
+        for (size_t i = 0; i < cmd->inst_size; i++) {
+            /* HERE AN HYPOTHESIS IS MADE THAT THE BSP HAS THE ID 0 */
+            /* NOT VERY ELEGANT */
+            if (core_id == -1 && cmd->inst[i].params_size == 1 && cmd->inst[i].params[0] == 0 && cmd->inst[i].bin != 0) {
+                strcat(path, cmd->inst[i].path);
+                strcat(path, "/");
+                return strcat(path, cmd->inst[i].bin) - path;
+            }
+
+            if (cmd->inst[i].core != core_id) continue;
+            strcat(path, cmd->inst[i].path);
+            strcat(path, "/");
+            return strcat(path, cmd->inst[i].bin) - path;
+
+        }
+        cmd = cmd->next;
+    }
     return 0;
 }

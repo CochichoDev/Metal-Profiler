@@ -136,7 +136,6 @@ void loader_scan_action() {
         uart_str("TEST1"); uart_nl();
         uart_str(ptr1); uart_nl();
         ptr1 = get_next_char(ptr1);
-        uart_str("TEST2");
     
         if (!strncmp(ptr1, "LOAD", 4)) {
             u8 num_sections = loader_handle_entry(&rst_addr);
@@ -163,9 +162,7 @@ void loader_scan_action() {
             uart_str("EXITING...\n\r");
             state = STOP;
         } else {
-            uart_str("TEST3");
             uart_str("UNRECOGNIZED ACTION\n\r");
-            uart_str("TEST4");
 
         }
     }

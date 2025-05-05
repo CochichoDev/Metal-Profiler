@@ -7,7 +7,7 @@ void uart_str(char *str) {
     for (; *str != 0; str++) outbyte(*str);
 }
 
-void uart_int(u64 num) {
+void uart_int(s64 num) {
     char nbuf[32];
     itos(num, nbuf);
     uart_str(nbuf);
@@ -21,7 +21,6 @@ void uart_hex(u64 num) {
 
 void uart_nl() {
     outbyte('\n');
-    outbyte('\r');
 }
 
 void get_uart_input(char input[], u32 max_size) {

@@ -1,0 +1,231 @@
+==38802== Memcheck, a memory error detector
+==38802== Copyright (C) 2002-2024, and GNU GPL'd, by Julian Seward et al.
+==38802== Using Valgrind-3.24.0 and LibVEX; rerun with -h for copyright info
+==38802== Command: ./bin/autometalbench
+==38802== Parent PID: 38791
+==38802== 
+==38802== Thread 2:
+==38802== Conditional jump or move depends on uninitialised value(s)
+==38802==    at 0x12260C: update_term_content (term.c:81)
+==38802==    by 0x4F95709: start_thread (pthread_create.c:448)
+==38802==    by 0x50198B3: clone (clone.S:100)
+==38802== 
+==38802== Thread 1:
+==38802== Syscall param wait4(pid) contains uninitialised byte(s)
+==38802==    at 0x4F9DBE2: __syscall_cancel_arch (syscall_cancel.S:56)
+==38802==    by 0x4F91E32: __internal_syscall_cancel (cancellation.c:49)
+==38802==    by 0x4F91E73: __syscall_cancel (cancellation.c:75)
+==38802==    by 0x5002D6E: wait4 (wait4.c:30)
+==38802==    by 0x10D972: callMakefile (build.c:365)
+==38802==    by 0x10DE29: CALL_MAKEFILES (build.c:431)
+==38802==    by 0x110BE0: default_BUILD_PROJECT (default_mod.c:30)
+==38802==    by 0x10C4BF: computeDegradation (bench.c:431)
+==38802==    by 0x10C276: computeInterferenceDegradation (bench.c:391)
+==38802==    by 0x10BE52: processResults (bench.c:334)
+==38802==    by 0x10B220: runExecution (bench.c:191)
+==38802==    by 0x10A7F1: returnOKButton (bench.c:50)
+==38802== 
+==38802== Invalid read of size 8
+==38802==    at 0x4ECD76E: GET_COMP_BY_ID (api.c:29)
+==38802==    by 0x10E076: activeCores (build.c:493)
+==38802==    by 0x110E0E: default_RUN_BENCH (default_mod.c:117)
+==38802==    by 0x10B34C: runBench (bench.c:210)
+==38802==    by 0x10B1B2: runExecution (bench.c:183)
+==38802==    by 0x10A7F1: returnOKButton (bench.c:50)
+==38802==    by 0x11F3F7: return_node_button (button.c:67)
+==38802==    by 0x120B3F: __get_child_action_return (events.c:124)
+==38802==    by 0x120CC6: event_handler (events.c:154)
+==38802==    by 0x10AFAF: analysisTUI (bench.c:143)
+==38802==    by 0x10FBCF: cliGetInput (cli.c:175)
+==38802==    by 0x10F9CF: cliStart (cli.c:130)
+==38802==  Address 0x5123ed8 is 136 bytes inside a block of size 144 free'd
+==38802==    at 0x48488EF: free (vg_replace_malloc.c:989)
+==38802==    by 0x10C282: computeInterferenceDegradation (bench.c:392)
+==38802==    by 0x10BE52: processResults (bench.c:334)
+==38802==    by 0x10B220: runExecution (bench.c:191)
+==38802==    by 0x10A7F1: returnOKButton (bench.c:50)
+==38802==    by 0x11F3F7: return_node_button (button.c:67)
+==38802==    by 0x120B3F: __get_child_action_return (events.c:124)
+==38802==    by 0x120CC6: event_handler (events.c:154)
+==38802==    by 0x10AFAF: analysisTUI (bench.c:143)
+==38802==    by 0x10FBCF: cliGetInput (cli.c:175)
+==38802==    by 0x10F9CF: cliStart (cli.c:130)
+==38802==    by 0x11189D: main (main.c:40)
+==38802==  Block was alloc'd at
+==38802==    at 0x484CC13: calloc (vg_replace_malloc.c:1675)
+==38802==    by 0x11EF1C: cloneConfig (utils.c:437)
+==38802==    by 0x10C1F4: computeInterferenceDegradation (bench.c:385)
+==38802==    by 0x10BE52: processResults (bench.c:334)
+==38802==    by 0x10B220: runExecution (bench.c:191)
+==38802==    by 0x10A7F1: returnOKButton (bench.c:50)
+==38802==    by 0x11F3F7: return_node_button (button.c:67)
+==38802==    by 0x120B3F: __get_child_action_return (events.c:124)
+==38802==    by 0x120CC6: event_handler (events.c:154)
+==38802==    by 0x10AFAF: analysisTUI (bench.c:143)
+==38802==    by 0x10FBCF: cliGetInput (cli.c:175)
+==38802==    by 0x10F9CF: cliStart (cli.c:130)
+==38802== 
+==38802== Invalid read of size 8
+==38802==    at 0x4ECD73A: GET_COMP_BY_ID (api.c:30)
+==38802==    by 0x10E076: activeCores (build.c:493)
+==38802==    by 0x110E0E: default_RUN_BENCH (default_mod.c:117)
+==38802==    by 0x10B34C: runBench (bench.c:210)
+==38802==    by 0x10B1B2: runExecution (bench.c:183)
+==38802==    by 0x10A7F1: returnOKButton (bench.c:50)
+==38802==    by 0x11F3F7: return_node_button (button.c:67)
+==38802==    by 0x120B3F: __get_child_action_return (events.c:124)
+==38802==    by 0x120CC6: event_handler (events.c:154)
+==38802==    by 0x10AFAF: analysisTUI (bench.c:143)
+==38802==    by 0x10FBCF: cliGetInput (cli.c:175)
+==38802==    by 0x10F9CF: cliStart (cli.c:130)
+==38802==  Address 0x5123e50 is 0 bytes inside a block of size 144 free'd
+==38802==    at 0x48488EF: free (vg_replace_malloc.c:989)
+==38802==    by 0x10C282: computeInterferenceDegradation (bench.c:392)
+==38802==    by 0x10BE52: processResults (bench.c:334)
+==38802==    by 0x10B220: runExecution (bench.c:191)
+==38802==    by 0x10A7F1: returnOKButton (bench.c:50)
+==38802==    by 0x11F3F7: return_node_button (button.c:67)
+==38802==    by 0x120B3F: __get_child_action_return (events.c:124)
+==38802==    by 0x120CC6: event_handler (events.c:154)
+==38802==    by 0x10AFAF: analysisTUI (bench.c:143)
+==38802==    by 0x10FBCF: cliGetInput (cli.c:175)
+==38802==    by 0x10F9CF: cliStart (cli.c:130)
+==38802==    by 0x11189D: main (main.c:40)
+==38802==  Block was alloc'd at
+==38802==    at 0x484CC13: calloc (vg_replace_malloc.c:1675)
+==38802==    by 0x11EF1C: cloneConfig (utils.c:437)
+==38802==    by 0x10C1F4: computeInterferenceDegradation (bench.c:385)
+==38802==    by 0x10BE52: processResults (bench.c:334)
+==38802==    by 0x10B220: runExecution (bench.c:191)
+==38802==    by 0x10A7F1: returnOKButton (bench.c:50)
+==38802==    by 0x11F3F7: return_node_button (button.c:67)
+==38802==    by 0x120B3F: __get_child_action_return (events.c:124)
+==38802==    by 0x120CC6: event_handler (events.c:154)
+==38802==    by 0x10AFAF: analysisTUI (bench.c:143)
+==38802==    by 0x10FBCF: cliGetInput (cli.c:175)
+==38802==    by 0x10F9CF: cliStart (cli.c:130)
+==38802== 
+==38802== 
+==38802== HEAP SUMMARY:
+==38802==     in use at exit: 167,499 bytes in 80 blocks
+==38802==   total heap usage: 851 allocs, 771 frees, 621,820 bytes allocated
+==38802== 
+==38802== LEAK SUMMARY:
+==38802==    definitely lost: 142,864 bytes in 31 blocks
+==38802==    indirectly lost: 21,842 bytes in 36 blocks
+==38802==      possibly lost: 0 bytes in 0 blocks
+==38802==    still reachable: 2,793 bytes in 13 blocks
+==38802==         suppressed: 0 bytes in 0 blocks
+==38802== Rerun with --leak-check=full to see details of leaked memory
+==38802== 
+==38802== Use --track-origins=yes to see where uninitialised values come from
+==38802== ERROR SUMMARY: 188 errors from 4 contexts (suppressed: 0 from 0)
+==38802== 
+==38802== 6 errors in context 1 of 4:
+==38802== Syscall param wait4(pid) contains uninitialised byte(s)
+==38802==    at 0x4F9DBE2: __syscall_cancel_arch (syscall_cancel.S:56)
+==38802==    by 0x4F91E32: __internal_syscall_cancel (cancellation.c:49)
+==38802==    by 0x4F91E73: __syscall_cancel (cancellation.c:75)
+==38802==    by 0x5002D6E: wait4 (wait4.c:30)
+==38802==    by 0x10D972: callMakefile (build.c:365)
+==38802==    by 0x10DE29: CALL_MAKEFILES (build.c:431)
+==38802==    by 0x110BE0: default_BUILD_PROJECT (default_mod.c:30)
+==38802==    by 0x10C4BF: computeDegradation (bench.c:431)
+==38802==    by 0x10C276: computeInterferenceDegradation (bench.c:391)
+==38802==    by 0x10BE52: processResults (bench.c:334)
+==38802==    by 0x10B220: runExecution (bench.c:191)
+==38802==    by 0x10A7F1: returnOKButton (bench.c:50)
+==38802== 
+==38802== 
+==38802== 12 errors in context 2 of 4:
+==38802== Invalid read of size 8
+==38802==    at 0x4ECD73A: GET_COMP_BY_ID (api.c:30)
+==38802==    by 0x10E076: activeCores (build.c:493)
+==38802==    by 0x110E0E: default_RUN_BENCH (default_mod.c:117)
+==38802==    by 0x10B34C: runBench (bench.c:210)
+==38802==    by 0x10B1B2: runExecution (bench.c:183)
+==38802==    by 0x10A7F1: returnOKButton (bench.c:50)
+==38802==    by 0x11F3F7: return_node_button (button.c:67)
+==38802==    by 0x120B3F: __get_child_action_return (events.c:124)
+==38802==    by 0x120CC6: event_handler (events.c:154)
+==38802==    by 0x10AFAF: analysisTUI (bench.c:143)
+==38802==    by 0x10FBCF: cliGetInput (cli.c:175)
+==38802==    by 0x10F9CF: cliStart (cli.c:130)
+==38802==  Address 0x5123e50 is 0 bytes inside a block of size 144 free'd
+==38802==    at 0x48488EF: free (vg_replace_malloc.c:989)
+==38802==    by 0x10C282: computeInterferenceDegradation (bench.c:392)
+==38802==    by 0x10BE52: processResults (bench.c:334)
+==38802==    by 0x10B220: runExecution (bench.c:191)
+==38802==    by 0x10A7F1: returnOKButton (bench.c:50)
+==38802==    by 0x11F3F7: return_node_button (button.c:67)
+==38802==    by 0x120B3F: __get_child_action_return (events.c:124)
+==38802==    by 0x120CC6: event_handler (events.c:154)
+==38802==    by 0x10AFAF: analysisTUI (bench.c:143)
+==38802==    by 0x10FBCF: cliGetInput (cli.c:175)
+==38802==    by 0x10F9CF: cliStart (cli.c:130)
+==38802==    by 0x11189D: main (main.c:40)
+==38802==  Block was alloc'd at
+==38802==    at 0x484CC13: calloc (vg_replace_malloc.c:1675)
+==38802==    by 0x11EF1C: cloneConfig (utils.c:437)
+==38802==    by 0x10C1F4: computeInterferenceDegradation (bench.c:385)
+==38802==    by 0x10BE52: processResults (bench.c:334)
+==38802==    by 0x10B220: runExecution (bench.c:191)
+==38802==    by 0x10A7F1: returnOKButton (bench.c:50)
+==38802==    by 0x11F3F7: return_node_button (button.c:67)
+==38802==    by 0x120B3F: __get_child_action_return (events.c:124)
+==38802==    by 0x120CC6: event_handler (events.c:154)
+==38802==    by 0x10AFAF: analysisTUI (bench.c:143)
+==38802==    by 0x10FBCF: cliGetInput (cli.c:175)
+==38802==    by 0x10F9CF: cliStart (cli.c:130)
+==38802== 
+==38802== 
+==38802== 15 errors in context 3 of 4:
+==38802== Invalid read of size 8
+==38802==    at 0x4ECD76E: GET_COMP_BY_ID (api.c:29)
+==38802==    by 0x10E076: activeCores (build.c:493)
+==38802==    by 0x110E0E: default_RUN_BENCH (default_mod.c:117)
+==38802==    by 0x10B34C: runBench (bench.c:210)
+==38802==    by 0x10B1B2: runExecution (bench.c:183)
+==38802==    by 0x10A7F1: returnOKButton (bench.c:50)
+==38802==    by 0x11F3F7: return_node_button (button.c:67)
+==38802==    by 0x120B3F: __get_child_action_return (events.c:124)
+==38802==    by 0x120CC6: event_handler (events.c:154)
+==38802==    by 0x10AFAF: analysisTUI (bench.c:143)
+==38802==    by 0x10FBCF: cliGetInput (cli.c:175)
+==38802==    by 0x10F9CF: cliStart (cli.c:130)
+==38802==  Address 0x5123ed8 is 136 bytes inside a block of size 144 free'd
+==38802==    at 0x48488EF: free (vg_replace_malloc.c:989)
+==38802==    by 0x10C282: computeInterferenceDegradation (bench.c:392)
+==38802==    by 0x10BE52: processResults (bench.c:334)
+==38802==    by 0x10B220: runExecution (bench.c:191)
+==38802==    by 0x10A7F1: returnOKButton (bench.c:50)
+==38802==    by 0x11F3F7: return_node_button (button.c:67)
+==38802==    by 0x120B3F: __get_child_action_return (events.c:124)
+==38802==    by 0x120CC6: event_handler (events.c:154)
+==38802==    by 0x10AFAF: analysisTUI (bench.c:143)
+==38802==    by 0x10FBCF: cliGetInput (cli.c:175)
+==38802==    by 0x10F9CF: cliStart (cli.c:130)
+==38802==    by 0x11189D: main (main.c:40)
+==38802==  Block was alloc'd at
+==38802==    at 0x484CC13: calloc (vg_replace_malloc.c:1675)
+==38802==    by 0x11EF1C: cloneConfig (utils.c:437)
+==38802==    by 0x10C1F4: computeInterferenceDegradation (bench.c:385)
+==38802==    by 0x10BE52: processResults (bench.c:334)
+==38802==    by 0x10B220: runExecution (bench.c:191)
+==38802==    by 0x10A7F1: returnOKButton (bench.c:50)
+==38802==    by 0x11F3F7: return_node_button (button.c:67)
+==38802==    by 0x120B3F: __get_child_action_return (events.c:124)
+==38802==    by 0x120CC6: event_handler (events.c:154)
+==38802==    by 0x10AFAF: analysisTUI (bench.c:143)
+==38802==    by 0x10FBCF: cliGetInput (cli.c:175)
+==38802==    by 0x10F9CF: cliStart (cli.c:130)
+==38802== 
+==38802== 
+==38802== 155 errors in context 4 of 4:
+==38802== Thread 2:
+==38802== Conditional jump or move depends on uninitialised value(s)
+==38802==    at 0x12260C: update_term_content (term.c:81)
+==38802==    by 0x4F95709: start_thread (pthread_create.c:448)
+==38802==    by 0x50198B3: clone (clone.S:100)
+==38802== 
+==38802== ERROR SUMMARY: 188 errors from 4 contexts (suppressed: 0 from 0)

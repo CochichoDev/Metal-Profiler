@@ -106,7 +106,9 @@ uint64_t gicc_clear_pending() {
 }
 
 void initGICC() { 
+    #ifdef DEBUG
     uart_str("Initializing GICC"); uart_nl();
+    #endif
     
     *REG_GIC_GICC_CTLR = GICC_CTLR_DISABLE;
 
@@ -124,7 +126,9 @@ void initGICC() {
 }
 
 void initGICD() {
+    #ifdef DEBUG
     uart_str("Initializing GICD"); uart_nl();
+    #endif
     /* 
      * In order to configure distributor and interuptins
      * they first need to be disabled

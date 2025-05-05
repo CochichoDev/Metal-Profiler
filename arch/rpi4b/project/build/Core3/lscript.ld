@@ -3,81 +3,68 @@
  * Please make sure to define the attributes especified for each descriptor
  */
 
-_STACK_SIZE = 0x2000;
+_STACK_SIZE = 0x1000;
 _BUFFER_SIZE = 0x200000;
 
 MEMORY
 {
-	MEM_REGION_0_SHARED :	 ORIGIN = 0x0, LENGTH = 0x500000
-	MEM_REGION_1_BOOT :	 ORIGIN = 0x580000, LENGTH = 0x40000
-	MEM_REGION_2_CC_LINK :	 ORIGIN = 0x40300000, LENGTH = 0x1fe80000
-	MEM_REGION_3 :	 ORIGIN = 0x80000000, LENGTH = 0x70000000
-	MEM_REGION_4 :	 ORIGIN = 0xf0000000, LENGTH = 0x8000000
-	MEM_REGION_5 :	 ORIGIN = 0xf8000000, LENGTH = 0x1200000
-	MEM_REGION_6 :	 ORIGIN = 0xf9200000, LENGTH = 0x3e00000
-	MEM_REGION_7 :	 ORIGIN = 0xfd000000, LENGTH = 0x2e00000
-	MEM_REGION_8 :	 ORIGIN = 0xffe00000, LENGTH = 0x200000
-	MEM_REGION_9 :	 ORIGIN = 0x100000000, LENGTH = 0x300000000
-	MEM_REGION_10 :	 ORIGIN = 0x400000000, LENGTH = 0x400000000
-	MEM_REGION_11_LOAD :	 ORIGIN = 0x840000000, LENGTH = 0x20000000
-	MEM_REGION_12 :	 ORIGIN = 0x880000000, LENGTH = 0x180000000
-	MEM_REGION_13 :	 ORIGIN = 0x1000000000, LENGTH = 0xb000000000
-	MEM_REGION_14 :	 ORIGIN = 0xc000000000, LENGTH = 0x4000000000
+	MEM_REGION_0_SHARED :	 ORIGIN = 0x0, LENGTH = 0x10000
+	MEM_REGION_1_MMU :	 ORIGIN = 0x10000, LENGTH = 0x11000
+	MEM_REGION_2_CC_LINK :	 ORIGIN = 0xb18000, LENGTH = 0x574000
+	MEM_REGION_3 :	 ORIGIN = 0x1600000, LENGTH = 0xfaa00000
+	MEM_REGION_4 :	 ORIGIN = 0xfc000000, LENGTH = 0x4000000
+	MEM_REGION_5 :	 ORIGIN = 0x100000000, LENGTH = 0x700000000
 }
 
 ENTRY(_boot)
 
 SECTIONS
 {
-.loader (NOLOAD) : {
-	. = ALIGN(64);
-	__loader_start = .;
-	*(.loader)
-	*(.loader.*)
-	__loader_end = .;
+.shared (NOLOAD) : {
+	. = ALIGN(0x8);
+	__shared_start = .;
+	. += 65536;
+	__shared_end = .;
 } > MEM_REGION_0_SHARED
 .mmu_tbl0 (NOLOAD) : {
-	. = ALIGN(64);
+	. = ALIGN(4096);
 	__mmu_tbl0_start = .;
 	*(.mmu_tbl0)
 	__mmu_tbl0_end = .;
-} > MEM_REGION_0_SHARED
+} > MEM_REGION_1_MMU
 .mmu_tbl1 (NOLOAD) : {
 	. = ALIGN(4096);
 	__mmu_tbl1_start = .;
 	*(.mmu_tbl1)
 	__mmu_tbl1_end = .;
-} > MEM_REGION_0_SHARED
+} > MEM_REGION_1_MMU
 .mmu_tbl2 (NOLOAD) : {
 	. = ALIGN(4096);
 	__mmu_tbl2_start = .;
 	*(.mmu_tbl2)
 	__mmu_tbl2_end = .;
-} > MEM_REGION_0_SHARED
+} > MEM_REGION_1_MMU
 .mmu_tbl3 (NOLOAD) : {
 	. = ALIGN(4096);
 	__mmu_tbl3_start = .;
 	*(.mmu_tbl3)
 	__mmu_tbl3_end = .;
-} > MEM_REGION_0_SHARED
+} > MEM_REGION_1_MMU
 
-.boot : {
-	. = ALIGN(64);
-	__boot_start = .;
-	*(.boot)
-	__boot_end = .;
-} > MEM_REGION_1_BOOT
+. = ALIGN(64);
+__loader_vma = .;
+
 .text : {
 	__ld_text = LOADADDR(.text);
 	__text_start = .;
 	. = ALIGN(64);
 	KEEP (*(.vectors))
 	*(.handlers)
-	*(.text)
+	*(.boot)
 	*(.text)
 	*(.text.*)
 	__text_end = .;
-} > MEM_REGION_2_CC_LINK AT > MEM_REGION_11_LOAD
+} > MEM_REGION_2_CC_LINK
 .rodata : {
 	__ld_rodata = LOADADDR(.rodata);
 	__rodata_start = .;
@@ -85,7 +72,7 @@ SECTIONS
 	*(.rodata)
 	*(.rodata.*)
 	__rodata_end = .;
-} > MEM_REGION_2_CC_LINK AT > MEM_REGION_11_LOAD
+} > MEM_REGION_2_CC_LINK
 .data : {
 	__ld_data = LOADADDR(.data);
 	__data_start = .;
@@ -93,14 +80,14 @@ SECTIONS
 	*(.data)
 	*(.data.*)
 	__data_end = .;
-} > MEM_REGION_2_CC_LINK AT > MEM_REGION_11_LOAD
-.stack : {
+} > MEM_REGION_2_CC_LINK
+.stack (NOLOAD) : {
 	. = ALIGN(64);
 	__stack_start = .;
 	. += _STACK_SIZE;
 	__stack_end = .;
 } > MEM_REGION_2_CC_LINK
-.bss : {
+.bss (NOLOAD) : {
 	. = ALIGN(64);
 	__bss_start = .;
 	*(.bss)
@@ -110,7 +97,7 @@ SECTIONS
 	. = ALIGN(64);
 	__bss_end = .;
 } > MEM_REGION_2_CC_LINK
-.sbss : {
+.sbss (NOLOAD) : {
 	. = ALIGN(64);
 	__sbss_start = .;
 	*(.sbss)
@@ -120,7 +107,7 @@ SECTIONS
 	__sbss_end = .;
 } > MEM_REGION_2_CC_LINK
 /* This section is only useful for the standard benchmarks */
-.buffer : {
+.buffer (NOLOAD) : {
 	. = ALIGN(64);
 	__buffer_start = .;
 	. += _BUFFER_SIZE;

@@ -160,8 +160,8 @@ static __attribute__((always_inline)) void time_handler(uint64_t us) {
 
     // Next time it will interrupt
     // Divided the frequency by 2 cause of the divisor
-    write_cntp_tval_el0((int32_t) (((double)us/1000000.0f) * (double)(IOPLLFRQ)/2));
-
+    uint32_t timer_freq = read_cntfreq_el0();
+    write_cntp_tval_el0((int32_t) (((double)us/1000000.0f) * (double)(timer_freq)));
     enable_cntp();
 }
 

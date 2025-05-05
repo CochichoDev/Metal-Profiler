@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "build.h"
 #include "types.h"
 #include "results.h"
 #include "state.h"
@@ -14,6 +15,8 @@
 #include "utils.h"
 #include "uart.h"
 #include "elf_reader.h"
+
+#define DEBUG
 
 static CONFIG *CUR_CFG;
 
@@ -75,11 +78,15 @@ void default_INIT_BENCH() {
     }
     */
 
+    /*
     INIT_TTY(TTY_PORT);
     puts("*****************************************************");
     puts("Info: TTY launched");
     puts("*****************************************************");
+    */
     init_uart(-1);
+    uart_log();
+
 }
 
 void default_RUN_BENCH(RESULT *results) {
@@ -88,40 +95,92 @@ void default_RUN_BENCH(RESULT *results) {
     //strcat(script_query, "/project/"T32SCRIPT);
     //strcat(script_query, "/project/"XSCTSCRIPT);
 
-    T_FLAG *core_state = alloca(sizeof(T_FLAG) * SELECTED_ARCH.desc.NUM_CORES);
-
-    for (size_t idx = 1 ; idx <= SELECTED_ARCH.desc.NUM_CORES ; idx++) {
-        core_state[idx-1] = (GET_COMP_BY_ID(CUR_CFG, idx, NULL) != -1) ? 1 : 0;
-    }
-    
     //EX_T32_SCRIPT(script_query, SELECTED_ARCH.desc.NUM_CORES, core_state);
     //EX_XSCT_SCRIPT(script_query, SELECTED_ARCH.desc.NUM_CORES, core_state);
 
     char *run_cmd = "RUN";
     char *info_cmd = "INFO";
     char *load_cmd = "LOAD";
-    for (size_t i = 0; i < strlen(load_cmd); i++)
-        uart_send_byte(load_cmd[i]);
+    char *mmu_cmd = "MMU";
+    char *reset_cmd = "RESET";
+    char *mem_cmd = "MEM";
+    char *sys_cmd = "SYS";
+    
+    char mmutables_binpath[128];
+    if (getBinPath(-1, mmutables_binpath) >= 128) {
+        fprintf(stderr, "Error: Bin path of bsp application is too big please increase the array size\n");
+        exit(1);
+    }
+
+    s8 *core_state = calloc(SELECTED_ARCH.desc.NUM_CORES, sizeof(s8));
+    size_t num_cores = activeCores(CUR_CFG, core_state);
+
+    if (num_cores != SELECTED_ARCH.desc.NUM_CORES) {
+        fprintf(stderr, "Error: The number of available cores does not match with the build.json (expected %d configured %ld)\n", SELECTED_ARCH.desc.NUM_CORES, num_cores);
+        exit(1);
+    }
+
+    
+    #ifdef DEBUG
+    printf("Sending MMU ELF...\n");
+    #endif
+    for (size_t i = 0; i < strlen(mmu_cmd); i++)
+        uart_send_byte(mmu_cmd[i]);
     uart_send_byte('\r');
+    open_elf(mmutables_binpath, 255 - num_cores);
 
-    strcat(script_query, "/project/build/Core1/bin/Core1.elf");
+    #ifdef DEBUG
+    printf("MMU ELF sent\n");
+    #endif
+    uart_log();
 
-    open_elf(script_query, 0);
+    char binpath[128];
+    for (size_t core = 0; core < num_cores; core++) {
+        if (core_state[core] != 1) continue;
+
+        #ifdef DEBUG
+        printf("Sending ELF of Core %ld...\n", core);
+        #endif
+        for (size_t i = 0; i < strlen(load_cmd); i++)
+            uart_send_byte(load_cmd[i]);
+        uart_send_byte('\r');
+
+        if (getBinPath(core, binpath) >= 128) {
+            fprintf(stderr, "Error: Bin path of core application is too big please increase the array size\n");
+            exit(1);
+        }
+
+        open_elf(binpath, core);
+        #ifdef DEBUG
+        printf("Finished sending ELF of Core %ld\n", core);
+        #endif
+        uart_log();
+    }
+
+    free(core_state);
 
     for (size_t i = 0; i < strlen(info_cmd); i++)
         uart_send_byte(info_cmd[i]);
     uart_send_byte('\r');
 
-    sleep(1);
+    uart_log();
+    sleep(2);
+
     for (size_t i = 0; i < strlen(run_cmd); i++)
         uart_send_byte(run_cmd[i]);
     uart_send_byte('\r');
+    uart_to_result('R', 'F', results);
+    uart_log();
+    
+    for (size_t i = 0; i < strlen(reset_cmd); i++)
+        uart_send_byte(reset_cmd[i]);
+    uart_send_byte('\r');
+    uart_log();
 
-    //TTY_TO_RESULT('R','F', results);
 }
 
 void default_EXIT_BENCH() {
-    CLOSE_TTY();
+    //CLOSE_TTY();
     close_uart();
     //CLOSE_T32();
     //CLOSE_XSCT();

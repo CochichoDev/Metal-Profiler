@@ -1,7 +1,9 @@
 CP=cp
 LIB=libbsp.a
+TTELF=translation_table.elf
 
 CPFLAGS = -c -O1 -nostdlib -nostartfiles $(AFLAGS)
+LFLAGS = -nostdlib -nostartfiles -T lscript.ld
 
 SRCDIR=./src/
 RELEASEDIR=./bin/
@@ -20,7 +22,10 @@ INCLUDEFILES=$(foreach inc, $(INCLUDEDIR), $(wildcard $(inc)*.h))
 
 .PHONY: all clean
 
-all: $(RELEASEDIR)$(LIB)
+all: $(RELEASEDIR)$(LIB) $(RELEASEDIR)$(TTELF)
+
+$(RELEASEDIR)$(TTELF): $(OBJECTS) $(ASSEMBLY_OBJECTS)
+	$(CC) $(LFLAGS) $(filter %translation_table.o, $^) -o $@
 
 $(RELEASEDIR)$(LIB): $(OBJECTS) $(ASSEMBLY_OBJECTS)
 	$(AR) -r $@ $^

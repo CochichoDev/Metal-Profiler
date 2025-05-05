@@ -23,10 +23,11 @@ void initPMU() {
     enable_pmc();
     clear_of_flags();
     cfg_pmevcntr(0u, L1D_CACHE_REFILL);
-    //cfg_pmevcntr(0u, L1I_CACHE);
     cfg_pmevcntr(1u, L1D_CACHE_WB);
     cfg_pmevcntr(2u, L2_CACHE_REFILL);
     cfg_pmevcntr(3u, L2_CACHE_WB);
+    cfg_pmevcntr(4u, L1D_CACHE_REFILL);
+    cfg_pmevcntr(5u, L1D_CACHE_WB);
     enable_pmevcntr(0u);
     enable_pmevcntr(1u);
     enable_pmevcntr(2u);
@@ -64,7 +65,9 @@ void enable_pmc() {
     pmcr_value |= 0x1 << PMC_ENABLE_BIT;
     pmcr_value |= 0x1 << 4;         // Enable export events
 
+    #ifdef DEBUG
     uart_str("PMCR_EL0: "); uart_hex(pmcr_value); uart_nl();
+    #endif
 
     __asm__ __volatile__(
                         "MSR    PMCR_EL0,   %0"
@@ -142,10 +145,14 @@ void cfg_pmevcntr(uint8_t n, uint16_t eventType) {
                         "MRS    %0,     PMSELR_EL0"
                         : "=r" (pmselr_value) : : "memory");
     __asm__ __volatile__("isb");
+    #ifdef DEBUG
     uart_str("PMSELR_EL0 (Before): "); uart_hex(pmselr_value); uart_nl(); 
+    #endif
     pmselr_value &= ~(PMSELR_MASK);
     pmselr_value |= (n & PMSELR_MASK);
+    #ifdef DEBUG
     uart_str("PMSELR_EL0 (After): "); uart_hex(pmselr_value); uart_nl(); 
+    #endif
 
     __asm__ __volatile__(
                         "MSR    PMSELR_EL0,     %0"
@@ -177,7 +184,9 @@ void cfg_pmevcntr_0(uint16_t eventType) {
     pmevtyper_value &= ~PMEVTYPER_MASK;
     pmevtyper_value |= (eventType & PMEVTYPER_MASK);
 
+    #ifdef DEBUG
     uart_str("PMEVTYPER0_EL0: "); uart_hex(pmevtyper_value); uart_nl();
+    #endif
 
     __asm__ __volatile__(
                         "MSR    PMEVTYPER0_EL0, %0"
@@ -192,7 +201,9 @@ void print_available_events() {
                         "MRS    %0, PMCEID0_EL0"
                         : "=r" (pmceid_value) : : "memory");
     __asm__ __volatile__("isb");
+    #ifdef DEBUG
     uart_str("PMCEID0_EL0: "); uart_hex(pmceid_value); uart_nl();
+    #endif
 }
 
 inline uint64_t read_l1d_refills() { return L1D_REFILLS; }

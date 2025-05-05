@@ -25,6 +25,7 @@
 /**** DEGRADATION PARAMETERS ****/
 #define IGNORE_LIMIT 10
 #define TARGET_SIZE_DIVISOR 0.9
+//#define TARGET_SIZE_DIVISOR 1.0
 
 /********************************/
 /**** OPTIMIZATION PARAMETERS ****/

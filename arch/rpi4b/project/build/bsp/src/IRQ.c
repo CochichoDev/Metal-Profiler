@@ -8,7 +8,9 @@
 #define IMP_BL
 #endif
 
-#define DEBUG
+//#define DEBUG
+
+
 
 #ifdef IMP_BL
 static s64 L1D_MSHR_NEW = 0;
@@ -16,27 +18,41 @@ static s64 L1D_WB_NEW = 0;
 static s64 LAST_L1D_MSHR = 0;
 static s64 LAST_L1D_WB = 0;
 
+static u8 COUNTER_RST = 0;
+
 static s64 AVAIL = BUDGET;
 
 static void mem_monitor() {
     LAST_L1D_MSHR = read_pmevcntr(0);
     LAST_L1D_WB = read_pmevcntr(1);
 
-    AVAIL = BUDGET;
-
 #ifdef DEBUG
-    uart_str("BUDGET: "); uart_int(AVAIL); uart_nl();
+    uart_str("AVAIL: "); uart_int(AVAIL); uart_nl();
 #endif
+
+    AVAIL = BUDGET;
     
-    time_handler(PERIOD);
+    COUNTER_RST = 1;
 }
 
 static void mem_overflow() {
     L1D_MSHR_NEW = read_pmevcntr(0);
     L1D_WB_NEW = read_pmevcntr(1);
 
+    #ifdef DEBUG
+        uart_str("Before AVAIL: "); uart_int(AVAIL); uart_nl();
+    #endif
+
     AVAIL-=(L1D_MSHR_NEW - LAST_L1D_MSHR);
     AVAIL-=(L1D_WB_NEW - LAST_L1D_WB);
+
+    #ifdef DEBUG
+        uart_str("DELTA_L1D_MSHR: "); uart_int(L1D_MSHR_NEW - LAST_L1D_MSHR); uart_nl();
+        uart_str("DELTA_L1D_WB: "); uart_int(L1D_WB_NEW - LAST_L1D_WB); uart_nl();
+    #endif
+    #ifdef DEBUG
+        uart_str("After AVAIL: "); uart_int(AVAIL); uart_nl();
+    #endif
 
     LAST_L1D_MSHR = L1D_MSHR_NEW;
     LAST_L1D_WB = L1D_WB_NEW;
@@ -88,14 +104,20 @@ void irq_handler() {
         #endif
                 break;
             default:
-                *REG_GIC_GICC_EOIR = iar_value;
                 uart_str("The IRQ ID is "); uart_hex(iar_value & 0x1FFU); uart_nl();
+                *REG_GIC_GICC_EOIR = iar_value;
                 break;
         }
 
     }
 #ifdef DEBUG
     uart_str("Leaving irq handler!"); uart_nl();
+#endif
+#ifdef IMP_BL
+    if (COUNTER_RST) {
+        COUNTER_RST = 0;
+        time_handler(PERIOD);
+    }
 #endif
 }
 

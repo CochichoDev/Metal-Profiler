@@ -7,6 +7,7 @@
             [
                 {
                     "path": "build/bsp",
+                    "bin": "bin/translation_table.elf",
                     "id": [
                         0
                     ]
@@ -19,6 +20,8 @@
                 },
                 {
                     "path": "build/Core1",
+                    "bin": "bin/Core1.elf",
+                    "core": 0,
                     "id": [
                         0,
                         1
@@ -26,6 +29,8 @@
                 },
                 {
                     "path": "build/Core2",
+                    "bin": "bin/Core2.elf",
+                    "core": 1,
                     "id": [
                         0,
                         2
@@ -33,6 +38,8 @@
                 },
                 {
                     "path": "build/Core3",
+                    "bin": "bin/Core3.elf",
+                    "core": 2,
                     "id": [
                         0,
                         3
@@ -40,6 +47,8 @@
                 },
                 {
                     "path": "build/Core4",
+                    "bin": "bin/Core4.elf",
+                    "core": 3,
                     "id": [
                         0,
                         4

@@ -2,9 +2,8 @@ RM := rm -rf
 
 AFLAGS ?=
 
-
 SRCDIR=./src/
-INCLUDEDIR=./include/ ./ ../bsp/include/
+INCLUDEDIR=./include/ ./ ../bsp/include/ /usr/aarch64-none-elf/include/
 LIBDIR=../bsp/bin/
 RELEASEDIR=./bin/
 
@@ -20,9 +19,9 @@ TARGET=Core2.elf
 .PHONY: all clean
 
 all:$(RELEASEDIR)$(TARGET)
-$(RELEASEDIR)$(TARGET): $(OBJS) lscript.ld
+$(RELEASEDIR)$(TARGET): $(OBJS) lscript.ld 
 	@echo 'Building target: $@'
-	$(CC) -Wl,-T -Wl,lscript.ld -Wl,--build-id=none $(LIBPATH) -static -nostdlib -o $@ $(OBJS) $(LIBS) 
+	$(CC) -Wl,-T -Wl,lscript.ld -Wl,--nmagic,--build-id=none $(LIBPATH) -static -nostdlib -o $@ $(OBJS) $(LIBS) 
 	@echo 'Finished building target: $@'
 
 $(RELEASEDIR)%.o: $(SRCDIR)%.c

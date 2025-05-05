@@ -1,7 +1,7 @@
 #0
 CACHECOLORING:  0b          [M]
 MEMBANDWIDTH:   0b          [M]
-BUDGET:         10000       [O]
+BUDGET:         15500       [O]
 PERIOD:         800         [O]
 THRESHOLD:      0.09f       [O]
 
@@ -12,19 +12,19 @@ STRIDE:         64
 ITERATIONS:     1000
 
 #2
-APP:            WRITE
+APP:            READ
 SIZE:           DDR
 STRIDE:         64
 ITERATIONS:     1000
 
 #3
-APP:            WRITE
+APP:            READ
 SIZE:           DDR
 STRIDE:         64
 ITERATIONS:     1000
 
 #4
-APP:            WRITE
+APP:            READ
 SIZE:           DDR
 STRIDE:         64
 ITERATIONS:     1000

@@ -12,6 +12,7 @@
 
 #include "api.h"
 #include "arch.h"
+#include "build.h"
 #include "global.h"
 #include "state.h"
 #include "types.h"
@@ -260,6 +261,7 @@ void selectArch(size_t choice) {
         return;
     }
 
+    destroyBuildConf();
     SELECTED_ARCH = AVAIL_ARCHS.arch[choice];
     char desc_path[512];
     strcpy(desc_path, SELECTED_ARCH.path);
@@ -998,6 +1000,10 @@ static MEM_MAP *parseMemMap(FILE *fd, MEM_MAP *map) {
     if (map->lvls != NULL) free(map->lvls);
     if (map->entries != NULL) free(map->entries);
     bzero(map, sizeof(MEM_MAP));
+    map->boot_section = -1;
+    map->link_section = -1;
+    map->load_section = -1;
+    map->shared_section = -1;
 
     /* Parsing aider */
     typedef struct {
@@ -1170,6 +1176,11 @@ static MEM_MAP *parseMemMap(FILE *fd, MEM_MAP *map) {
                 map->boot_section = map->num_entries-1;
             #ifdef DEBUG
                 printf("Entry %ld is the boot section\n", map->boot_section);
+            #endif
+            } else if (end_ptr - init_ptr == 3 && !memcmp(init_ptr, "MMU", 3)) {
+                map->mmu_section = map->num_entries-1;
+            #ifdef DEBUG
+                printf("Entry %ld is the mmu section\n", map->mmu_section);
             #endif
             }
         }

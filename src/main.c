@@ -35,11 +35,6 @@
     }
 
 int main(int32_t argc, char **argv) {
-    /*
-    init_uart(-1);
-    open_elf("./bin/test.elf", 1);
-    close_uart();
-    */
     loadAvailableArchs();
 
     cliStart();

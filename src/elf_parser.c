@@ -8,7 +8,7 @@
 #include "elf_reader.h"
 #include "common.h"
 
-#define DEBUG
+//#define DEBUG
 
 err process_elf_32(s32 fd, u8 core_num) {
     // Reinitialize the file cursor
@@ -58,11 +58,15 @@ err process_elf_64(s32 fd, u8 core_num) {
     }
     u8 total_loadable_sections = 0;
     for (size_t sidx = 0; sidx < header.e_shnum; ++sidx) {
+        #ifdef DEBUG
         printf("File Offset: 0x%lx\n", sheaders[sidx].sh_offset);
         printf("Size: 0x%lx\n", sheaders[sidx].sh_size);
         printf("Virtual Address: 0x%lx\n", sheaders[sidx].sh_addr);
+         #endif
         if ((sheaders[sidx].sh_flags & SHF_ALLOC) == 0 || (sheaders[sidx].sh_type == SHT_NOBITS)) continue;
+        #ifdef DEBUG
         printf("Section is loadable\n\n");
+         #endif
         ++total_loadable_sections;
     }
 
@@ -107,12 +111,12 @@ err open_elf(const char *path, u8 core_num) {
     }
 
     if (idx != 4) {
-        fprintf(stderr, "Error: The file is not in ELF format\n");
+        fprintf(stderr, "Error: The file %s is not in ELF format (matched signature until byte %lu)\n", path, idx);
         return -1;
     }
 
 #ifdef DEBUG
-    printf("File correctly identified as ELF\n");
+    printf("File %s correctly identified as ELF\n", path);
 #endif
 
     err rvalue = 0;

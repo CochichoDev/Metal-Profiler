@@ -2,7 +2,7 @@
 #include "uart_internals.h"
 #include "gpio.h"
 
-static u8 init = 0;
+static u8 init = 1;
 
 void init_uart(u32 baudrate) {
 #if (STDOUT==UART4)
@@ -29,22 +29,19 @@ void init_uart(u32 baudrate) {
     *REG_UART_CR(STDOUT) |= 0b1100001100000001;  //0b1100 0001 0000 0001
     
     init = 1;
+    asm volatile("dmb sy");
 }
 
 void outbyte(char c) {
-    if (!init) init_uart(BAUDRATE);
-
     /* Wait until transmission channel is empty */
-    while ((*REG_UART_FR(STDOUT) & UART_FR_TXFF_BIT));
+    while (*REG_UART_FR(STDOUT) & UART_FR_TXFF_BIT);
     /* Send the character */
     *REG_UART_DR(STDOUT) = (c & UART_DR_TX_MASK);
 }
 
 char inbyte() {
-    if (!init) init_uart(BAUDRATE);
-
     /* Wait until transmission channel is empty */
-    while ((*REG_UART_FR(STDOUT) & UART_FR_RXFE_BIT));
+    while (*REG_UART_FR(STDOUT) & UART_FR_RXFE_BIT);
     /* Send the character */
     return (*REG_UART_DR(STDOUT) & UART_DR_TX_MASK);
 }
