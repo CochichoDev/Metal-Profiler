@@ -1,29 +1,32 @@
 #0
-CACHECOLORING:  0b          [M]
-MEMBANDWIDTH:   0b          [M]
-BUDGET:         2000        [O]
-PERIOD:         50          [O]
-REPLENISHMENT:  50          [O]
+CACHECOLORING:  1b          [M]
+MEMBANDWIDTH:   1b          [M]
+BUDGET:         7000        [O]
+PERIOD:         350         [O]
+THRESHOLD:      0.47f       [O]
 
 #1
-APP:    READ
-SIZE:   1500000
+APP:    WRITE
+SIZE:   DDR
 STRIDE: 64
-LIMIT:  10000
+ITERATIONS:  5000
 
 #2
 APP:    WRITE
-SIZE:   1500000
+SIZE:   DDR
 STRIDE: 64
+ITERATIONS:  5000
 
 #3
 APP:    WRITE
-SIZE:   1500000
+SIZE:   DDR
 STRIDE: 64
+ITERATIONS:  5000
 
 #4
 APP:    WRITE
-SIZE:   1500000
+SIZE:   DDR
 STRIDE: 64
+ITERATIONS:  5000
 
 

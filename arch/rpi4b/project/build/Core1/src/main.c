@@ -17,6 +17,7 @@ register uint64_t L2_WB __asm__("x24");
 
 int main(void) {
     disable_no_allocate();
+    disable_va_based_prefetching();
     disable_outstanding_prefetching();
     register volatile uint8_t *target = &__buffer_start;
 
@@ -36,14 +37,15 @@ int main(void) {
             for (register int i = 0 ; i < (SIZE * DIV) ; i += STRIDE) 
             {
                 ACCESS_METHOD(target+i);
+                //asm volatile("dsb sy");
             }
         }
 #ifdef VICTIM
-        uart_str("R"); uart_int(read_cntpct_el0() - SC_TICKS); uart_nl();
-        uart_str("R"); uart_int(read_pmevcntr(0) - L1D_REFILLS); uart_nl();
-        uart_str("R"); uart_int(read_pmevcntr(1) - L1D_WB); uart_nl();
-        uart_str("R"); uart_int(read_pmevcntr(2) - L2_REFILLS); uart_nl();
-        uart_str("R"); uart_int(read_pmevcntr(3) - L2_WB); uart_nl();
+        uart_str("!"); uart_int(read_cntpct_el0() - SC_TICKS); uart_nl();
+        uart_str("!"); uart_int(read_pmevcntr(0) - L1D_REFILLS); uart_nl();
+        uart_str("!"); uart_int(read_pmevcntr(1) - L1D_WB); uart_nl();
+        uart_str("!"); uart_int(read_pmevcntr(2) - L2_REFILLS); uart_nl();
+        uart_str("!"); uart_int(read_pmevcntr(3) - L2_WB); uart_nl();
         asm volatile("dsb sy");
         L1D_REFILLS = read_pmevcntr(0);
         L1D_WB      = read_pmevcntr(1);
@@ -53,7 +55,7 @@ int main(void) {
 #endif
     }
 #ifdef VICTIM
-    uart_str("FIN"); uart_nl();
+    uart_str("?"); uart_nl();
 #endif
 
     return 0;

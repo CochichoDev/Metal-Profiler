@@ -204,8 +204,8 @@ T_VOID runExecution (size_t iter, const char *name) {
 
 T_ERROR runBench(size_t iter, T_UINT numResults, RESULT **results_input) {
     RESULT *result = create_result_from_output(OUTPUT_LIST_SELECTED);
-    INIT_BENCH();
     for (size_t idx = 0; idx < iter; idx++) {
+        INIT_BENCH();
         //cliPrintProgress(idx, iter);
         RUN_BENCH(result);
         if (!result) {
@@ -236,8 +236,8 @@ T_ERROR runBench(size_t iter, T_UINT numResults, RESULT **results_input) {
                     break;
             }
         }
+        EXIT_BENCH();
     }
-    EXIT_BENCH();
     size_t result_idx = 0;
     for (OUTPUT_LIST *out_ptr = OUTPUT_LIST_SELECTED; out_ptr != NULL; out_ptr = out_ptr->NEXT, ++result_idx) {
         DESTROY_RESULTS(result + result_idx);

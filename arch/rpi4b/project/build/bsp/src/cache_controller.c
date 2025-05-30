@@ -48,8 +48,16 @@ void no_allocate_threshold_L2(uint32_t mode) {
 void disable_outstanding_prefetching() {
 	register uint64_t value = 0;
 
+	__asm__ __volatile__("MRS %0, S3_1_C15_C2_1" : "=r"(value));
+	__asm__ __volatile__("MSR S3_1_C15_C2_1, %0" : : "r" ((value & CPUECTLR_PREFETCH_MASK) | CPUECTLR_PREFETCH_DISABLE));
 	__asm__ __volatile__("MRS %0, S3_1_C15_C2_0" : "=r"(value));
 	__asm__ __volatile__("MSR S3_1_C15_C2_0, %0" : : "r" ((value & CPUACTLR_PREFETCH_MASK) | CPUACTLR_PREFETCH_DISABLE));
+}
+void disable_va_based_prefetching() {
+	register uint64_t value = 0;
+
+	__asm__ __volatile__("MRS %0, S3_1_C15_C2_0" : "=r"(value));
+	__asm__ __volatile__("MSR S3_1_C15_C2_0, %0" : : "r" ((value & CPUACTLR_VA_PREFETCH_MASK) | CPUACTLR_VA_PREFETCH_DISABLE));
 }
 #else
 void set_outstanding_prefetching(uint8_t L1PCTL) {

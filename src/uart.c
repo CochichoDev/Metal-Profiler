@@ -13,6 +13,7 @@
 #include "elf_reader.h"
 #include "global.h"
 #include "uart.h"
+#include "utils.h"
 
 static s32 uart_fd = -1;
 static s8 uart_lock = 0;
@@ -152,11 +153,13 @@ static size_t read_line_from_tty(int fd, char *buf) {
     return idx;
 }
 
+
 void uart_to_result(char imarker, char fmarker, RESULT *results) {
     assert(OUTPUT_LIST_SELECTED != NULL);
     assert(results != NULL);
 
     char buf[256] = { 0 };
+    char *buf_ptr = buf;
 
     size_t numResults = 0;
     for (OUTPUT_LIST *out_ptr = OUTPUT_LIST_SELECTED; out_ptr != NULL; out_ptr = out_ptr->NEXT, ++numResults);
@@ -181,7 +184,8 @@ void uart_to_result(char imarker, char fmarker, RESULT *results) {
         if (buf[0] == fmarker) {
             stop=1;
         }
-        if (read_bytes > 1 && buf[0] == imarker && isdigit(buf[1])) {
+        buf_ptr = buf;
+        while ( *(buf_ptr = get_result_ptr(buf_ptr, imarker)) != 0 ) {
             #ifdef DEBUG
             printf("Result in index %lu has a size of %lu\n", total % numResults,  results[total % numResults].ARRAY.SIZE);
             #endif
@@ -189,15 +193,15 @@ void uart_to_result(char imarker, char fmarker, RESULT *results) {
                 goto CONTINUE;
             switch (results[total % numResults].ARRAY.TYPE) {
                 case G_INT:
-                    sscanf(buf+1, "%u", ((T_UINT *)results[total % numResults].ARRAY.DATA)+idx);
+                    sscanf(buf_ptr, "%u", ((T_UINT *)results[total % numResults].ARRAY.DATA)+idx);
                     //printf("%u\n", *(((T_UINT *)results[total % numResults].ARRAY.DATA)+idx));
                     break;
                 case G_UINT:
-                    sscanf(buf+1, "%u", ((T_UINT *)results[total % numResults].ARRAY.DATA)+idx);
+                    sscanf(buf_ptr, "%u", ((T_UINT *)results[total % numResults].ARRAY.DATA)+idx);
                     //printf("%u\n", *(((T_UINT *)results[total % numResults].ARRAY.DATA)+idx));
                     break;
                 case G_DOUBLE:
-                    sscanf(buf+1, "%lf", ((T_DOUBLE *)results[total % numResults].ARRAY.DATA)+idx);
+                    sscanf(buf_ptr, "%lf", ((T_DOUBLE *)results[total % numResults].ARRAY.DATA)+idx);
                     //printf("%f\n", *(((T_DOUBLE *)results[total % numResults].ARRAY.DATA)+idx));
                 default:
                     break;

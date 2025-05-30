@@ -167,7 +167,7 @@ T_ERROR calculateDegradation(G_ARRAY *garrays_std_iso, size_t size_iso, G_ARRAY 
     return 0;
 }
 
-T_DOUBLE *calculateDegradationNormalized(G_ARRAY *garray_result_iso, G_ARRAY *garray_result_full, T_DOUBLE avg, size_t num) {
+T_DOUBLE *calculateDegradationNormalized(G_ARRAY *garray_result_iso, G_ARRAY *garray_result_full, T_DOUBLE avg, size_t num, T_DOUBLE min, T_DOUBLE max) {
     // Calculate vector of degradation
     G_ARRAY *garrays_std_full = calloc(garray_result_full->SIZE, sizeof(G_ARRAY));
     G_ARRAY *garrays_std_deg = calloc(garray_result_full->SIZE, sizeof(G_ARRAY));
@@ -208,22 +208,24 @@ T_DOUBLE *calculateDegradationNormalized(G_ARRAY *garray_result_iso, G_ARRAY *ga
 
     T_DOUBLE *result = NULL;
 
+    T_DOUBLE deg1 = ((T_DOUBLE *) deg_metrics.MAX.DATA)[0];
+    if (deg1 > max || deg1 < min) return NULL;
+
     // Guarantee that standard deviation does not depass 100%
     T_DOUBLE std_dev = (((T_DOUBLE *)deg_metrics.MAX.DATA)[0] - ((T_DOUBLE *)deg_metrics.MIN.DATA)[0]) / ((T_DOUBLE *)deg_metrics.MEDIAN.DATA)[0];
+    if (std_dev >= STD_DEV_MAX) return NULL;
 
-    T_DOUBLE deg1 = ((T_DOUBLE *) deg_metrics.MAX.DATA)[0];
-    if (std_dev >= STD_DEV_MAX) {
-        deg1 = avg;
-    } else {
-        deg1 = ((T_DOUBLE *) deg_metrics.MAX.DATA)[0];
-        avg = avg * ((T_DOUBLE) num / (num+1));
-        avg += (deg1 / (num+1));
-    }
-    
+    if (avg == 0) avg = deg1;
+
+    avg = avg * ((T_DOUBLE) num / (num+1));
+    avg += (deg1 / (num+1));
+
+    T_DOUBLE abs_deg1 = deg1;
     deg1 /= avg;
-    result = malloc(2 * sizeof(T_DOUBLE));
+    result = malloc(3 * sizeof(T_DOUBLE));
     result[0] = deg1;
     result[1] = avg;
+    result[2] = abs_deg1;
 
     for (size_t result_idx = 0; result_idx < garray_result_full->SIZE; result_idx++) 
         free(garrays_std_deg[result_idx].DATA);
@@ -388,7 +390,7 @@ T_INT uniformRandom(T_INT min, T_INT max) {
     // since higher order bits in rand() are better distributed
     // I'll take the minimum high-order bits to represent my
     // distribution sampling
-    T_UCHAR num_randmax_bits = __builtin_popcount(RAND_MAX);
+    T_UCHAR num_randmax_bits = sizeof(int) * 8 - __builtin_clz(RAND_MAX);
     T_UCHAR shift = num_randmax_bits - range_nbit;
 
     T_INT random_num;

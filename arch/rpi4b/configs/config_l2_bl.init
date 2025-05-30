@@ -1,0 +1,30 @@
+#0
+CACHECOLORING:  1b          [M]
+MEMBANDWIDTH:   1b          [M]
+BUDGET:         260         [O]
+PERIOD:         5           [O]
+THRESHOLD:      0.30f       [O]
+
+#1
+APP:    WRITE
+SIZE:   L2
+STRIDE: 64
+ITERATIONS:  5000
+
+#2
+APP:    WRITE
+SIZE:   L2
+STRIDE: 64
+ITERATIONS:  5000
+
+#3
+APP:    WRITE
+SIZE:   L2
+STRIDE: 64
+ITERATIONS:  5000
+
+#4
+APP:    WRITE
+SIZE:   L2
+STRIDE: 64
+ITERATIONS:  5000

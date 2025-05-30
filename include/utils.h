@@ -51,6 +51,7 @@ T_VOID saveDataMETRICS(const T_PSTR output, G_ARRAY *metrics_array);
 T_VOID saveDataRESULTS(const T_PSTR output, G_ARRAY *result_array);
 T_ERROR saveDataRESULTBATCH(const T_PSTR output, G_ARRAY *result_array, size_t size_result_array);
 T_ERROR saveDataOptimizationResults(const T_PSTR output, G_ARRAY *optimization_array, OPT_MAP *map);
+T_ERROR saveDataOptimizationResultsNR(const T_PSTR output, G_ARRAY *optimization_array, OPT_MAP *map);
 
 /************** CONFIG HANDLING FUNCTIONS ****************/
 size_t strProprietyIdxByPtr(T_PSTR *OPTS, T_PSTR prop);
@@ -60,4 +61,8 @@ T_FLAG isConfigAlwaysOptimizable(CONFIG *cfg);
 
 /************** MAKEFILE HANDLING FUNCTIONS ****************/
 T_ERROR CALL_MAKEFILES(CONFIG *config);
+
+/************** UART Integrity ****************/
+char *get_result_ptr(char *line, char i_char);
 #endif
+

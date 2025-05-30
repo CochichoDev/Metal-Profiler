@@ -25,15 +25,19 @@
 /**** DEGRADATION PARAMETERS ****/
 #define IGNORE_LIMIT 10
 #define TARGET_SIZE_DIVISOR 0.9
-//#define TARGET_SIZE_DIVISOR 1.0
+//#define TARGET_SIZE_DIVISOR 0.99
 
 /********************************/
 /**** OPTIMIZATION PARAMETERS ****/
 #define NUM_ISO_RESULTS 1
-#define WEIGHT1         7
-#define WEIGHT2         3
+#define WEIGHT1         9
+#define WEIGHT2         1
 // FOR 2 WEIGHT OPTIMIZATION
-#define STD_DEV_MAX     0.5f
+#define STD_DEV_MAX     1.0f
+#define MIN_DEG     0.7f
+#define MAX_DEG     2.0f
+#define MIN_OVERHEAD     0.9f
+#define MAX_OVERHEAD     10.0f
 /*********************************/
 
 #define STR(s) #s

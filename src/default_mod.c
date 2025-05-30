@@ -135,7 +135,7 @@ void default_RUN_BENCH(RESULT *results) {
     uart_log();
 
     char binpath[128];
-    for (size_t core = 0; core < num_cores; core++) {
+    for (size_t core = 0; core < CUR_CFG->NUM-1; core++) {      // CUR_CFG->NUM-1 because the ID 0 is always system wide
         if (core_state[core] != 1) continue;
 
         #ifdef DEBUG
@@ -169,7 +169,7 @@ void default_RUN_BENCH(RESULT *results) {
     for (size_t i = 0; i < strlen(run_cmd); i++)
         uart_send_byte(run_cmd[i]);
     uart_send_byte('\r');
-    uart_to_result('R', 'F', results);
+    uart_to_result('!', '?', results);
     uart_log();
     
     for (size_t i = 0; i < strlen(reset_cmd); i++)

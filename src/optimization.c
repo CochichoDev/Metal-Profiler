@@ -511,6 +511,8 @@ static G_ARRAY *objectiveMinimizeMemMonitoring(OPT_MAP *mapGrid, PARAM_GRID para
         num1 = 0, num2 = 0;
     }
 
+    T_DOUBLE tmp_avg1 = avg1, tmp_avg2 = avg2;
+    T_DOUBLE tmp_num1 = num1, tmp_num2 = num2;
 
     // Compile the program w/ new config (MemMonitoring and Attackers)
     CONFIG *full_cfg = buildConfigFromParameterGrid(mapGrid, param);
@@ -532,9 +534,21 @@ static G_ARRAY *objectiveMinimizeMemMonitoring(OPT_MAP *mapGrid, PARAM_GRID para
     BUILD_PROJECT(cfg_mm_iso);
     runBench(garray_result_mm_iso.SIZE, 1, (RESULT *[]) {garray_result_mm_iso.DATA});
 
-    T_DOUBLE *deg1 = calculateDegradationNormalized(&garray_result_mm_iso, &garray_result_full, avg1, num1);
-    avg1 = deg1[1];
-    num1++;
+    T_DOUBLE *deg1 = calculateDegradationNormalized(&garray_result_mm_iso, &garray_result_full, tmp_avg1, tmp_num1, MIN_DEG, MAX_DEG);
+    if (deg1 == NULL) {
+        for (size_t result_idx = 0; result_idx < garray_result_full.SIZE; result_idx++) {
+            RESULT *result = ((RESULT *) garray_result_full.DATA) + result_idx;
+            DESTROY_RESULTS(result);
+            result = ((RESULT *) garray_result_mm_iso.DATA) + result_idx;
+            DESTROY_RESULTS(result);
+        }
+        free(garray_result_full.DATA);
+        free(garray_result_mm_iso.DATA);
+        free(cfg_mm_iso);
+        return NULL;
+    }
+    tmp_avg1 = deg1[1];
+    tmp_num1++;
 
     // This should always be true the first time except whenever it's ran for the first time
     if (garray_result_iso == NULL) {
@@ -564,19 +578,33 @@ static G_ARRAY *objectiveMinimizeMemMonitoring(OPT_MAP *mapGrid, PARAM_GRID para
     }
     free(cfg_mm_iso);
     // Repeat the same calculations for the second metric (Influnce of MemMonitoring)
-    T_DOUBLE *deg2 = calculateDegradationNormalized(garray_result_iso, &garray_result_mm_iso, avg2, num2);
-    avg2 = deg2[1];
-    num2++;
+    T_DOUBLE *deg2 = calculateDegradationNormalized(garray_result_iso, &garray_result_mm_iso, tmp_avg2, tmp_num2, MIN_OVERHEAD, MAX_OVERHEAD);
+    if (deg2 == NULL) {
+        free(deg1);
+        for (size_t result_idx = 0; result_idx < garray_result_full.SIZE; result_idx++) {
+            RESULT *result = ((RESULT *) garray_result_full.DATA) + result_idx;
+            DESTROY_RESULTS(result);
+            result = ((RESULT *) garray_result_mm_iso.DATA) + result_idx;
+            DESTROY_RESULTS(result);
+        }
+        free(garray_result_full.DATA);
+        free(garray_result_mm_iso.DATA);
+        return NULL;
+    }
+    tmp_avg2 = deg2[1];
+    tmp_num2++;
 
     
     G_ARRAY *results = calloc(1, sizeof(G_ARRAY));
-    results->DATA = malloc(4*sizeof(T_DOUBLE));
-    results->SIZE = 4;
+    results->DATA = malloc(6*sizeof(T_DOUBLE));
+    results->SIZE = 6;
     results->TYPE = G_DOUBLE;
     ((T_DOUBLE *)results->DATA)[0] = deg1[0];
-    ((T_DOUBLE *)results->DATA)[1] = avg1;
-    ((T_DOUBLE *)results->DATA)[2] = deg2[0];
-    ((T_DOUBLE *)results->DATA)[3] = avg2;
+    ((T_DOUBLE *)results->DATA)[1] = tmp_avg1;
+    ((T_DOUBLE *)results->DATA)[2] = deg1[2];
+    ((T_DOUBLE *)results->DATA)[3] = deg2[0];
+    ((T_DOUBLE *)results->DATA)[4] = tmp_avg2;
+    ((T_DOUBLE *)results->DATA)[5] = deg2[2];
 
     // Clean allocations and return objective
     for (size_t result_idx = 0; result_idx < garray_result_full.SIZE; result_idx++) {
@@ -590,6 +618,10 @@ static G_ARRAY *objectiveMinimizeMemMonitoring(OPT_MAP *mapGrid, PARAM_GRID para
     free(garray_result_mm_iso.DATA);
     free(deg1);
     free(deg2);
+
+    // Commit the new state values
+    num1 = tmp_num1; num2 = tmp_num2;
+    avg1 = tmp_avg1; avg2 = tmp_avg2;
 
     return results;
 }
@@ -799,14 +831,15 @@ static PARAM_GRID randomSearchNRWeighted(OPT_MAP *mapGrid, PARAM_GRID param, siz
 
     // Define variables to register max degradation and best cur_paramss
     PARAM_GRID cur_params = cloneParams(mapGrid, param);
-    G_ARRAY *result_array = objectiveFunc(mapGrid, cur_params);
-    PARAM_GRID best_params = cloneParams(mapGrid, cur_params);
+    G_ARRAY *result_array = NULL;
+    PARAM_GRID best_params = cloneParams(mapGrid, param);
 
-    T_DOUBLE deg1 = ((T_DOUBLE *)result_array->DATA)[0], deg2 = ((T_DOUBLE *)result_array->DATA)[2];
-    T_DOUBLE avg1 = ((T_DOUBLE *)result_array->DATA)[1], avg2 = ((T_DOUBLE *)result_array->DATA)[3];
-    T_DOUBLE best = -(deg1 * WEIGHT1 + deg2 * WEIGHT2);
-    DESTROY_GENERIC(result_array);
-    free(result_array);
+    T_FLAG first_run = TRUE;        // Used to register initial reference
+
+    T_DOUBLE deg1 = 0, deg2 = 0;
+    T_DOUBLE abs_deg1 = 0, abs_deg2 = 0;
+    T_DOUBLE avg1 = 0, avg2 = 0;
+    T_DOUBLE best = 0;
 
     G_ARRAY garray_opt_result = {.SIZE = iterations_limiter, .TYPE = G_OPTRESULT, .DATA = malloc(sizeof(OPT_RESULT) * iterations)};
 
@@ -815,31 +848,21 @@ static PARAM_GRID randomSearchNRWeighted(OPT_MAP *mapGrid, PARAM_GRID param, siz
     T_CHAR num_buffer[16];
     T_UCHAR new_hash[32];
 
-    // Save initial configuration's hash
-    for (size_t row_idx = 0; row_idx < mapGrid->NUM_COMP; row_idx++) {
-        for (size_t cur_params_idx = 0; cur_params_idx < mapGrid->PROPS_P_ROW[row_idx]; cur_params_idx++) {
-            itos(cur_params[row_idx][cur_params_idx].cur, num_buffer);
-            strcat(param_buffer, num_buffer);
-        }
-    }
-    SHA256((const unsigned char *)param_buffer, strlen(param_buffer), hashes[0]);
-
-
-    ((OPT_RESULT *) garray_opt_result.DATA)[0].DEG = -best;
-    ((OPT_RESULT *) garray_opt_result.DATA)[0].GRID = cloneParams(mapGrid, best_params);
     // Optimization Loop
-    for (size_t iter = 1; iter < iterations_limiter; iter++) {
+    for (size_t iter = 0; iter < iterations_limiter; iter++) {
     
         T_FLAG new_mutation = TRUE;
+        printf("ITERATION: %ld\n", iter);
 
         // Mutate cur_paramss
         do {
             param_buffer[0] = '\0';
             for (size_t row_idx = 0; row_idx < mapGrid->NUM_COMP; row_idx++) {
                 for (size_t cur_params_idx = 0; cur_params_idx < mapGrid->PROPS_P_ROW[row_idx]; cur_params_idx++) {
-                    T_INT random = uniformRandom(0, cur_params[row_idx][cur_params_idx].max);
-                    //printf("%d\n", random);
-                    cur_params[row_idx][cur_params_idx].cur = random;
+                    if (iter > 0) {
+                        cur_params[row_idx][cur_params_idx].cur = uniformRandom(0, cur_params[row_idx][cur_params_idx].max);
+                        //printf("%d\n", cur_params[row_idx][cur_params_idx].cur);
+                    }
                     itos(cur_params[row_idx][cur_params_idx].cur, num_buffer);
                     strcat(param_buffer, num_buffer);
                 }
@@ -871,12 +894,25 @@ static PARAM_GRID randomSearchNRWeighted(OPT_MAP *mapGrid, PARAM_GRID param, siz
 
         // Obtain objective
         result_array = objectiveFunc(mapGrid, cur_params);
-        T_DOUBLE new_deg1 = ((T_DOUBLE *)result_array->DATA)[0], new_deg2 = ((T_DOUBLE *)result_array->DATA)[2];
-        T_DOUBLE new_avg1 = ((T_DOUBLE *)result_array->DATA)[1], new_avg2 = ((T_DOUBLE *)result_array->DATA)[3];
+        if (result_array == NULL) goto SKIP;;
+        T_DOUBLE new_deg1 = ((T_DOUBLE *)result_array->DATA)[0], new_deg2 = ((T_DOUBLE *)result_array->DATA)[3];
+        T_DOUBLE new_avg1 = ((T_DOUBLE *)result_array->DATA)[1], new_avg2 = ((T_DOUBLE *)result_array->DATA)[4];
+        T_DOUBLE new_abs_deg1 = ((T_DOUBLE *)result_array->DATA)[2], new_abs_deg2 = ((T_DOUBLE *)result_array->DATA)[5];
         DESTROY_GENERIC(result_array);
         free(result_array);
 
         // Update best objective w/ new average
+        if (first_run) {
+            deg1 = new_deg1; deg2 = new_deg2;
+            avg1 = new_avg1; avg2 = new_avg2;
+            best = -(deg1 * WEIGHT1 + deg2 * WEIGHT2);
+            abs_deg1 = new_abs_deg1; abs_deg2 = new_abs_deg2;
+
+            best_params = cloneParams(mapGrid, cur_params);     // This assignment is needed in case the first case fails to get a valid results and the parameters mutate. In that case the current value will be different from the initialization but this case will still run because it's considered a first run (first valid result)
+
+            first_run = FALSE;
+            goto SKIP;
+        }
         deg1 *= (avg1/new_avg1), deg2 *= (avg2/new_avg2);
         best = -(deg1 * WEIGHT1 + deg2 * WEIGHT2);
 
@@ -886,26 +922,35 @@ static PARAM_GRID randomSearchNRWeighted(OPT_MAP *mapGrid, PARAM_GRID param, siz
         // Update averages
         avg1 = new_avg1, avg2 = new_avg2;
 
-        printf("ITERATION: %ld\n", iter);
         // Compare and replace
         if (new_objective > best) {
             destroyParameterGrid(mapGrid, best_params);
             best_params = cloneParams(mapGrid, cur_params);
             best = new_objective;
-            deg1 = new_deg1, deg2 = new_deg2;
+            deg1 = new_deg1; deg2 = new_deg2;
+            abs_deg1 = new_abs_deg1; abs_deg2 = new_abs_deg2;
             //printf("Best: %lf\n", best);
         }
-        ((OPT_RESULT *) garray_opt_result.DATA)[iter].DEG = -best;
+
+    SKIP:
+        if (best < 0) {
+            ((OPT_RESULT *) garray_opt_result.DATA)[iter].DEG = -best;
+        } else {
+            ((OPT_RESULT *) garray_opt_result.DATA)[iter].DEG = best;
+        }
+        ((OPT_RESULT *) garray_opt_result.DATA)[iter].ABS_DEG = abs_deg1;
+        ((OPT_RESULT *) garray_opt_result.DATA)[iter].ABS_DEG2 = abs_deg2;
         ((OPT_RESULT *) garray_opt_result.DATA)[iter].GRID = cloneParams(mapGrid, best_params);
         
     }
+
 
     destroyParameterGrid(mapGrid, cur_params);
 
     char output_rsnr[64] = "\0";
     strncpy(output_rsnr, output, 63-5);
     strcat(output_rsnr, "_rsnr");
-    saveDataOptimizationResults(output_rsnr, &garray_opt_result, mapGrid);
+    saveDataOptimizationResultsNR(output_rsnr, &garray_opt_result, mapGrid);
     DESTROY_GENERIC(&garray_opt_result);
     free(hashes);
 
@@ -1033,6 +1078,7 @@ T_VOID optimizeConfig(PARAM_GRID (*optimizationFunc)(OPT_MAP *, PARAM_GRID, size
             DESTROY_RESULTS(result);
         }
         free(garray_result_iso->DATA);
+        garray_result_iso->DATA = NULL;
     }
     free(garray_result_iso);
     garray_result_iso = NULL;

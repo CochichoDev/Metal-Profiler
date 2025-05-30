@@ -5,7 +5,7 @@ PAGE:       4096
 #CACHE_L1
 LINE:       64
 SIZE:       32768
-WAYS:       4
+WAYS:       2
 SHARED:     1
 
 #CACHE_L2

@@ -1,0 +1,32 @@
+#0
+CACHECOLORING:  1b          [M]
+MEMBANDWIDTH:   0b          [M]
+BUDGET:         100         [O]
+PERIOD:         1           [O]
+THRESHOLD:      0.05f       [O]
+
+#1
+APP:    WRITENEON
+SIZE:   DDR
+STRIDE: 64
+ITERATIONS:  5000
+
+#2
+APP:    WRITE
+SIZE:   DDR
+STRIDE: 64
+ITERATIONS:  5000
+
+#3
+APP:    WRITE
+SIZE:   DDR
+STRIDE: 64
+ITERATIONS:  5000
+
+#4
+APP:    WRITE
+SIZE:   DDR
+STRIDE: 64
+ITERATIONS:  5000
+
+

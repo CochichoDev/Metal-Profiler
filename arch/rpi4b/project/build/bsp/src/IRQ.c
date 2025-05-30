@@ -23,9 +23,6 @@ static u8 COUNTER_RST = 0;
 static s64 AVAIL = BUDGET;
 
 static void mem_monitor() {
-    LAST_L1D_MSHR = read_pmevcntr(0);
-    LAST_L1D_WB = read_pmevcntr(1);
-
 #ifdef DEBUG
     uart_str("AVAIL: "); uart_int(AVAIL); uart_nl();
 #endif
@@ -104,7 +101,9 @@ void irq_handler() {
         #endif
                 break;
             default:
+        #ifdef DEBUG
                 uart_str("The IRQ ID is "); uart_hex(iar_value & 0x1FFU); uart_nl();
+        #endif
                 *REG_GIC_GICC_EOIR = iar_value;
                 break;
         }
@@ -122,5 +121,7 @@ void irq_handler() {
 }
 
 void sync_handler() {
+    #ifdef DEBUG
     uart_str("Synchronous Exception"); uart_nl();
+    #endif
 }

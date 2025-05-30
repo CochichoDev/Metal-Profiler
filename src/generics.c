@@ -62,4 +62,5 @@ T_VOID DESTROY_GENERIC(G_ARRAY* gen_data) {
         return;
     }
     free(gen_data->DATA);
+    gen_data->DATA = NULL;
 }

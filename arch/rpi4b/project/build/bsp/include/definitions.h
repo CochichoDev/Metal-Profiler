@@ -73,7 +73,7 @@
 #elif APP == READNEON
 #define ACCESS_METHOD(TARGET)   \
     __asm__("                   \
-        ld4     [%0], {V0.2D, V1.2D, V2.2D, V3.2D}         \
+        ld4     {V0.2D, V1.2D, V2.2D, V3.2D}, [%0]         \
             "                   \
         :                       \ 
         :"r"(TARGET)            \

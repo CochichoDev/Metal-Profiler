@@ -25,6 +25,8 @@ typedef PARAM_ROW *PARAM_GRID;
 
 typedef struct {
     T_DOUBLE    DEG;
+    T_DOUBLE    ABS_DEG;
+    T_DOUBLE    ABS_DEG2;
     PARAM_GRID  GRID;
 } OPT_RESULT;
 

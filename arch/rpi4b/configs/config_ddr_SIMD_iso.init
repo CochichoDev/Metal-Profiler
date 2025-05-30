@@ -1,0 +1,12 @@
+#0
+CACHECOLORING:  0b          [M]
+MEMBANDWIDTH:   0b          [M]
+BUDGET:         2000        [O]
+PERIOD:         800         [O]
+THRESHOLD:      0.09f       [O]
+
+#1
+APP:    READNEON
+SIZE:   DDR
+STRIDE: 64
+ITERATIONS:  5000
