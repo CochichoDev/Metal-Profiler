@@ -27,6 +27,8 @@ int main(void) {
     L1D_WB      = read_pmevcntr(1);
     L2_REFILLS  = read_pmevcntr(2);
     L2_WB       = read_pmevcntr(3);
+
+    uart_str("$"); uart_nl();
 #endif
     for (HEADER) 
     {

@@ -17,7 +17,7 @@ CFLAGS:=
 CPPFLAGS:=$(foreach inc, $(INCLUDE), -I$(inc)) -fno-stack-protector 
 LFLAGS:=-L$(LIB) $(foreach lib,$(LIBS),-l$(lib)) -Wl,--no-as-needed -lAMBapi -lcjson
 
-TARGET:=$(BIN)/autometalbench
+TARGET:=$(BIN)/metalprofiler
 TARGET_API:=$(BIN)/libAMBapi.so
 SRC_FILES:=$(wildcard $(SRC)/*.c)
 API_SRC_FILES:=$(wildcard $(SRC)/api/*.c)

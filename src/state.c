@@ -286,8 +286,10 @@ void selectArch(size_t choice) {
     strcpy(module_path, SELECTED_ARCH.path);
     strcat(module_path, "/module/bin/dmodule.so");
 
-    if (!(MODULE_HANDLE = dlopen(module_path, RTLD_LAZY)))
+    if (!(MODULE_HANDLE = dlopen(module_path, RTLD_LAZY))) { 
         fprintf(stderr, "Error: Could not open handle of module (%s)\n", dlerror());
+        exit(-1);
+    }
 
     if (!(MODULE_CONFIG = (CONFIG *) dlsym(MODULE_HANDLE, "ARCH_CONFIG")))
         fprintf(stderr, "Error: Could not access CONFIG variable (%s)\n", dlerror());
@@ -536,6 +538,8 @@ T_ERROR cleanState() {
     // Clean INPUT_CONFIG
     destroyConfig(INPUT_CONFIG);
     INPUT_CONFIG = NULL;
+
+    destroyBuildConf();
 
     // Clean OUTPUT_LIST_SELECTED
     OUTPUT_LIST *iter = OUTPUT_LIST_SELECTED;

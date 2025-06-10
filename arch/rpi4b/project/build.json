@@ -1,7 +1,7 @@
 {
-    "CC": "aarch64-none-elf-gcc",
-    "LD": "aarch64-none-elf-ld",
-    "AR": "aarch64-none-elf-ar",
+    "CC": "aarch64-linux-gnu-gcc",
+    "LD": "aarch64-linux-gnu-ld",
+    "AR": "aarch64-linux-gnu-ar",
     "OBJCOPY": "aarch64-linux-gnu-objcopy",
     "BUILD": [
             [
@@ -15,7 +15,7 @@
             ],
             [
                 {
-                    "path": "KERNEL",
+                    "path": "deploy",
                     "id": []
                 },
                 {
@@ -70,7 +70,7 @@
             "dest": "start4.elf"
         },
         {
-            "src": "KERNEL/bin/kernel8.img",
+            "src": "deploy/bin/kernel8.img",
             "dest": "kernel8.img"
         }
     ]

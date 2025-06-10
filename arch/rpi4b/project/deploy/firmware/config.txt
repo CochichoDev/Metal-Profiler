@@ -1,5 +1,9 @@
 arm_64bit=1
 kernel_old=1
 disable_commandine_tags=1
-#armstub=armstub8.bin
 kernel=kernel8.img
+enable_gic=1
+arm_freq=2250
+gpu_freq=750
+over_voltage=12
+force_turbo=1
