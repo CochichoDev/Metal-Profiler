@@ -86,6 +86,7 @@ Once launched, Metal Profiler provides a CLI menu interface:
 -   `list`: Show all supported architectures (defined in `arch/archs.txt`).
 -   `set arch $ARCH`: Selects the architecture and loads its config files.
 -   `load $CONFIG`: Compiles and prepares stress applications for deployment.
+-   `generate (mmu/linker)`: Generates the MMU configuration and linker scripts based on the user specified memory configuration.
 -   `deploy $PATH`: Copies the firmware to the specified path (needs to be correctly mounted).
 -   `analyze`: Opens the TUI for performance data visualization.
 -   `optimize`: Opens the TUI to configure and launch optimization routines.
