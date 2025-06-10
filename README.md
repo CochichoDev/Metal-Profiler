@@ -1,4 +1,5 @@
 
+
 # Welcome to Metal Profiler!
 
 **Metal Profiler** is a framework designed to help users perform **bare-metal performance stress-tests** across different hardware architectures. It facilitates hardware interference characterization through customizable benchmarks and portable tooling.
@@ -31,6 +32,33 @@ Through a modular, extensible architecture-aware framework, **Metal Profiler** p
 - 📚 **Extensible Modules**: Plug-and-play `dmodule.so` libraries define application parameters, properties, and optimization ranges.
 
 ---
+## Building the Tool
+
+To compile the Metal Profiler toolchain, simply run:
+```bash
+make
+```
+
+This command must be executed from the **root directory** of the repository.
+
+### What it does:
+
+-   Compiles the **main executable** and places it at:
+```bash
+Metal-Profiler/bin/metalprofiler
+```
+Scans the `arch/` directory for available architectures and **copies shared libraries** from `lib/` into each corresponding module path:
+```bash
+arch/myarch/module/lib/
+```
+Each module must be compiled into a shared object and placed at:
+```bash
+arch/myarch/module/bin/dmodule.so
+```
+
+If you’re integrating a new architecture, be sure to define and build your module properly so that the main executable can interface with it correctly.
+
+---
 
 ## Usage
 
@@ -58,8 +86,10 @@ Once launched, Metal Profiler provides a CLI menu interface:
 -   `list`: Show all supported architectures (defined in `arch/archs.txt`).
 -   `set arch $ARCH`: Selects the architecture and loads its config files.
 -   `load $CONFIG`: Compiles and prepares stress applications for deployment.
+-   `deploy $PATH`: Copies the firmware to the specified path (needs to be correctly mounted).
 -   `analyze`: Opens the TUI for performance data visualization.
 -   `optimize`: Opens the TUI to configure and launch optimization routines.
+
 
 ---
 ## Architecture Integration
@@ -123,7 +153,7 @@ L3: 4K
 ---
 ## Build Configuration (`build.json`)
 
-Defines how to compile and link each target application:
+Defines how to compile and link each target application, what and where the firmware files should me copied to upon the `deploy` command:
 ```json
 "BUILD": [
   [
@@ -147,6 +177,16 @@ Defines how to compile and link each target application:
       "id": [0, 2]
     }
   ]
+]
+"DEPLOY": [
+  {
+    "src": "deploy/firmware/start4.elf",
+    "dest": "start4.elf"
+  },
+  {
+    "src": "deploy/bin/kernel8.img",
+    "dest": "kernel8.img"
+  }
 ]
 ```
 The structure supports sequential (outer list) and parallel (inner list) compilation, enabling efficient builds with dependency management.
@@ -236,4 +276,5 @@ This project is licensed under the GNU General Public License version 3 (GPLv3) 
 
 Below is the full text of the LICENSE file included in this repository:
 > 🔗 [LICENSE](https://github.com/CochichoDev/Metal-Profiler/blob/main/LICENSE)
+
 
