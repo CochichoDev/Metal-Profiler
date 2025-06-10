@@ -229,9 +229,8 @@ Most of the firmware **code can be shared** across platforms, provided that each
 
 ### Shared Interface Requirements
 
-Each firmware project must expose a common set of symbols and behaviors, including:
+Each firmware back-end project must expose a common set of symbols and behaviors, including:
 
-- `main`: the entry point.
 - `init_uart`: routine to receive binaries over UART and load them into memory.
 - `out_byte`: entry to send a byte via uart.
 - `in_byte`: entry to receive a byte via uart.
