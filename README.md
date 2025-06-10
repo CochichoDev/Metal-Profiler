@@ -202,9 +202,9 @@ Each architecture module defines application-specific parameters using shared ob
 PROP buffer[] = {
     {
         .NAME = "BLOCK_SIZE",
-        .PTYPE = "INT",
-        .FLAGS = ["REQUIRED", "OPTIMIZABLE"],
-        .iRANGE = [64, 4096],
+        .PTYPE = pINT,
+        .FLAGS = NEEDED|OPTIMIZABLE,
+        .iRANGE = {64, 4096},
         .iSTEP = 64
     },
     ...
