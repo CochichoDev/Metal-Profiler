@@ -232,9 +232,9 @@ Most of the firmware **code can be shared** across platforms, provided that each
 Each firmware project must expose a common set of symbols and behaviors, including:
 
 - `main`: the entry point.
-- `load_applications`: routine to receive binaries over UART and load them into memory.
-- `start_benchmark`: entry to launch benchmark logic on selected cores.
-- `print_result`: mechanism to report metrics over UART.
+- `init_uart`: routine to receive binaries over UART and load them into memory.
+- `out_byte`: entry to send a byte via uart.
+- `in_byte`: entry to receive a byte via uart.
 
 Additional platform-specific initialization (MMU setup, UART drivers, etc.) is abstracted in per-platform layers but can often reuse implementations from existing targets.
 
